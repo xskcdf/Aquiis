@@ -13,6 +13,11 @@ namespace Aquiis.SimpleStart.Models
         [Display(Name = "Organization ID")]
         public Guid OrganizationId { get; set; }
 
+        [Required]
+        [MaxLength(200)]
+        [Display(Name = "Organization Name")]
+        public string Name { get; set; } = string.Empty;
+
         #region Late Fee Settings
 
         [Display(Name = "Enable Late Fees")]

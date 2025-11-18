@@ -149,9 +149,9 @@ namespace Aquiis.SimpleStart.Data
                     .HasForeignKey(d => d.PaymentId)
                     .OnDelete(DeleteBehavior.SetNull);
                 
-                // Configure FileData to use VARBINARY(MAX) for large files
-                entity.Property(e => e.FileData)
-                    .HasColumnType("VARBINARY(MAX)");
+                // FileData is automatically stored as BLOB in SQLite
+                // No need to specify column type
+                
                 // Configure relationship with User
                 entity.HasOne<IdentityUser>()
                     .WithMany()

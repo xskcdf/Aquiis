@@ -7,9 +7,18 @@ using Aquiis.SimpleStart.Data;
 using Aquiis.SimpleStart.Components.PropertyManagement;
 using Aquiis.SimpleStart.Components.Administration.Application;
 using Aquiis.SimpleStart.Services;
+using ElectronNET.API;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure for Electron
+builder.WebHost.UseElectron(args);
+
+// Configure URLs - use specific port for Electron
+if (HybridSupport.IsElectronActive)
+{
+    builder.WebHost.UseUrls("http://localhost:8888");
+}
 
 
 
@@ -40,7 +49,11 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// Get database connection string (uses Electron user data path when running as desktop app)
+var connectionString = HybridSupport.IsElectronActive 
+    ? await ElectronPathService.GetConnectionStringAsync()
+    : builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
@@ -49,7 +62,8 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options => {
 
-    options.SignIn.RequireConfirmedAccount = true;
+    // For desktop app, simplify registration (email confirmation can be enabled later via settings)
+    options.SignIn.RequireConfirmedAccount = !HybridSupport.IsElectronActive;
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 6;
     options.Password.RequireNonAlphanumeric = false;
@@ -72,6 +86,14 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LoginPath = "/Account/Login";
     options.LogoutPath = "/Account/Logout";
     options.AccessDeniedPath = "/Account/AccessDenied";
+    
+    // For Electron desktop app, we can use longer cookie lifetime
+    if (HybridSupport.IsElectronActive)
+    {
+        options.ExpireTimeSpan = TimeSpan.FromDays(30);
+        options.SlidingExpiration = true;
+    }
+    
     options.Events.OnSignedIn = async context =>
     {
         // Track user login
@@ -123,17 +145,46 @@ var app = builder.Build();
 // Ensure database is created and migrations are applied
 using (var scope = app.Services.CreateScope())
 {
-    // var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    // try
-    // {
-    //     context.Database.Migrate();
-    // }
-    // catch (InvalidOperationException ex) when (ex.Message.Contains("PendingModelChangesWarning"))
-    // {
-    //     // If there are pending model changes, create the database with current model
-    //     context.Database.EnsureDeleted();
-    //     context.Database.EnsureCreated();
-    // }
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    
+    // For Electron, handle database initialization and migrations
+    if (HybridSupport.IsElectronActive)
+    {
+        var dbPath = await ElectronPathService.GetDatabasePathAsync();
+        var dbExists = File.Exists(dbPath);
+        
+        if (dbExists)
+        {
+            // Existing installation - apply any pending migrations
+            app.Logger.LogInformation("Checking for migrations on existing database at {DbPath}", dbPath);
+            
+            var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+            if (pendingMigrations.Any())
+            {
+                app.Logger.LogInformation("Found {Count} pending migrations", pendingMigrations.Count());
+                
+                // Backup database before migration
+                var backupPath = $"{dbPath}.backup.{DateTime.Now:yyyyMMddHHmmss}";
+                File.Copy(dbPath, backupPath);
+                app.Logger.LogInformation("Database backed up to {BackupPath}", backupPath);
+                
+                // Apply migrations
+                await context.Database.MigrateAsync();
+                app.Logger.LogInformation("Migrations applied successfully");
+            }
+            else
+            {
+                app.Logger.LogInformation("Database is up to date");
+            }
+        }
+        else
+        {
+            // New installation - create database with migrations
+            app.Logger.LogInformation("Creating new database for Electron app at {DbPath}", dbPath);
+            await context.Database.MigrateAsync();
+            app.Logger.LogInformation("Database created successfully");
+        }
+    }
 
     // Seed roles
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -176,16 +227,45 @@ else
 }
 
 app.UseSession();
-app.UseHttpsRedirection();
 
+// Only use HTTPS redirection in web mode, not in Electron
+if (!HybridSupport.IsElectronActive)
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAntiforgery();
 
 app.MapStaticAssets();
-app.MapRazorComponents<App>()
+app.MapRazorComponents<Aquiis.SimpleStart.Components.App>()
     .AddInteractiveServerRenderMode();
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
 
-app.Run();
+// Start the app for Electron
+await app.StartAsync();
+
+// Open Electron window
+if (HybridSupport.IsElectronActive)
+{
+    var window = await Electron.WindowManager.CreateWindowAsync(new ElectronNET.API.Entities.BrowserWindowOptions
+    {
+        Width = 1400,
+        Height = 900,
+        Show = false
+    });
+
+    window.OnReadyToShow += () => window.Show();
+    window.SetTitle("Aquiis Property Management");
+    
+    // Gracefully shutdown when window is closed
+    window.OnClosed += async () =>
+    {
+        app.Logger.LogInformation("Electron window closed, shutting down application");
+        await app.StopAsync();
+        Electron.App.Quit();
+    };
+}
+
+await app.WaitForShutdownAsync();

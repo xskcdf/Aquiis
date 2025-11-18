@@ -34,6 +34,17 @@
                 <EditForm Model="viewModel" OnValidSubmit="SaveSettings" FormName="late-fee-settings">
                     <DataAnnotationsValidator />
 
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Organization Name</label>
+                        <InputText @bind-Value="viewModel.Name" class="form-control" placeholder="Enter organization name" />
+                        <small class="text-muted">Your organization's name for reports and documents</small>
+                        <ValidationMessage For="() => viewModel.Name" class="text-danger" />
+                    </div>
+
+                    <hr class="my-4"/>
+
+                    <h6 class="mb-3">Late Fee Configuration</h6>
+
                     <div class="mb-3">
                         <div class="form-check form-switch">
                             <InputCheckbox @bind-Value="viewModel.LateFeeEnabled" class="form-check-input" id="lateFeeEnabled" />
@@ -222,6 +233,7 @@
                 // Map entity to view model
                 viewModel = new LateFeeSettingsViewModel
                 {
+                    Name = settings.Name,
                     LateFeeEnabled = settings.LateFeeEnabled,
                     LateFeeAutoApply = settings.LateFeeAutoApply,
                     LateFeeGracePeriodDays = settings.LateFeeGracePeriodDays,
@@ -254,6 +266,7 @@
             }
 
             // Map view model back to entity
+            settings.Name = viewModel.Name;
             settings.LateFeeEnabled = viewModel.LateFeeEnabled;
             settings.LateFeeAutoApply = viewModel.LateFeeAutoApply;
             settings.LateFeeGracePeriodDays = viewModel.LateFeeGracePeriodDays;
@@ -304,6 +317,11 @@
 
     public class LateFeeSettingsViewModel
     {
+        [Required]
+        [MaxLength(200)]
+        [Display(Name = "Organization Name")]
+        public string Name { get; set; } = string.Empty;
+
         [Display(Name = "Enable Late Fees")]
         public bool LateFeeEnabled { get; set; } = true;
 
