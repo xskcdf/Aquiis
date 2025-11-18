@@ -33,7 +33,7 @@ namespace Aquiis.SimpleStart.Models
         [StringLength(100)]
         [DataType(DataType.Text)]
         [Display(Name = "Last Modified By")]
-        public string LastModifiedBy { get; set; } = string.Empty;
+        public string? LastModifiedBy { get; set; }
 
         [JsonInclude]
         [Display(Name = "Is Deleted?")]

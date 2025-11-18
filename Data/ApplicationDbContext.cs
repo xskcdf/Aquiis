@@ -9,6 +9,7 @@ using Aquiis.SimpleStart.Components.PropertyManagement.Documents;
 using Aquiis.SimpleStart.Components.PropertyManagement.Inspections;
 using Aquiis.SimpleStart.Components.PropertyManagement.MaintenanceRequests;
 using Aquiis.SimpleStart.Components.Account;
+using Aquiis.SimpleStart.Models;
 using Microsoft.AspNetCore.Identity;
 
 namespace Aquiis.SimpleStart.Data
@@ -29,6 +30,7 @@ namespace Aquiis.SimpleStart.Data
         public DbSet<Document> Documents { get; set; }
         public DbSet<Inspection> Inspections { get; set; }
         public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
+        public DbSet<OrganizationSettings> OrganizationSettings { get; set; }
 
          protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -194,6 +196,14 @@ namespace Aquiis.SimpleStart.Data
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.Priority);
                 entity.HasIndex(e => e.RequestedOn);
+            });
+
+            // Configure OrganizationSettings entity
+            modelBuilder.Entity<OrganizationSettings>(entity =>
+            {
+                entity.HasIndex(e => e.OrganizationId).IsUnique();
+                entity.Property(e => e.LateFeePercentage).HasPrecision(5, 4);
+                entity.Property(e => e.MaxLateFeeAmount).HasPrecision(18, 2);
             });
         }
 

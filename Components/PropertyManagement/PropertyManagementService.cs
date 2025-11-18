@@ -8,6 +8,7 @@ using Aquiis.SimpleStart.Components.PropertyManagement.Inspections;
 using Aquiis.SimpleStart.Components.PropertyManagement.MaintenanceRequests;
 using Aquiis.SimpleStart.Components.Account;
 using Aquiis.SimpleStart.Data;
+using Aquiis.SimpleStart.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Aquiis.SimpleStart.Components.Administration.Application;
@@ -1455,6 +1456,88 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
                 _dbContext.MaintenanceRequests.Update(maintenanceRequest);
                 await _dbContext.SaveChangesAsync();
             }
+        }
+
+        #endregion
+
+        #region Organization Settings
+
+        /// <summary>
+        /// Gets the organization settings for the current user's organization.
+        /// If no settings exist, creates default settings.
+        /// </summary>
+        public async Task<OrganizationSettings?> GetOrganizationSettingsAsync()
+        {
+            var organizationId = await _userContext.GetOrganizationIdAsync();
+
+            if (string.IsNullOrEmpty(organizationId))
+            {
+                throw new InvalidOperationException("Organization ID not found for current user");
+            }
+
+            var settings = await _dbContext.OrganizationSettings
+                .Where(s => !s.IsDeleted && s.OrganizationId.ToString() == organizationId)
+                .FirstOrDefaultAsync();
+
+            // Create default settings if they don't exist
+            if (settings == null)
+            {
+                var userId = await _userContext.GetUserIdAsync();
+                settings = new OrganizationSettings
+                {
+                    OrganizationId = Guid.Parse(organizationId),
+                    LateFeeEnabled = true,
+                    LateFeeAutoApply = true,
+                    LateFeeGracePeriodDays = 3,
+                    LateFeePercentage = 0.05m,
+                    MaxLateFeeAmount = 50.00m,
+                    PaymentReminderEnabled = true,
+                    PaymentReminderDaysBefore = 3,
+                    CreatedOn = DateTime.UtcNow,
+                    CreatedBy = userId ?? "System"
+                };
+                
+                await _dbContext.OrganizationSettings.AddAsync(settings);
+                await _dbContext.SaveChangesAsync();
+            }
+
+            return settings;
+        }
+
+        /// <summary>
+        /// Gets organization settings by organization ID (used by scheduled tasks).
+        /// </summary>
+        public async Task<OrganizationSettings?> GetOrganizationSettingsByOrgIdAsync(Guid organizationId)
+        {
+            return await _dbContext.OrganizationSettings
+                .Where(s => !s.IsDeleted && s.OrganizationId == organizationId)
+                .FirstOrDefaultAsync();
+        }
+
+        /// <summary>
+        /// Gets organization settings by organization ID string (used by scheduled tasks).
+        /// </summary>
+        public async Task<OrganizationSettings?> GetOrganizationSettingsByOrgIdAsync(string organizationId)
+        {
+            if (Guid.TryParse(organizationId, out var guid))
+            {
+                return await GetOrganizationSettingsByOrgIdAsync(guid);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Updates the organization settings for the current user's organization.
+        /// </summary>
+        public async Task UpdateOrganizationSettingsAsync(OrganizationSettings settings)
+        {
+            var userId = await _userContext.GetUserIdAsync();
+            
+            settings.LastModifiedOn = DateTime.UtcNow;
+            settings.LastModifiedBy = userId ?? "System";
+
+            _dbContext.OrganizationSettings.Update(settings);
+            await _dbContext.SaveChangesAsync();
         }
 
         #endregion

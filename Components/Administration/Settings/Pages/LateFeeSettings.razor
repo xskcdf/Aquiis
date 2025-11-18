@@ -1,8 +1,12 @@
 @page "/administration/settings/latefees"
 @using Aquiis.SimpleStart.Components.Administration.Application
+@using Aquiis.SimpleStart.Components.PropertyManagement
+@using Aquiis.SimpleStart.Models
 @using Aquiis.SimpleStart.Services
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
+
+@inject PropertyManagementService PropertyService
 @inject ToastService ToastService
 @rendermode InteractiveServer
 
@@ -27,61 +31,86 @@
                     After the grace period expires, a late fee will be automatically applied to unpaid invoices.
                 </div>
 
-                <EditForm Model="settings" OnValidSubmit="SaveSettings" FormName="late-fee-settings">
+                <EditForm Model="viewModel" OnValidSubmit="SaveSettings" FormName="late-fee-settings">
                     <DataAnnotationsValidator />
 
                     <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <InputCheckbox @bind-Value="viewModel.LateFeeEnabled" class="form-check-input" id="lateFeeEnabled" />
+                            <label class="form-check-label" for="lateFeeEnabled">
+                                <strong>Enable Late Fees</strong>
+                            </label>
+                            <small class="d-block text-muted">Master switch for the entire late fee feature</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <InputCheckbox @bind-Value="viewModel.LateFeeAutoApply" class="form-check-input" id="autoApply" disabled="@(!viewModel.LateFeeEnabled)" />
+                            <label class="form-check-label" for="autoApply">
+                                <strong>Auto-Apply Late Fees</strong>
+                            </label>
+                            <small class="d-block text-muted">Automatically apply late fees to overdue invoices (if disabled, invoices will only be marked as overdue)</small>
+                        </div>
+                    </div>
+
+                    <hr/>
+
+                    <div class="mb-3">
                         <label class="form-label">Grace Period (Days)</label>
-                        <InputNumber @bind-Value="settings.GracePeriodDays" class="form-control" />
+                        <InputNumber @bind-Value="viewModel.LateFeeGracePeriodDays" class="form-control" disabled="@(!viewModel.LateFeeEnabled)" />
                         <small class="text-muted">Number of days after due date before late fees apply</small>
-                        <ValidationMessage For="() => settings.GracePeriodDays" class="text-danger" />
+                        <ValidationMessage For="() => viewModel.LateFeeGracePeriodDays" class="text-danger" />
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Late Fee Percentage</label>
                         <div class="input-group">
-                            <InputNumber @bind-Value="settings.LateFeePercentage" class="form-control" step="0.01" />
+                            <InputNumber @bind-Value="viewModel.LateFeePercentage" class="form-control" step="0.01" disabled="@(!viewModel.LateFeeEnabled)" />
                             <span class="input-group-text">%</span>
                         </div>
                         <small class="text-muted">Percentage of invoice amount to charge as late fee</small>
-                        <ValidationMessage For="() => settings.LateFeePercentage" class="text-danger" />
+                        <ValidationMessage For="() => viewModel.LateFeePercentage" class="text-danger" />
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Maximum Late Fee Amount</label>
                         <div class="input-group">
                             <span class="input-group-text">$</span>
-                            <InputNumber @bind-Value="settings.MaxLateFeeAmount" class="form-control" step="0.01" />
+                            <InputNumber @bind-Value="viewModel.MaxLateFeeAmount" class="form-control" step="0.01" disabled="@(!viewModel.LateFeeEnabled)" />
                         </div>
                         <small class="text-muted">Cap on the maximum late fee that can be charged</small>
-                        <ValidationMessage For="() => settings.MaxLateFeeAmount" class="text-danger" />
+                        <ValidationMessage For="() => viewModel.MaxLateFeeAmount" class="text-danger" />
+                    </div>
+
+                    <hr/>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <InputCheckbox @bind-Value="viewModel.PaymentReminderEnabled" class="form-check-input" id="reminderEnabled" />
+                            <label class="form-check-label" for="reminderEnabled">
+                                <strong>Enable Payment Reminders</strong>
+                            </label>
+                            <small class="d-block text-muted">Send payment reminders before invoices are due</small>
+                        </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Payment Reminder Days</label>
-                        <InputNumber @bind-Value="settings.ReminderDays" class="form-control" />
+                        <InputNumber @bind-Value="viewModel.PaymentReminderDaysBefore" class="form-control" disabled="@(!viewModel.PaymentReminderEnabled)" />
                         <small class="text-muted">Send payment reminder this many days before due date</small>
-                        <ValidationMessage For="() => settings.ReminderDays" class="text-danger" />
-                    </div>
-
-                    <div class="mb-4">
-                        <div class="form-check">
-                            <InputCheckbox @bind-Value="settings.AutoApplyLateFees" class="form-check-input" id="autoApply" />
-                            <label class="form-check-label" for="autoApply">
-                                Automatically apply late fees to overdue invoices
-                            </label>
-                        </div>
+                        <ValidationMessage For="() => viewModel.PaymentReminderDaysBefore" class="text-danger" />
                     </div>
 
                     <div class="alert alert-warning">
                         <strong>Example Calculation:</strong><br/>
                         Invoice Amount: $1,000<br/>
-                        Grace Period: @settings.GracePeriodDays days<br/>
-                        Late Fee: @settings.LateFeePercentage% = $@((1000 * (settings.LateFeePercentage / 100)).ToString("F2"))<br/>
-                        Capped at: $@settings.MaxLateFeeAmount<br/>
+                        Grace Period: @viewModel.LateFeeGracePeriodDays days<br/>
+                        Late Fee: @viewModel.LateFeePercentage% = $@((1000 * (viewModel.LateFeePercentage / 100)).ToString("F2"))<br/>
+                        Capped at: $@viewModel.MaxLateFeeAmount<br/>
                         @{
-                            var calculatedFee = 1000 * (settings.LateFeePercentage / 100);
-                            var actualFee = Math.Min(calculatedFee, settings.MaxLateFeeAmount);
+                            var calculatedFee = 1000 * (viewModel.LateFeePercentage / 100);
+                            var actualFee = Math.Min(calculatedFee, viewModel.MaxLateFeeAmount);
                         }
                         <strong>Actual Late Fee: $@actualFee.ToString("F2")</strong>
                     </div>
@@ -110,21 +139,9 @@
             </div>
             <div class="card-body">
                 <dl>
-                    <dt>Grace Period</dt>
-                    <dd>@settings.GracePeriodDays days</dd>
-
-                    <dt>Late Fee Rate</dt>
-                    <dd>@settings.LateFeePercentage%</dd>
-
-                    <dt>Maximum Late Fee</dt>
-                    <dd>$@settings.MaxLateFeeAmount</dd>
-
-                    <dt>Reminder Timing</dt>
-                    <dd>@settings.ReminderDays days before due</dd>
-
-                    <dt>Auto-Apply</dt>
+                    <dt>Late Fees</dt>
                     <dd>
-                        @if (settings.AutoApplyLateFees)
+                        @if (viewModel.LateFeeEnabled)
                         {
                             <span class="badge bg-success">Enabled</span>
                         }
@@ -133,6 +150,42 @@
                             <span class="badge bg-secondary">Disabled</span>
                         }
                     </dd>
+
+                    <dt>Auto-Apply</dt>
+                    <dd>
+                        @if (viewModel.LateFeeAutoApply && viewModel.LateFeeEnabled)
+                        {
+                            <span class="badge bg-success">Enabled</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Disabled</span>
+                        }
+                    </dd>
+
+                    <dt>Grace Period</dt>
+                    <dd>@viewModel.LateFeeGracePeriodDays days</dd>
+
+                    <dt>Late Fee Rate</dt>
+                    <dd>@viewModel.LateFeePercentage%</dd>
+
+                    <dt>Maximum Late Fee</dt>
+                    <dd>$@viewModel.MaxLateFeeAmount</dd>
+
+                    <dt>Payment Reminders</dt>
+                    <dd>
+                        @if (viewModel.PaymentReminderEnabled)
+                        {
+                            <span class="badge bg-success">Enabled</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Disabled</span>
+                        }
+                    </dd>
+
+                    <dt>Reminder Timing</dt>
+                    <dd>@viewModel.PaymentReminderDaysBefore days before due</dd>
                 </dl>
             </div>
         </div>
@@ -155,21 +208,34 @@
 </div>
 
 @code {
-    private LateFeeConfig settings = new();
+    private LateFeeSettingsViewModel viewModel = new();
     private bool isSaving = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        // In a real implementation, load from database or configuration
-        // For now, use defaults
-        settings = new LateFeeConfig
+        try
         {
-            GracePeriodDays = 3,
-            LateFeePercentage = 5.0m,
-            MaxLateFeeAmount = 50.00m,
-            ReminderDays = 3,
-            AutoApplyLateFees = true
-        };
+            var settings = await PropertyService.GetOrganizationSettingsAsync();
+            
+            if (settings != null)
+            {
+                // Map entity to view model
+                viewModel = new LateFeeSettingsViewModel
+                {
+                    LateFeeEnabled = settings.LateFeeEnabled,
+                    LateFeeAutoApply = settings.LateFeeAutoApply,
+                    LateFeeGracePeriodDays = settings.LateFeeGracePeriodDays,
+                    LateFeePercentage = settings.LateFeePercentage * 100, // Convert to percentage display
+                    MaxLateFeeAmount = settings.MaxLateFeeAmount,
+                    PaymentReminderEnabled = settings.PaymentReminderEnabled,
+                    PaymentReminderDaysBefore = settings.PaymentReminderDaysBefore
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Failed to load settings: {ex.Message}");
+        }
     }
 
     private async Task SaveSettings()
@@ -178,8 +244,25 @@
         {
             isSaving = true;
 
-            // TODO: Save to database or configuration file
-            await Task.Delay(500); // Simulate save
+            // Get the existing entity
+            var settings = await PropertyService.GetOrganizationSettingsAsync();
+            
+            if (settings == null)
+            {
+                ToastService.ShowError("Failed to load organization settings");
+                return;
+            }
+
+            // Map view model back to entity
+            settings.LateFeeEnabled = viewModel.LateFeeEnabled;
+            settings.LateFeeAutoApply = viewModel.LateFeeAutoApply;
+            settings.LateFeeGracePeriodDays = viewModel.LateFeeGracePeriodDays;
+            settings.LateFeePercentage = viewModel.LateFeePercentage / 100; // Convert from percentage display
+            settings.MaxLateFeeAmount = viewModel.MaxLateFeeAmount;
+            settings.PaymentReminderEnabled = viewModel.PaymentReminderEnabled;
+            settings.PaymentReminderDaysBefore = viewModel.PaymentReminderDaysBefore;
+
+            await PropertyService.UpdateOrganizationSettingsAsync(settings);
 
             ToastService.ShowSuccess("Late fee settings saved successfully!");
         }
@@ -195,11 +278,13 @@
 
     private void ResetToDefaults()
     {
-        settings.GracePeriodDays = 3;
-        settings.LateFeePercentage = 5.0m;
-        settings.MaxLateFeeAmount = 50.00m;
-        settings.ReminderDays = 3;
-        settings.AutoApplyLateFees = true;
+        viewModel.LateFeeEnabled = true;
+        viewModel.LateFeeAutoApply = true;
+        viewModel.LateFeeGracePeriodDays = 3;
+        viewModel.LateFeePercentage = 5.0m;
+        viewModel.MaxLateFeeAmount = 50.00m;
+        viewModel.PaymentReminderEnabled = true;
+        viewModel.PaymentReminderDaysBefore = 3;
 
         ToastService.ShowInfo("Settings reset to defaults");
     }
@@ -217,24 +302,35 @@
         return next2AM.ToString("MMM dd, yyyy h:mm tt");
     }
 
-    public class LateFeeConfig
+    public class LateFeeSettingsViewModel
     {
+        [Display(Name = "Enable Late Fees")]
+        public bool LateFeeEnabled { get; set; } = true;
+
+        [Display(Name = "Auto-Apply Late Fees")]
+        public bool LateFeeAutoApply { get; set; } = true;
+
         [Required]
         [Range(0, 30, ErrorMessage = "Grace period must be between 0 and 30 days")]
-        public int GracePeriodDays { get; set; } = 3;
+        [Display(Name = "Grace Period (Days)")]
+        public int LateFeeGracePeriodDays { get; set; } = 3;
 
         [Required]
         [Range(0.0, 100.0, ErrorMessage = "Late fee percentage must be between 0% and 100%")]
+        [Display(Name = "Late Fee Percentage")]
         public decimal LateFeePercentage { get; set; } = 5.0m;
 
         [Required]
         [Range(0.0, 10000.0, ErrorMessage = "Maximum late fee must be between $0 and $10,000")]
+        [Display(Name = "Maximum Late Fee Amount")]
         public decimal MaxLateFeeAmount { get; set; } = 50.00m;
 
-        [Required]
-        [Range(0, 30, ErrorMessage = "Reminder days must be between 0 and 30")]
-        public int ReminderDays { get; set; } = 3;
+        [Display(Name = "Enable Payment Reminders")]
+        public bool PaymentReminderEnabled { get; set; } = true;
 
-        public bool AutoApplyLateFees { get; set; } = true;
+        [Required]
+        [Range(1, 30, ErrorMessage = "Reminder days must be between 1 and 30")]
+        [Display(Name = "Send Reminder (Days Before Due)")]
+        public int PaymentReminderDaysBefore { get; set; } = 3;
     }
 }

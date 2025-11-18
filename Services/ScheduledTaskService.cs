@@ -1,5 +1,6 @@
 using Aquiis.SimpleStart.Components.PropertyManagement;
 using Aquiis.SimpleStart.Data;
+using Aquiis.SimpleStart.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -81,18 +82,44 @@ namespace Aquiis.SimpleStart.Services
                 {
                     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                     var toastService = scope.ServiceProvider.GetRequiredService<ToastService>();
+                    var propertyManagementService = scope.ServiceProvider.GetRequiredService<PropertyManagementService>();
 
-                    // Task 1: Apply late fees to overdue invoices
-                    await ApplyLateFees(dbContext, toastService, stoppingToken);
+                    // Get all distinct organization IDs from OrganizationSettings
+                    var organizations = await dbContext.OrganizationSettings
+                        .Where(s => !s.IsDeleted)
+                        .Select(s => s.OrganizationId.ToString())
+                        .Distinct()
+                        .ToListAsync(stoppingToken);
 
-                    // Task 2: Update invoice statuses
-                    await UpdateInvoiceStatuses(dbContext, stoppingToken);
+                    foreach (var organizationId in organizations)
+                    {
+                        // Get settings for this organization
+                        var settings = await propertyManagementService.GetOrganizationSettingsByOrgIdAsync(organizationId);
+                        
+                        if (settings == null)
+                        {
+                            _logger.LogWarning("No settings found for organization {OrganizationId}, skipping", organizationId);
+                            continue;
+                        }
 
-                    // Task 3: Send payment reminders (placeholder for future email integration)
-                    await SendPaymentReminders(dbContext, stoppingToken);
+                        // Task 1: Apply late fees to overdue invoices (if enabled)
+                        if (settings.LateFeeEnabled && settings.LateFeeAutoApply)
+                        {
+                            await ApplyLateFees(dbContext, toastService, organizationId, settings, stoppingToken);
+                        }
 
-                    // Task 4: Check for expiring leases and send renewal notifications
-                    await CheckLeaseRenewals(dbContext, stoppingToken);
+                        // Task 2: Update invoice statuses
+                        await UpdateInvoiceStatuses(dbContext, organizationId, stoppingToken);
+
+                        // Task 3: Send payment reminders (if enabled)
+                        if (settings.PaymentReminderEnabled)
+                        {
+                            await SendPaymentReminders(dbContext, organizationId, settings, stoppingToken);
+                        }
+
+                        // Task 4: Check for expiring leases and send renewal notifications
+                        await CheckLeaseRenewals(dbContext, organizationId, stoppingToken);
+                    }
                 }
             }
             catch (Exception ex)
@@ -101,27 +128,30 @@ namespace Aquiis.SimpleStart.Services
             }
         }
 
-        private async Task ApplyLateFees(ApplicationDbContext dbContext, ToastService toastService, CancellationToken stoppingToken)
+        private async Task ApplyLateFees(
+            ApplicationDbContext dbContext, 
+            ToastService toastService, 
+            string organizationId,
+            OrganizationSettings settings,
+            CancellationToken stoppingToken)
         {
             try
             {
                 var today = DateTime.Today;
-                var gracePeriodDays = 3; // Grace period before late fees apply
-                var lateFeePercentage = 0.05m; // 5% late fee
-                var maxLateFeeAmount = 50.00m; // Maximum late fee cap
 
                 // Find overdue invoices that haven't been charged a late fee yet
                 var overdueInvoices = await dbContext.Invoices
                     .Include(i => i.Lease)
                     .Where(i => !i.IsDeleted &&
+                               i.UserId == organizationId &&
                                i.Status == "Pending" &&
-                               i.DueDate < today.AddDays(-gracePeriodDays) &&
+                               i.DueDate < today.AddDays(-settings.LateFeeGracePeriodDays) &&
                                (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
                     .ToListAsync(stoppingToken);
 
                 foreach (var invoice in overdueInvoices)
                 {
-                    var lateFee = Math.Min(invoice.Amount * lateFeePercentage, maxLateFeeAmount);
+                    var lateFee = Math.Min(invoice.Amount * settings.LateFeePercentage, settings.MaxLateFeeAmount);
                     
                     invoice.LateFeeAmount = lateFee;
                     invoice.LateFeeApplied = true;
@@ -135,23 +165,24 @@ namespace Aquiis.SimpleStart.Services
                         : $"{invoice.Notes}\nLate fee of {lateFee:C} applied on {DateTime.Now:MMM dd, yyyy}";
 
                     _logger.LogInformation(
-                        "Applied late fee of {LateFee:C} to invoice {InvoiceNumber} (ID: {InvoiceId})",
-                        lateFee, invoice.InvoiceNumber, invoice.Id);
+                        "Applied late fee of {LateFee:C} to invoice {InvoiceNumber} (ID: {InvoiceId}) for organization {OrganizationId}",
+                        lateFee, invoice.InvoiceNumber, invoice.Id, organizationId);
                 }
 
                 if (overdueInvoices.Any())
                 {
                     await dbContext.SaveChangesAsync(stoppingToken);
-                    _logger.LogInformation("Applied late fees to {Count} invoices", overdueInvoices.Count);
+                    _logger.LogInformation("Applied late fees to {Count} invoices for organization {OrganizationId}", 
+                        overdueInvoices.Count, organizationId);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error applying late fees");
+                _logger.LogError(ex, "Error applying late fees for organization {OrganizationId}", organizationId);
             }
         }
 
-        private async Task UpdateInvoiceStatuses(ApplicationDbContext dbContext, CancellationToken stoppingToken)
+        private async Task UpdateInvoiceStatuses(ApplicationDbContext dbContext, string organizationId, CancellationToken stoppingToken)
         {
             try
             {
@@ -160,6 +191,7 @@ namespace Aquiis.SimpleStart.Services
                 // Update pending invoices that are now overdue (and haven't had late fees applied)
                 var newlyOverdueInvoices = await dbContext.Invoices
                     .Where(i => !i.IsDeleted &&
+                               i.UserId == organizationId &&
                                i.Status == "Pending" &&
                                i.DueDate < today &&
                                (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
@@ -175,21 +207,25 @@ namespace Aquiis.SimpleStart.Services
                 if (newlyOverdueInvoices.Any())
                 {
                     await dbContext.SaveChangesAsync(stoppingToken);
-                    _logger.LogInformation("Updated {Count} invoices to Overdue status", newlyOverdueInvoices.Count);
+                    _logger.LogInformation("Updated {Count} invoices to Overdue status for organization {OrganizationId}", 
+                        newlyOverdueInvoices.Count, organizationId);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating invoice statuses");
+                _logger.LogError(ex, "Error updating invoice statuses for organization {OrganizationId}", organizationId);
             }
         }
 
-        private async Task SendPaymentReminders(ApplicationDbContext dbContext, CancellationToken stoppingToken)
+        private async Task SendPaymentReminders(
+            ApplicationDbContext dbContext, 
+            string organizationId,
+            OrganizationSettings settings,
+            CancellationToken stoppingToken)
         {
             try
             {
                 var today = DateTime.Today;
-                var reminderDays = 3; // Send reminder 3 days before due date
 
                 // Find invoices due soon
                 var upcomingInvoices = await dbContext.Invoices
@@ -198,9 +234,10 @@ namespace Aquiis.SimpleStart.Services
                     .Include(i => i.Lease)
                         .ThenInclude(l => l.Property)
                     .Where(i => !i.IsDeleted &&
+                               i.UserId == organizationId &&
                                i.Status == "Pending" &&
                                i.DueDate >= today &&
-                               i.DueDate <= today.AddDays(reminderDays) &&
+                               i.DueDate <= today.AddDays(settings.PaymentReminderDaysBefore) &&
                                (i.ReminderSent == null || !i.ReminderSent.Value))
                     .ToListAsync(stoppingToken);
 
@@ -209,10 +246,11 @@ namespace Aquiis.SimpleStart.Services
                     // TODO: Integrate with email service when implemented
                     // For now, just log the reminder
                     _logger.LogInformation(
-                        "Payment reminder needed for invoice {InvoiceNumber} due {DueDate} for tenant {TenantName}",
+                        "Payment reminder needed for invoice {InvoiceNumber} due {DueDate} for tenant {TenantName} in organization {OrganizationId}",
                         invoice.InvoiceNumber,
                         invoice.DueDate.ToString("MMM dd, yyyy"),
-                        invoice.Lease?.Tenant?.FullName ?? "Unknown");
+                        invoice.Lease?.Tenant?.FullName ?? "Unknown",
+                        organizationId);
 
                     invoice.ReminderSent = true;
                     invoice.ReminderSentDate = DateTime.UtcNow;
@@ -223,16 +261,17 @@ namespace Aquiis.SimpleStart.Services
                 if (upcomingInvoices.Any())
                 {
                     await dbContext.SaveChangesAsync(stoppingToken);
-                    _logger.LogInformation("Marked {Count} invoices as reminder sent", upcomingInvoices.Count);
+                    _logger.LogInformation("Marked {Count} invoices as reminder sent for organization {OrganizationId}", 
+                        upcomingInvoices.Count, organizationId);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending payment reminders");
+                _logger.LogError(ex, "Error sending payment reminders for organization {OrganizationId}", organizationId);
             }
         }
 
-        private async Task CheckLeaseRenewals(ApplicationDbContext dbContext, CancellationToken stoppingToken)
+        private async Task CheckLeaseRenewals(ApplicationDbContext dbContext, string organizationId, CancellationToken stoppingToken)
         {
             try
             {
@@ -243,6 +282,7 @@ namespace Aquiis.SimpleStart.Services
                     .Include(l => l.Tenant)
                     .Include(l => l.Property)
                     .Where(l => !l.IsDeleted &&
+                               l.UserId == organizationId &&
                                l.Status == "Active" &&
                                l.EndDate >= today.AddDays(85) &&
                                l.EndDate <= today.AddDays(95) &&
@@ -271,6 +311,7 @@ namespace Aquiis.SimpleStart.Services
                     .Include(l => l.Tenant)
                     .Include(l => l.Property)
                     .Where(l => !l.IsDeleted &&
+                               l.UserId == organizationId &&
                                l.Status == "Active" &&
                                l.EndDate >= today.AddDays(55) &&
                                l.EndDate <= today.AddDays(65) &&
@@ -298,6 +339,7 @@ namespace Aquiis.SimpleStart.Services
                     .Include(l => l.Tenant)
                     .Include(l => l.Property)
                     .Where(l => !l.IsDeleted &&
+                               l.UserId == organizationId &&
                                l.Status == "Active" &&
                                l.EndDate >= today.AddDays(25) &&
                                l.EndDate <= today.AddDays(35) &&
@@ -318,6 +360,7 @@ namespace Aquiis.SimpleStart.Services
                 // Update status for expired leases
                 var expiredLeases = await dbContext.Leases
                     .Where(l => !l.IsDeleted &&
+                               l.UserId == organizationId &&
                                l.Status == "Active" &&
                                l.EndDate < today &&
                                (l.RenewalStatus == null || l.RenewalStatus == "Pending"))
@@ -343,8 +386,9 @@ namespace Aquiis.SimpleStart.Services
                 {
                     await dbContext.SaveChangesAsync(stoppingToken);
                     _logger.LogInformation(
-                        "Processed {Count} lease renewals: {Initial} initial notifications, {Reminder60} 60-day reminders, {Reminder30} 30-day reminders, {Expired} expired",
+                        "Processed {Count} lease renewals for organization {OrganizationId}: {Initial} initial notifications, {Reminder60} 60-day reminders, {Reminder30} 30-day reminders, {Expired} expired",
                         totalUpdated,
+                        organizationId,
                         leasesExpiring90Days.Count,
                         leasesExpiring60Days.Count,
                         leasesExpiring30Days.Count,
@@ -353,7 +397,7 @@ namespace Aquiis.SimpleStart.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking lease renewals");
+                _logger.LogError(ex, "Error checking lease renewals for organization {OrganizationId}", organizationId);
             }
         }
 
