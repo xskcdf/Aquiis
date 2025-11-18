@@ -10,7 +10,7 @@
   "aspCoreBackendPort": 8888,
   "build": {
     "appId": "com.aquiis.propertymanagement",
-    "productName": "Aquiis Property Management",
+    "productName": "AquiisPropertyManagement",
     "copyright": "Copyright © 2025",
     "buildVersion": "1.0.0",
     "compression": "maximum",

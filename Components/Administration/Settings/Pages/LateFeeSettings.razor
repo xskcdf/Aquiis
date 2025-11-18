@@ -317,10 +317,9 @@
 
     public class LateFeeSettingsViewModel
     {
-        [Required]
         [MaxLength(200)]
         [Display(Name = "Organization Name")]
-        public string Name { get; set; } = string.Empty;
+        public string? Name { get; set; }
 
         [Display(Name = "Enable Late Fees")]
         public bool LateFeeEnabled { get; set; } = true;

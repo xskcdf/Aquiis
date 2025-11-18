@@ -79,7 +79,7 @@ namespace Aquiis.SimpleStart.Data
                 entity.Property(e => e.SecurityDeposit).HasPrecision(18, 2);
                 
                 // Configure relationship with User
-                entity.HasOne<IdentityUser>()
+                entity.HasOne<ApplicationUser>()
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
@@ -98,7 +98,7 @@ namespace Aquiis.SimpleStart.Data
                 entity.Property(e => e.AmountPaid).HasPrecision(18, 2);
                 
                 // Configure relationship with User
-                entity.HasOne<IdentityUser>()
+                entity.HasOne<ApplicationUser>()
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
@@ -115,7 +115,7 @@ namespace Aquiis.SimpleStart.Data
                 entity.Property(e => e.Amount).HasPrecision(18, 2);
                 
                 // Configure relationship with User
-                entity.HasOne<IdentityUser>()
+                entity.HasOne<ApplicationUser>()
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
@@ -153,7 +153,7 @@ namespace Aquiis.SimpleStart.Data
                 // No need to specify column type
                 
                 // Configure relationship with User
-                entity.HasOne<IdentityUser>()
+                entity.HasOne<ApplicationUser>()
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);

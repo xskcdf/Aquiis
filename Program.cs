@@ -150,39 +150,47 @@ using (var scope = app.Services.CreateScope())
     // For Electron, handle database initialization and migrations
     if (HybridSupport.IsElectronActive)
     {
-        var dbPath = await ElectronPathService.GetDatabasePathAsync();
-        var dbExists = File.Exists(dbPath);
-        
-        if (dbExists)
+        try
         {
-            // Existing installation - apply any pending migrations
-            app.Logger.LogInformation("Checking for migrations on existing database at {DbPath}", dbPath);
+            var dbPath = await ElectronPathService.GetDatabasePathAsync();
+            var dbExists = File.Exists(dbPath);
             
-            var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
-            if (pendingMigrations.Any())
+            if (dbExists)
             {
-                app.Logger.LogInformation("Found {Count} pending migrations", pendingMigrations.Count());
+                // Existing installation - apply any pending migrations
+                app.Logger.LogInformation("Checking for migrations on existing database at {DbPath}", dbPath);
                 
-                // Backup database before migration
-                var backupPath = $"{dbPath}.backup.{DateTime.Now:yyyyMMddHHmmss}";
-                File.Copy(dbPath, backupPath);
-                app.Logger.LogInformation("Database backed up to {BackupPath}", backupPath);
-                
-                // Apply migrations
-                await context.Database.MigrateAsync();
-                app.Logger.LogInformation("Migrations applied successfully");
+                var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+                if (pendingMigrations.Any())
+                {
+                    app.Logger.LogInformation("Found {Count} pending migrations", pendingMigrations.Count());
+                    
+                    // Backup database before migration
+                    var backupPath = $"{dbPath}.backup.{DateTime.Now:yyyyMMddHHmmss}";
+                    File.Copy(dbPath, backupPath);
+                    app.Logger.LogInformation("Database backed up to {BackupPath}", backupPath);
+                    
+                    // Apply migrations
+                    await context.Database.MigrateAsync();
+                    app.Logger.LogInformation("Migrations applied successfully");
+                }
+                else
+                {
+                    app.Logger.LogInformation("Database is up to date");
+                }
             }
             else
             {
-                app.Logger.LogInformation("Database is up to date");
+                // New installation - create database with migrations
+                app.Logger.LogInformation("Creating new database for Electron app at {DbPath}", dbPath);
+                await context.Database.MigrateAsync();
+                app.Logger.LogInformation("Database created successfully");
             }
         }
-        else
+        catch (Exception ex)
         {
-            // New installation - create database with migrations
-            app.Logger.LogInformation("Creating new database for Electron app at {DbPath}", dbPath);
-            await context.Database.MigrateAsync();
-            app.Logger.LogInformation("Database created successfully");
+            app.Logger.LogError(ex, "Failed to initialize database for Electron");
+            throw;
         }
     }
 
@@ -260,10 +268,9 @@ if (HybridSupport.IsElectronActive)
     window.SetTitle("Aquiis Property Management");
     
     // Gracefully shutdown when window is closed
-    window.OnClosed += async () =>
+    window.OnClosed += () =>
     {
         app.Logger.LogInformation("Electron window closed, shutting down application");
-        await app.StopAsync();
         Electron.App.Quit();
     };
 }
