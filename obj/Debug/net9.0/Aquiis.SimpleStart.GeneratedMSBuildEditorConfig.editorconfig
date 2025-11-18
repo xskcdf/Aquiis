@@ -220,6 +220,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9BZG1pbmlzdHJhdGlvbi9TZXR0aW5ncy9QYWdlcy9MYXRlRmVlU2V0dGluZ3MucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
+[/home/cisguru/Source/Aquiis/Aquiis.SimpleStart/Components/Administration/Settings/Pages/ServiceSettings.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9BZG1pbmlzdHJhdGlvbi9TZXR0aW5ncy9QYWdlcy9TZXJ2aWNlU2V0dGluZ3MucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
 [/home/cisguru/Source/Aquiis/Aquiis.SimpleStart/Components/Administration/Users/Dashboard.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9BZG1pbmlzdHJhdGlvbi9Vc2Vycy9EYXNoYm9hcmQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 

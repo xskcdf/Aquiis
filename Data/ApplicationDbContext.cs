@@ -201,6 +201,7 @@ namespace Aquiis.SimpleStart.Data
             // Configure OrganizationSettings entity
             modelBuilder.Entity<OrganizationSettings>(entity =>
             {
+                entity.Property(e => e.OrganizationId).HasConversion<string>();
                 entity.HasIndex(e => e.OrganizationId).IsUnique();
                 entity.Property(e => e.LateFeePercentage).HasPrecision(5, 4);
                 entity.Property(e => e.MaxLateFeeAmount).HasPrecision(18, 2);
