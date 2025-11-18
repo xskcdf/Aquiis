@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Aquiis.SimpleStart")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+80137847e863458d89fb8a102bd470d399e51e9c")]
 [assembly: System.Reflection.AssemblyProductAttribute("Aquiis.SimpleStart")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Aquiis.SimpleStart")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

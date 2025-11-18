@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "5AoVjkBVFBA=",
+  "dgSpecHash": "UAqBKj0Fb+k=",
   "success": true,
-  "projectFilePath": "/home/cisguru/Source/Aquiis.V2/Aquiis.SimpleStart/Aquiis.SimpleStart.csproj",
+  "projectFilePath": "/home/cisguru/Source/Aquiis/Aquiis.SimpleStart/Aquiis.SimpleStart.csproj",
   "expectedPackageFiles": [
     "/home/cisguru/.nuget/packages/humanizer.core/2.14.1/humanizer.core.2.14.1.nupkg.sha512",
     "/home/cisguru/.nuget/packages/microsoft.aspnetcore.cryptography.internal/9.0.11/microsoft.aspnetcore.cryptography.internal.9.0.11.nupkg.sha512",

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/cisguru/Source/Aquiis.V2/Aquiis.SimpleStart/Aquiis.SimpleStart.csproj": {}
+    "/home/cisguru/Source/Aquiis/Aquiis.SimpleStart/Aquiis.SimpleStart.csproj": {}
   },
   "projects": {
-    "/home/cisguru/Source/Aquiis.V2/Aquiis.SimpleStart/Aquiis.SimpleStart.csproj": {
+    "/home/cisguru/Source/Aquiis/Aquiis.SimpleStart/Aquiis.SimpleStart.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/cisguru/Source/Aquiis.V2/Aquiis.SimpleStart/Aquiis.SimpleStart.csproj",
+        "projectUniqueName": "/home/cisguru/Source/Aquiis/Aquiis.SimpleStart/Aquiis.SimpleStart.csproj",
         "projectName": "Aquiis.SimpleStart",
-        "projectPath": "/home/cisguru/Source/Aquiis.V2/Aquiis.SimpleStart/Aquiis.SimpleStart.csproj",
+        "projectPath": "/home/cisguru/Source/Aquiis/Aquiis.SimpleStart/Aquiis.SimpleStart.csproj",
         "packagesPath": "/home/cisguru/.nuget/packages/",
-        "outputPath": "/home/cisguru/Source/Aquiis.V2/Aquiis.SimpleStart/obj/",
+        "outputPath": "/home/cisguru/Source/Aquiis/Aquiis.SimpleStart/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/cisguru/.nuget/NuGet/NuGet.Config"
