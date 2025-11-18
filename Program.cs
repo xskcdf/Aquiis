@@ -55,9 +55,9 @@ var connectionString = HybridSupport.IsElectronActive
     : builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString));
+    options.UseSqlite(connectionString, b => b.MigrationsAssembly("Aquiis.SimpleStart")));
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString), ServiceLifetime.Scoped);
+    options.UseSqlite(connectionString, b => b.MigrationsAssembly("Aquiis.SimpleStart")), ServiceLifetime.Scoped);
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options => {
@@ -190,6 +190,21 @@ using (var scope = app.Services.CreateScope())
         catch (Exception ex)
         {
             app.Logger.LogError(ex, "Failed to initialize database for Electron");
+            throw;
+        }
+    }
+    else
+    {
+        // Web mode - ensure migrations are applied
+        try
+        {
+            app.Logger.LogInformation("Applying database migrations for web mode");
+            await context.Database.MigrateAsync();
+            app.Logger.LogInformation("Database migrations applied successfully");
+        }
+        catch (Exception ex)
+        {
+            app.Logger.LogError(ex, "Failed to apply database migrations");
             throw;
         }
     }

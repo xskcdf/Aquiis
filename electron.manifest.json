@@ -1,7 +1,7 @@
 {
   "executable": "Aquiis.SimpleStart",
   "splashscreen": {
-    "imageFile": ""
+    "imageFile": "Assets/splash.png"
   },
   "name": "aquiis-property-management",
   "author": "Aquiis",
