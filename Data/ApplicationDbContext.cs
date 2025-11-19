@@ -98,6 +98,11 @@ namespace Aquiis.SimpleStart.Data
                     .HasForeignKey(i => i.LeaseId)
                     .OnDelete(DeleteBehavior.Restrict);
 
+                entity.HasOne(i => i.Document)
+                    .WithMany()
+                    .HasForeignKey(i => i.DocumentId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
                 entity.HasIndex(e => e.InvoiceNumber).IsUnique();
                 entity.Property(e => e.Amount).HasPrecision(18, 2);
                 entity.Property(e => e.AmountPaid).HasPrecision(18, 2);
@@ -116,6 +121,11 @@ namespace Aquiis.SimpleStart.Data
                     .WithMany(i => i.Payments)
                     .HasForeignKey(p => p.InvoiceId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(p => p.Document)
+                    .WithMany()
+                    .HasForeignKey(p => p.DocumentId)
+                    .OnDelete(DeleteBehavior.SetNull);
 
                 entity.Property(e => e.Amount).HasPrecision(18, 2);
                 

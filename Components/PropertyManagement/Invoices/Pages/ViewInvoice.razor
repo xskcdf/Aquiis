@@ -217,17 +217,29 @@ else
                         <button class="btn btn-outline-info" @onclick="ViewLease">
                             <i class="bi bi-file-text"></i> View Lease
                         </button>
-                        <button class="btn btn-outline-secondary" @onclick="GenerateInvoicePdf" disabled="@isGenerating">
-                            @if (isGenerating)
-                            {
-                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                            }
-                            else
-                            {
-                                <i class="bi bi-file-pdf"></i>
-                            }
-                            Generate PDF
-                        </button>
+                        @if (invoice.DocumentId == null)
+                        {
+                            <button class="btn btn-outline-secondary" @onclick="GenerateInvoicePdf" disabled="@isGenerating">
+                                @if (isGenerating)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-file-pdf"></i>
+                                }
+                                Generate PDF
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-primary" @onclick="ViewDocument">
+                                <i class="bi bi-eye"></i> View PDF
+                            </button>
+                            <button class="btn btn-outline-primary" @onclick="DownloadDocument">
+                                <i class="bi bi-download"></i> Download PDF
+                            </button>
+                        }
                     </div>
                 </div>
             </div>
@@ -264,6 +276,7 @@ else
 
     private Invoice? invoice;
     private bool isGenerating = false;
+    private Document? document = null;
 
     [CascadingParameter]
     private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
@@ -276,6 +289,12 @@ else
     private async Task LoadInvoice()
     {
         invoice = await PropertyManagementService.GetInvoiceByIdAsync(Id);
+        
+        // Load the document if it exists
+        if (invoice?.DocumentId != null)
+        {
+            document = await PropertyManagementService.GetDocumentByIdAsync(invoice.DocumentId.Value);
+        }
     }
 
     private string GetStatusBadgeClass(string status)
@@ -310,6 +329,27 @@ else
         if (invoice?.LeaseId != null)
         {
             NavigationManager.NavigateTo($"/propertymanagement/leases/view/{invoice.LeaseId}");
+        }
+    }
+
+    private async Task ViewDocument()
+    {
+        if (document != null)
+        {
+            var base64Data = Convert.ToBase64String(document.FileData);
+            await JSRuntime.InvokeVoidAsync("viewFile", base64Data, document.FileType);
+        }
+    }
+
+    private async Task DownloadDocument()
+    {
+        if (document != null)
+        {
+            var fileName = document.FileName;
+            var fileData = document.FileData;
+            var mimeType = document.FileType;
+
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(fileData), mimeType);
         }
     }
 
@@ -360,13 +400,17 @@ else
             // Save to database
             await PropertyManagementService.AddDocumentAsync(document);
 
-            await JSRuntime.InvokeVoidAsync("alert", "Invoice PDF generated successfully!");
+            // Update invoice with DocumentId
+            invoice.DocumentId = document.Id;
+            invoice.LastModifiedOn = DateTime.UtcNow;
+            invoice.LastModifiedBy = userId;
+            await PropertyManagementService.UpdateInvoiceAsync(invoice);
 
-            // Navigate to documents page if lease exists
-            if (invoice.LeaseId > 0)
-            {
-                NavigationManager.NavigateTo($"/propertymanagement/leases/{invoice.LeaseId}/documents");
-            }
+            // Reload invoice and document
+            await LoadInvoice();
+            StateHasChanged();
+
+            await JSRuntime.InvokeVoidAsync("alert", "Invoice PDF generated successfully!");
         }
         catch (Exception ex)
         {

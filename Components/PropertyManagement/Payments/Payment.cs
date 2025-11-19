@@ -32,9 +32,15 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Payments {
         [StringLength(1000)]
         public string Notes { get; set; } = string.Empty;
 
+        // Document Tracking
+        public int? DocumentId { get; set; }
+
         // Navigation properties
         [ForeignKey("InvoiceId")]
         public virtual Invoice Invoice { get; set; } = null!;
+
+        [ForeignKey("DocumentId")]
+        public virtual Document? Document { get; set; }
 
     }
 }

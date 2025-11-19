@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Aquiis.SimpleStart.Components.PropertyManagement.Documents;
 using Aquiis.SimpleStart.Components.PropertyManagement.Leases;
 using Aquiis.SimpleStart.Components.PropertyManagement.Payments;
 using Aquiis.SimpleStart.Models;
@@ -59,11 +60,17 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Invoices {
 
         public DateTime? ReminderSentDate { get; set; }
 
-        // Navigation properties
-        [ForeignKey("LeaseId")]
-        public virtual Lease Lease { get; set; } = null!;
+    // Document Tracking
+    public int? DocumentId { get; set; }
 
-        public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+        // Navigation properties
+    [ForeignKey("LeaseId")]
+    public virtual Lease Lease { get; set; } = null!;
+
+    [ForeignKey("DocumentId")]
+    public virtual Document? Document { get; set; }
+
+    public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
         // Computed properties
         public decimal BalanceDue => Amount - AmountPaid;

@@ -1038,6 +1038,59 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
                 document.LastModifiedBy = _userId!;
                 document.LastModifiedOn = DateTime.UtcNow;
                 _dbContext.Documents.Update(document);
+
+                // Clear reverse foreign keys in related entities
+                // Since soft delete doesn't trigger DB cascade, we need to manually clear DocumentId
+                
+                // Clear Inspection.DocumentId if any inspection links to this document
+                var inspection = await _dbContext.Inspections
+                    .FirstOrDefaultAsync(i => i.DocumentId == document.Id);
+                if (inspection != null)
+                {
+                    inspection.DocumentId = null;
+                    inspection.LastModifiedBy = _userId;
+                    inspection.LastModifiedOn = DateTime.UtcNow;
+                    _dbContext.Inspections.Update(inspection);
+                }
+
+                // Clear Lease.DocumentId if any lease links to this document
+                var lease = await _dbContext.Leases
+                    .FirstOrDefaultAsync(l => l.DocumentId == document.Id);
+                if (lease != null)
+                {
+                    lease.DocumentId = null;
+                    lease.LastModifiedBy = _userId;
+                    lease.LastModifiedOn = DateTime.UtcNow;
+                    _dbContext.Leases.Update(lease);
+                }
+
+                // Clear Invoice.DocumentId if any invoice links to this document
+                if (document.InvoiceId != null)
+                {
+                    var invoice = await _dbContext.Invoices
+                        .FirstOrDefaultAsync(i => i.Id == document.InvoiceId.Value && i.DocumentId == document.Id);
+                    if (invoice != null)
+                    {
+                        invoice.DocumentId = null;
+                        invoice.LastModifiedBy = _userId;
+                        invoice.LastModifiedOn = DateTime.UtcNow;
+                        _dbContext.Invoices.Update(invoice);
+                    }
+                }
+
+                // Clear Payment.DocumentId if any payment links to this document
+                if (document.PaymentId != null)
+                {
+                    var payment = await _dbContext.Payments
+                        .FirstOrDefaultAsync(p => p.Id == document.PaymentId.Value && p.DocumentId == document.Id);
+                    if (payment != null)
+                    {
+                        payment.DocumentId = null;
+                        payment.LastModifiedBy = _userId;
+                        payment.LastModifiedOn = DateTime.UtcNow;
+                        _dbContext.Payments.Update(payment);
+                    }
+                }
             }
             await _dbContext.SaveChangesAsync();
         }

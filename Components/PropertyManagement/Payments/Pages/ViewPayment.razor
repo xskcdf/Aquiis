@@ -231,17 +231,29 @@ else
                         <button class="btn btn-primary" @onclick="EditPayment">
                             <i class="bi bi-pencil"></i> Edit Payment
                         </button>
-                        <button class="btn btn-outline-success" @onclick="GeneratePaymentReceipt" disabled="@isGenerating">
-                            @if (isGenerating)
-                            {
-                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                            }
-                            else
-                            {
-                                <i class="bi bi-file-pdf"></i>
-                            }
-                            Generate Receipt
-                        </button>
+                        @if (payment.DocumentId == null)
+                        {
+                            <button class="btn btn-outline-success" @onclick="GeneratePaymentReceipt" disabled="@isGenerating">
+                                @if (isGenerating)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-file-pdf"></i>
+                                }
+                                Generate Receipt
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-success" @onclick="ViewDocument">
+                                <i class="bi bi-eye"></i> View Receipt
+                            </button>
+                            <button class="btn btn-outline-success" @onclick="DownloadDocument">
+                                <i class="bi bi-download"></i> Download Receipt
+                            </button>
+                        }
                         <a href="/propertymanagement/invoices/view/@payment.InvoiceId" class="btn btn-outline-primary">
                             <i class="bi bi-receipt"></i> View Invoice
                         </a>
@@ -297,6 +309,7 @@ else
 
     private Payment? payment;
     private bool isGenerating = false;
+    private Document? document = null;
 
     [CascadingParameter]
     private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
@@ -309,6 +322,11 @@ else
         {
             Navigation.NavigateTo("/propertymanagement/payments");
         }
+        else if (payment.DocumentId != null)
+        {
+            // Load the document if it exists
+            document = await PropertyManagementService.GetDocumentByIdAsync(payment.DocumentId.Value);
+        }
     }
 
     private void EditPayment()
@@ -319,6 +337,27 @@ else
     private void GoBack()
     {
         Navigation.NavigateTo("/propertymanagement/payments");
+    }
+
+    private async Task ViewDocument()
+    {
+        if (document != null)
+        {
+            var base64Data = Convert.ToBase64String(document.FileData);
+            await JSRuntime.InvokeVoidAsync("viewFile", base64Data, document.FileType);
+        }
+    }
+
+    private async Task DownloadDocument()
+    {
+        if (document != null)
+        {
+            var fileName = document.FileName;
+            var fileData = document.FileData;
+            var mimeType = document.FileType;
+
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(fileData), mimeType);
+        }
     }
 
     private async Task GeneratePaymentReceipt()
@@ -369,13 +408,17 @@ else
             // Save to database
             await PropertyManagementService.AddDocumentAsync(document);
 
-            await JSRuntime.InvokeVoidAsync("alert", "Payment receipt generated successfully!");
+            // Update payment with DocumentId
+            payment.DocumentId = document.Id;
+            payment.LastModifiedOn = DateTime.UtcNow;
+            payment.LastModifiedBy = userId;
+            await PropertyManagementService.UpdatePaymentAsync(payment);
 
-            // Navigate to documents page if lease exists
-            if (payment.Invoice?.LeaseId != null)
-            {
-                Navigation.NavigateTo($"/propertymanagement/leases/{payment.Invoice.LeaseId}/documents");
-            }
+            // Reload payment and document
+            this.document = document;
+            StateHasChanged();
+
+            await JSRuntime.InvokeVoidAsync("alert", "Payment receipt generated successfully!");
         }
         catch (Exception ex)
         {
