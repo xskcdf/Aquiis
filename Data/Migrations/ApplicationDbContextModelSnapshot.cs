@@ -264,6 +264,9 @@ namespace Aquiis.SimpleStart.Data.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("DocumentId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("ElectricalSystemGood")
                         .HasColumnType("INTEGER");
 
@@ -431,6 +434,8 @@ namespace Aquiis.SimpleStart.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DocumentId");
+
                     b.HasIndex("InspectionDate");
 
                     b.HasIndex("LeaseId");
@@ -549,6 +554,9 @@ namespace Aquiis.SimpleStart.Data.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("DocumentId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("TEXT");
 
@@ -628,6 +636,8 @@ namespace Aquiis.SimpleStart.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
 
                     b.HasIndex("PropertyId");
 
@@ -1238,6 +1248,11 @@ namespace Aquiis.SimpleStart.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Components.PropertyManagement.Inspections.Inspection", b =>
                 {
+                    b.HasOne("Aquiis.SimpleStart.Components.PropertyManagement.Documents.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Aquiis.SimpleStart.Components.PropertyManagement.Leases.Lease", "Lease")
                         .WithMany()
                         .HasForeignKey("LeaseId")
@@ -1248,6 +1263,8 @@ namespace Aquiis.SimpleStart.Data.Migrations
                         .HasForeignKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Document");
 
                     b.Navigation("Lease");
 
@@ -1273,6 +1290,11 @@ namespace Aquiis.SimpleStart.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Components.PropertyManagement.Leases.Lease", b =>
                 {
+                    b.HasOne("Aquiis.SimpleStart.Components.PropertyManagement.Documents.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Aquiis.SimpleStart.Components.PropertyManagement.Properties.Property", "Property")
                         .WithMany("Leases")
                         .HasForeignKey("PropertyId")
@@ -1290,6 +1312,8 @@ namespace Aquiis.SimpleStart.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Document");
 
                     b.Navigation("Property");
 

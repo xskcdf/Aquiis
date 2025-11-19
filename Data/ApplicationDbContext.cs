@@ -75,6 +75,11 @@ namespace Aquiis.SimpleStart.Data
                     .HasForeignKey(l => l.TenantId)
                     .OnDelete(DeleteBehavior.Restrict);
 
+                entity.HasOne(l => l.Document)
+                    .WithMany()
+                    .HasForeignKey(l => l.DocumentId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
                 entity.Property(e => e.MonthlyRent).HasPrecision(18, 2);
                 entity.Property(e => e.SecurityDeposit).HasPrecision(18, 2);
                 
@@ -170,6 +175,11 @@ namespace Aquiis.SimpleStart.Data
                 entity.HasOne(i => i.Lease)
                     .WithMany()
                     .HasForeignKey(i => i.LeaseId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(i => i.Document)
+                    .WithMany()
+                    .HasForeignKey(i => i.DocumentId)
                     .OnDelete(DeleteBehavior.SetNull);
                 
                 entity.HasIndex(e => e.PropertyId);

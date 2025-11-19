@@ -265,18 +265,30 @@ else
                         <button class="btn btn-outline-secondary" @onclick="ViewDocuments">
                             <i class="bi bi-folder"></i> View Documents
                         </button>
-                        <button class="btn btn-outline-warning" @onclick="GenerateLeaseDocument" disabled="@isGenerating">
-                            @if (isGenerating)
-                            {
-                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                <span>Generating...</span>
-                            }
-                            else
-                            {
-                                <i class="bi bi-file-pdf"></i>
-                                <span> Generate PDF</span>
-                            }
-                        </button>
+                        @if (lease.DocumentId == null)
+                        {
+                            <button class="btn btn-outline-warning" @onclick="GenerateLeaseDocument" disabled="@isGenerating">
+                                @if (isGenerating)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    <span>Generating...</span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-file-pdf"></i>
+                                    <span> Generate PDF</span>
+                                }
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-primary" @onclick="ViewDocument">
+                                <i class="bi bi-eye"></i> View PDF
+                            </button>
+                            <button class="btn btn-outline-primary" @onclick="DownloadDocument">
+                                <i class="bi bi-download"></i> Download PDF
+                            </button>
+                        }
                     </div>
                 </div>
             </div>
@@ -386,6 +398,7 @@ else
     private bool showRenewalModal = false;
     private decimal proposedRent = 0;
     private string renewalNotes = "";
+    private Document? document = null;
 
     [CascadingParameter]
     private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
@@ -437,6 +450,11 @@ else
             .Take(5)
             .ToList();
 
+        // Load the document if it exists
+        if (lease.DocumentId != null)
+        {
+            document = await PropertyManagementService.GetDocumentByIdAsync(lease.DocumentId.Value);
+        }
     }
 
     private string GetStatusBadgeClass(string status)
@@ -707,6 +725,27 @@ else
         Navigation.NavigateTo($"/propertymanagement/leases/{Id}/documents");
     }
 
+    private async Task ViewDocument()
+    {
+        if (document != null)
+        {
+            var base64Data = Convert.ToBase64String(document.FileData);
+            await JSRuntime.InvokeVoidAsync("viewFile", base64Data, document.FileType);
+        }
+    }
+
+    private async Task DownloadDocument()
+    {
+        if (document != null)
+        {
+            var fileName = document.FileName;
+            var fileData = document.FileData;
+            var mimeType = document.FileType;
+
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(fileData), mimeType);
+        }
+    }
+
     private async Task GenerateLeaseDocument()
     {
         isGenerating = true;
@@ -753,10 +792,17 @@ else
             // Save to database
             await PropertyManagementService.AddDocumentAsync(document);
 
-            await JSRuntime.InvokeVoidAsync("alert", "Lease document generated successfully!");
+            // Update lease with DocumentId
+            lease.DocumentId = document.Id;
+            lease.LastModifiedOn = DateTime.UtcNow;
+            lease.LastModifiedBy = userId;
+            await PropertyManagementService.UpdateLeaseAsync(lease);
 
-            // Navigate to documents page
-            Navigation.NavigateTo($"/propertymanagement/leases/{Id}/documents");
+            // Reload lease and document
+            await LoadLease();
+            StateHasChanged();
+
+            await JSRuntime.InvokeVoidAsync("alert", "Lease document generated successfully!");
         }
         catch (Exception ex)
         {

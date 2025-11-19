@@ -66,12 +66,18 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Leases {
         // Lease Chain Tracking
         public int? PreviousLeaseId { get; set; }
 
+        // Document Tracking
+        public int? DocumentId { get; set; }
+
         // Navigation properties
         [ForeignKey("PropertyId")]
         public virtual Property Property { get; set; } = null!;
 
         [ForeignKey("TenantId")]
         public virtual Tenant Tenant { get; set; } = null!;
+
+        [ForeignKey("DocumentId")]
+        public virtual Document? Document { get; set; }
 
         public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
         public virtual ICollection<Document> Documents { get; set; } = new List<Document>();

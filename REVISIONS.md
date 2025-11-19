@@ -1,5 +1,129 @@
 # Aquiis - Revision History
 
+## November 19, 2025
+
+### PDF Generation Tracking for Inspections
+
+**Enhanced Inspection Document Management**
+
+- ✅ Added DocumentId foreign key to Inspections table
+- ✅ Implemented PDF tracking to prevent duplicate generation
+- ✅ Enhanced UI to show PDF status and provide access to existing PDFs
+- ✅ Integrated with existing Document infrastructure
+
+**Database Changes:**
+
+1. **Inspection Model Updates (Inspection.cs):**
+
+   - Added `public int? DocumentId { get; set; }` - Nullable FK to Documents table
+   - Added `[ForeignKey("DocumentId")] public Document? Document { get; set; }` navigation property
+   - Using nullable int allows checking for PDF existence (null = no PDF, value = PDF exists)
+
+2. **ApplicationDbContext Configuration:**
+
+   - Added FK relationship configuration for Inspection.DocumentId → Document.Id
+   - Configured `OnDelete(DeleteBehavior.SetNull)` - If document deleted, inspection remains valid
+   - Created index on DocumentId for performance
+
+3. **Database Migration (20251119164110_AddInspectionDocumentId.cs):**
+   - Adds nullable `DocumentId` column to Inspections table
+   - Creates FK constraint to Documents table
+   - Creates index `IX_Inspections_DocumentId`
+   - **Migration is safe** - won't break existing inspection records (nullable column)
+   - Compatible with both web and Electron modes
+
+**User Interface Enhancements:**
+
+1. **ViewInspection.razor - Button State Logic:**
+
+   - **Before PDF generation**: Shows green "Generate PDF" button (enabled)
+   - **After PDF generation**: Hides Generate PDF button, shows:
+     - Blue "View PDF" button - Opens PDF in browser tab
+     - "Download PDF" button - Downloads PDF file
+   - Buttons updated in both page header and sidebar summary section
+   - Prevents duplicate PDF generation
+
+2. **Document Loading:**
+
+   - On page initialization, checks if `inspection.DocumentId != null`
+   - If DocumentId exists, loads Document from database
+   - Stores document in component state for View/Download actions
+   - Uses existing `PropertyManagementService.GetDocumentByIdAsync()`
+
+3. **PDF Generation Workflow:**
+   - User clicks "Generate PDF" button (only visible when DocumentId is null)
+   - System generates PDF using existing `InspectionPdfGenerator`
+   - Creates Document entity with:
+     - FileData: PDF byte array
+     - FileType: "application/pdf"
+     - DocumentType: "Inspection Report"
+     - FileName: `Inspection_{PropertyAddress}_{Date}.pdf`
+     - Proper associations: PropertyId, LeaseId, OrganizationId
+   - Saves document to Documents table via `PropertyManagementService.AddDocumentAsync()`
+   - **Updates inspection record** with `inspection.DocumentId = document.Id`
+   - Saves updated inspection via `PropertyManagementService.UpdateInspectionAsync()`
+   - Updates UI state to show View/Download buttons
+
+**Technical Implementation:**
+
+- Removed `generatedDocument` variable, now uses persistent `document` loaded from database
+- UI state driven by `inspection.DocumentId` value (null check)
+- Proper async/await patterns throughout
+- Error handling with try-catch blocks
+- Loading states during PDF generation
+- Success messages after generation
+- Consistent with existing document management patterns
+
+**User Benefits:**
+
+- **Prevents Duplicate PDFs**: Once PDF is generated, button changes to View/Download
+- **Persistent Access**: PDFs remain accessible across page visits
+- **Clear Visual Feedback**: Button state clearly indicates PDF status
+- **Efficient Storage**: Only one PDF per inspection (no duplicates)
+- **Consistent Experience**: Same View/Download functionality as other document pages
+- **Data Integrity**: FK relationship ensures document tracking
+
+**Workflow Example:**
+
+1. User creates inspection and completes checklist
+2. Views inspection report page → Sees "Generate PDF" button
+3. Clicks "Generate PDF" → PDF generated and saved to Documents table
+4. Inspection.DocumentId updated with link to document
+5. Page refreshes → Now shows "View PDF" and "Download PDF" buttons
+6. User can view or download PDF anytime
+7. If user navigates away and returns → PDF buttons still appear (persistent state)
+8. Generate PDF button never appears again for this inspection
+
+**Migration Application:**
+
+- **Web Mode**: Migration applies automatically on next run (Program.cs has migration logic)
+- **Electron Mode**: Migration applies automatically with database backup before migration
+- **Existing Data**: All existing inspections remain valid with DocumentId = null
+- **New Workflow**: Future inspections can have PDFs linked via DocumentId
+
+**Files Modified:**
+
+```
+Aquiis.SimpleStart/
+├── Components/PropertyManagement/Inspections/
+│   ├── Inspection.cs (Added DocumentId and Document navigation property)
+│   └── Pages/
+│       └── ViewInspection.razor (Updated button logic and document loading)
+├── Data/
+│   ├── ApplicationDbContext.cs (Added FK configuration for Inspection.DocumentId)
+│   └── Migrations/
+│       └── 20251119164110_AddInspectionDocumentId.cs (New migration)
+└── REVISIONS.md (This file)
+```
+
+**Code Quality:**
+
+- Follows existing patterns from Lease/Invoice/Payment documents
+- Proper null handling for optional FK relationship
+- Clean separation of concerns (model, context, UI)
+- Testable and maintainable code structure
+- No breaking changes to existing functionality
+
 ## November 18, 2025
 
 ### Electron.NET Desktop Application Implementation

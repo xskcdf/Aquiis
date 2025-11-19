@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Aquiis.SimpleStart.Components.PropertyManagement.Properties;
 using Aquiis.SimpleStart.Components.PropertyManagement.Leases;
+using Aquiis.SimpleStart.Components.PropertyManagement.Documents;
 using Aquiis.SimpleStart.Models;
 
 namespace Aquiis.SimpleStart.Components.PropertyManagement.Inspections;
@@ -120,12 +121,18 @@ public class Inspection : BaseModel
     [StringLength(2000)]
     public string? ActionItemsRequired { get; set; }
 
+    // Generated PDF Document
+    public int? DocumentId { get; set; }
+
     // Navigation Properties
     [ForeignKey("PropertyId")]
     public Property? Property { get; set; }
 
     [ForeignKey("LeaseId")]
     public Lease? Lease { get; set; }
+
+    [ForeignKey("DocumentId")]
+    public Document? Document { get; set; }
 
     // Audit Fields
     // SEE BASE MODEL

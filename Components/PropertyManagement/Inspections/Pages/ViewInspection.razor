@@ -29,13 +29,25 @@ else
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1><i class="bi bi-clipboard-check"></i> Inspection Report</h1>
         <div class="btn-group">
-            <button class="btn btn-success" @onclick="GeneratePdf" disabled="@isGenerating">
-                @if (isGenerating)
-                {
-                    <span class="spinner-border spinner-border-sm me-2"></span>
-                }
-                <i class="bi bi-file-pdf"></i> Generate PDF
-            </button>
+            @if (inspection.DocumentId == null)
+            {
+                <button class="btn btn-success" @onclick="GeneratePdf" disabled="@isGenerating">
+                    @if (isGenerating)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                    }
+                    <i class="bi bi-file-pdf"></i> Generate PDF
+                </button>
+            }
+            else
+            {
+                <button class="btn btn-primary" @onclick="ViewDocument">
+                    <i class="bi bi-eye"></i> View PDF
+                </button>
+                <button class="btn btn-outline-primary" @onclick="DownloadDocument">
+                    <i class="bi bi-download"></i> Download PDF
+                </button>
+            }
             <button class="btn btn-outline-secondary" @onclick="BackToProperty">
                 <i class="bi bi-arrow-left"></i> Back to Property
             </button>
@@ -178,14 +190,17 @@ else
                     </div>
                     <hr />
                     <div class="d-grid gap-2">
-                        <button class="btn btn-success btn-sm" @onclick="GeneratePdf" disabled="@isGenerating">
-                            @if (isGenerating)
-                            {
-                                <span class="spinner-border spinner-border-sm me-1"></span>
-                            }
-                            <i class="bi bi-file-pdf"></i> Generate PDF
-                        </button>
-                        @if (generatedDocument != null)
+                        @if (inspection.DocumentId == null)
+                        {
+                            <button class="btn btn-success btn-sm" @onclick="GeneratePdf" disabled="@isGenerating">
+                                @if (isGenerating)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                }
+                                <i class="bi bi-file-pdf"></i> Generate PDF
+                            </button>
+                        }
+                        else
                         {
                             <button class="btn btn-primary btn-sm" @onclick="ViewDocument">
                                 <i class="bi bi-eye"></i> View PDF
@@ -212,11 +227,17 @@ else
     private string? successMessage;
     private string? errorMessage;
     private bool isGenerating = false;
-    private Document? generatedDocument = null;
+    private Document? document = null;
 
     protected override async Task OnInitializedAsync()
     {
         inspection = await PropertyManagementService.GetInspectionByIdAsync(InspectionId);
+        
+        // Load the document if it exists
+        if (inspection?.DocumentId != null)
+        {
+            document = await PropertyManagementService.GetDocumentByIdAsync(inspection.DocumentId.Value);
+        }
     }
 
     private List<(string Label, bool IsGood, string? Notes)> GetExteriorItems() => new()
@@ -326,7 +347,7 @@ else
             var userEmail = await UserContext.GetUserEmailAsync();
             var organizationId = await UserContext.GetOrganizationIdAsync();
 
-            var document = new Document
+            var newDocument = new Document
             {
                 FileName = $"Inspection_{inspection!.Property?.Address}_{inspection.InspectionDate:yyyyMMdd}.pdf",
                 FileData = pdfBytes,
@@ -345,9 +366,13 @@ else
                 Description = $"{inspection.InspectionType} Inspection - {inspection.InspectionDate:MMM dd, yyyy}"
             };
 
-            await PropertyManagementService.AddDocumentAsync(document);
+            await PropertyManagementService.AddDocumentAsync(newDocument);
 
-            generatedDocument = document;
+            // Link the document to the inspection
+            inspection.DocumentId = newDocument.Id;
+            await PropertyManagementService.UpdateInspectionAsync(inspection);
+
+            document = newDocument;
             successMessage = "Inspection PDF generated and saved successfully!";
         }
         catch (Exception ex)
@@ -362,20 +387,20 @@ else
 
     private async Task ViewDocument()
     {
-        if (generatedDocument != null)
+        if (document != null)
         {
-            var base64Data = Convert.ToBase64String(generatedDocument.FileData);
-            await JSRuntime.InvokeVoidAsync("viewFile", base64Data, generatedDocument.FileType);
+            var base64Data = Convert.ToBase64String(document.FileData);
+            await JSRuntime.InvokeVoidAsync("viewFile", base64Data, document.FileType);
         }
     }
 
     private async Task DownloadDocument()
     {
-        if (generatedDocument != null)
+        if (document != null)
         {
-            var fileName = generatedDocument.FileName;
-            var fileData = generatedDocument.FileData;
-            var mimeType = generatedDocument.FileType;
+            var fileName = document.FileName;
+            var fileData = document.FileData;
+            var mimeType = document.FileType;
 
             await JSRuntime.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(fileData), mimeType);
         }
