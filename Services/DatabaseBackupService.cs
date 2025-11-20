@@ -53,6 +53,24 @@ namespace Aquiis.SimpleStart.Services
 
                 _logger.LogInformation("Backup will be created at: {BackupPath}", backupPath);
 
+                // Force WAL checkpoint to flush all data from WAL file into main database file
+                try
+                {
+                    var connection = _dbContext.Database.GetDbConnection();
+                    await connection.OpenAsync();
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = "PRAGMA wal_checkpoint(TRUNCATE);";
+                        await command.ExecuteNonQueryAsync();
+                        _logger.LogInformation("WAL checkpoint completed - all data flushed to main database file");
+                    }
+                    await connection.CloseAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to checkpoint WAL before backup");
+                }
+
                 // Try to close any open connections before backup
                 try
                 {
@@ -174,29 +192,40 @@ namespace Aquiis.SimpleStart.Services
 
                 var dbPath = await GetDatabasePathAsync();
 
-                // Close all connections
+                // Close all connections and clear connection pool
                 await _dbContext.Database.CloseConnectionAsync();
+                _dbContext.Dispose();
+                
+                // Clear SQLite connection pool to release file locks
+                Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+                
+                // Give the system a moment to release file locks
+                await Task.Delay(100);
 
-                // Create a backup of current (corrupted) database before restoring
-                var corruptedBackupPath = $"{dbPath}.corrupted.{DateTime.Now:yyyyMMddHHmmss}";
+                // Create a backup of current database before restoring (with unique filename)
+                // Use milliseconds and a counter to ensure uniqueness
+                var timestamp = DateTime.Now.ToString("yyyyMMddHHmmssfff");
+                var corruptedBackupPath = $"{dbPath}.corrupted.{timestamp}";
+                
+                // If file still exists (very rare), add a counter
+                int counter = 1;
+                while (File.Exists(corruptedBackupPath))
+                {
+                    corruptedBackupPath = $"{dbPath}.corrupted.{timestamp}.{counter}";
+                    counter++;
+                }
+                
                 if (File.Exists(dbPath))
                 {
-                    File.Copy(dbPath, corruptedBackupPath);
-                    _logger.LogInformation("Corrupted database saved to: {CorruptedPath}", corruptedBackupPath);
+                    // Move the current database to the corrupted backup path
+                    File.Move(dbPath, corruptedBackupPath);
+                    _logger.LogInformation("Current database moved to: {CorruptedPath}", corruptedBackupPath);
                 }
 
-                // Restore from backup
+                // Restore from backup (now the original path is free)
                 File.Copy(backupPath, dbPath, overwrite: true);
 
                 _logger.LogInformation("Database restored from backup: {BackupPath}", backupPath);
-
-                // Validate the restored database
-                var (isHealthy, message) = await ValidateDatabaseHealthAsync();
-                if (!isHealthy)
-                {
-                    _logger.LogError("Restored database failed health check: {Message}", message);
-                    return false;
-                }
 
                 return true;
             }

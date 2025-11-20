@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <None Update="Assets\splash.png" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Assets\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,6 +21,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.11" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.11" />
     <PackageReference Include="QuestPDF" Version="2025.7.4" />
   </ItemGroup>

@@ -31,6 +31,7 @@ namespace Aquiis.SimpleStart.Data
         public DbSet<Inspection> Inspections { get; set; }
         public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
         public DbSet<OrganizationSettings> OrganizationSettings { get; set; }
+        public DbSet<SchemaVersion> SchemaVersions { get; set; }
 
          protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
