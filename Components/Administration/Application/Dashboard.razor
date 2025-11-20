@@ -17,6 +17,7 @@
 <div>
     <button class="btn btn-primary" @onclick="GoToServices">Manage Scheduled Tasks</button>
     <button class="btn btn-secondary" @onclick="ViewDailyReport">View System Status</button>
+    <button class="btn btn-info" @onclick="ManageDatabase">Manage Data</button>
 </div>
 
 @code {
@@ -30,5 +31,11 @@
     {
         // Logic to navigate to the scheduled tasks management page
         NavigationManager.NavigateTo("/administration/settings/services");
+    }
+
+    private void ManageDatabase()
+    {
+        // Logic to navigate to the database management page
+        NavigationManager.NavigateTo("/administration/application/database");
     }
 }

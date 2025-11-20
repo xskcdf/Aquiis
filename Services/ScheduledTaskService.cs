@@ -467,6 +467,15 @@ namespace Aquiis.SimpleStart.Services
             {
                 using var scope = _serviceProvider.CreateScope();
                 var propertyManagementService = scope.ServiceProvider.GetRequiredService<PropertyManagementService>();
+                var httpContextAccessor = scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>();
+                
+                // Skip if no user is authenticated (background service context)
+                var userId = httpContextAccessor.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    _logger.LogDebug("Skipping hourly tasks - no authenticated user context");
+                    return;
+                }
 
                 // Example hourly task: Check for upcoming lease expirations
                 var upcomingLeases = await propertyManagementService.GetLeasesAsync();

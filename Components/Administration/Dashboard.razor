@@ -89,6 +89,7 @@
     <div>
     <button class="btn btn-primary" @onclick="ManageSettings">Manage Settings</button>
     <button class="btn btn-secondary" @onclick="ViewDailyReport">View System Status</button>
+    <button class="btn btn-info" @onclick="ManageDatabase">Manage Database</button>
 </div>
 
 @code {
@@ -138,5 +139,10 @@
     {
         // Logic to navigate to the application settings page
         NavigationManager.NavigateTo("/administration/settings/services");
+    }
+    private void ManageDatabase()
+    {
+        // Logic to navigate to the database management page
+        NavigationManager.NavigateTo("/administration/application/database");
     }
 }
