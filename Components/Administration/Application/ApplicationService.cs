@@ -31,7 +31,7 @@ namespace Aquiis.SimpleStart.Components.Administration.Application
         {
             var payments = await _propertyManagementService.GetPaymentsAsync();
             return payments
-                .Where(p => p.PaymentDate.Date == date.Date && !p.IsDeleted)
+                .Where(p => p.PaidOn.Date == date.Date && !p.IsDeleted)
                 .Sum(p => p.Amount);
         }
 
@@ -50,8 +50,8 @@ namespace Aquiis.SimpleStart.Components.Administration.Application
         {
             var payments = await _propertyManagementService.GetPaymentsAsync();
             return payments
-                .Where(p => p.PaymentDate.Date >= startDate.Date && 
-                           p.PaymentDate.Date <= endDate.Date && 
+                .Where(p => p.PaidOn.Date >= startDate.Date && 
+                           p.PaidOn.Date <= endDate.Date && 
                            !p.IsDeleted)
                 .Sum(p => p.Amount);
         }
@@ -63,8 +63,8 @@ namespace Aquiis.SimpleStart.Components.Administration.Application
         {
             var payments = await _propertyManagementService.GetPaymentsAsync();
             var periodPayments = payments
-                .Where(p => p.PaymentDate.Date >= startDate.Date && 
-                           p.PaymentDate.Date <= endDate.Date && 
+                .Where(p => p.PaidOn.Date >= startDate.Date && 
+                           p.PaidOn.Date <= endDate.Date && 
                            !p.IsDeleted)
                 .ToList();
 

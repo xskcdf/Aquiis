@@ -446,7 +446,7 @@ else
 
         var invoices = await PropertyManagementService.GetInvoicesByLeaseIdAsync(Id);
         recentInvoices = invoices
-            .OrderByDescending(i => i.DueDate)
+            .OrderByDescending(i => i.DueOn)
             .Take(5)
             .ToList();
 
@@ -572,8 +572,8 @@ else
                 ContentType = "application/pdf",
                 DocumentType = "Lease Renewal Offer",
                 Description = $"Renewal offer letter for {lease.Property?.Address}. Proposed rent: {lease.ProposedRenewalRent:C}",
-                UploadedBy = userName,
-                CreatedBy = userName,
+                UploadedBy = userId,
+                CreatedBy = userId,
                 CreatedOn = DateTime.UtcNow
             };
 
@@ -781,7 +781,7 @@ else
                 LeaseId = lease.Id,
                 PropertyId = lease.PropertyId,
                 TenantId = lease.TenantId,
-                UploadedBy = userName,
+                UploadedBy = userId,
                 CreatedBy = userId,
                 CreatedOn = DateTime.UtcNow,
                 LastModifiedBy = userId,

@@ -53,8 +53,8 @@
 
                         <div class="mb-3">
                             <label for="paymentDate" class="form-label">Payment Date *</label>
-                            <InputDate id="paymentDate" class="form-control" @bind-Value="paymentModel.PaymentDate" />
-                            <ValidationMessage For="() => paymentModel.PaymentDate" />
+                            <InputDate id="paymentDate" class="form-control" @bind-Value="paymentModel.PaidOn" />
+                            <ValidationMessage For="() => paymentModel.PaidOn" />
                         </div>
 
                         <div class="mb-3">
@@ -213,10 +213,10 @@
             List<Invoice>? allInvoices = await PropertyManagementService.GetInvoicesAsync();
             invoices = allInvoices
                 .Where(i => i.BalanceDue > 0 && i.Status != "Cancelled")
-                .OrderByDescending(i => i.DueDate)
+                .OrderByDescending(i => i.DueOn)
                 .ToList();
             
-            paymentModel.PaymentDate = DateTime.Now;
+            paymentModel.PaidOn = DateTime.Now;
             if (InvoiceId.HasValue)
             {
                 paymentModel.InvoiceId = InvoiceId.Value;
@@ -255,7 +255,7 @@
             {
                 UserId = userId,
                 InvoiceId = paymentModel.InvoiceId,
-                PaymentDate = paymentModel.PaymentDate,
+                PaidOn = paymentModel.PaidOn,
                 Amount = paymentModel.Amount,
                 PaymentMethod = paymentModel.PaymentMethod,
                 Notes = paymentModel.Notes!,
@@ -279,7 +279,7 @@
         public int InvoiceId { get; set; }
 
         [Required(ErrorMessage = "Payment date is required.")]
-        public DateTime PaymentDate { get; set; } = DateTime.Now;
+        public DateTime PaidOn { get; set; } = DateTime.Now;
 
         [Required(ErrorMessage = "Amount is required.")]
         [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than zero.")]

@@ -245,12 +245,12 @@
                                                                 @invoice.InvoiceNumber
                                                             </a>
                                                         </h6>
-                                                        <small>@invoice.InvoiceDate.ToString("MMM dd, yyyy")</small>
+                                                        <small>@invoice.InvoicedOn.ToString("MMM dd, yyyy")</small>
                                                     </div>
                                                     <p class="mb-1">@invoice.Lease?.Tenant?.FullName</p>
                                                     <div class="d-flex justify-content-between">
                                                         <div>
-                                                            <small class="text-muted">Due: @invoice.DueDate.ToString("MMM dd, yyyy")</small>
+                                                            <small class="text-muted">Due: @invoice.DueOn.ToString("MMM dd, yyyy")</small>
                                                             @if (invoice.IsOverdue)
                                                             {
                                                                 <br>
@@ -490,7 +490,7 @@
         var allInvoices = await PropertyManagementService.GetInvoicesAsync();
         recentInvoices = allInvoices
             .Where(i => i.Status != "Paid" && i.Status != "Cancelled")
-            .OrderByDescending(i => i.InvoiceDate)
+            .OrderByDescending(i => i.InvoicedOn)
             .Take(5)
             .ToList();
     }

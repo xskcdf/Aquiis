@@ -291,7 +291,7 @@
             .Where(i => !i.IsDeleted &&
                        i.UserId == organizationId &&
                        i.Status == "Pending" &&
-                       i.DueDate < today.AddDays(-settings.LateFeeGracePeriodDays) &&
+                       i.DueOn < today.AddDays(-settings.LateFeeGracePeriodDays) &&
                        (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
             .ToListAsync();
 
@@ -300,7 +300,7 @@
             var lateFee = Math.Min(invoice.Amount * settings.LateFeePercentage, settings.MaxLateFeeAmount);
             invoice.LateFeeAmount = lateFee;
             invoice.LateFeeApplied = true;
-            invoice.LateFeeAppliedDate = DateTime.UtcNow;
+            invoice.LateFeeAppliedOn = DateTime.UtcNow;
             invoice.Amount += lateFee;
             invoice.Status = "Overdue";
             invoice.LastModifiedOn = DateTime.UtcNow;
@@ -325,7 +325,7 @@
             .Where(i => !i.IsDeleted &&
                        i.UserId == organizationId &&
                        i.Status == "Pending" &&
-                       i.DueDate < today &&
+                       i.DueOn < today &&
                        (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
             .ToListAsync();
 
@@ -363,15 +363,15 @@
             .Where(i => !i.IsDeleted &&
                        i.UserId == organizationId &&
                        i.Status == "Pending" &&
-                       i.DueDate >= today &&
-                       i.DueDate <= today.AddDays(settings.PaymentReminderDaysBefore) &&
+                       i.DueOn >= today &&
+                       i.DueOn <= today.AddDays(settings.PaymentReminderDaysBefore) &&
                        (i.ReminderSent == null || !i.ReminderSent.Value))
             .ToListAsync();
 
         foreach (var invoice in upcomingInvoices)
         {
             invoice.ReminderSent = true;
-            invoice.ReminderSentDate = DateTime.UtcNow;
+            invoice.ReminderSentOn = DateTime.UtcNow;
             invoice.LastModifiedOn = DateTime.UtcNow;
             invoice.LastModifiedBy = "System";
         }

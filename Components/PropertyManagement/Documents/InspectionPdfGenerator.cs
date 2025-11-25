@@ -34,7 +34,7 @@ public class InspectionPdfGenerator
                         column.Item().PaddingTop(5).Text(text =>
                         {
                             text.Span("Inspection Date: ").FontColor(Colors.White);
-                            text.Span(inspection.InspectionDate.ToString("MMMM dd, yyyy"))
+                            text.Span(inspection.CompletedOn.ToString("MMMM dd, yyyy"))
                                 .Bold()
                                 .FontColor(Colors.White);
                         });

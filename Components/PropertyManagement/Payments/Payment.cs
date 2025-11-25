@@ -20,7 +20,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Payments {
 
         [Required]
         [DataType(DataType.Date)]
-        public DateTime PaymentDate { get; set; }
+        public DateTime PaidOn { get; set; }
 
         [Required]
         [Column(TypeName = "decimal(18,2)")]

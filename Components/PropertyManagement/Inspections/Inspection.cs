@@ -21,7 +21,7 @@ public class Inspection : BaseModel
     public int? LeaseId { get; set; }
 
     [Required]
-    public DateTime InspectionDate { get; set; } = DateTime.Now;
+    public DateTime CompletedOn { get; set; } = DateTime.Now;
 
     [Required]
     [StringLength(50)]

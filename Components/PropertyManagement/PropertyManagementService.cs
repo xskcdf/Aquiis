@@ -655,7 +655,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
                     .ThenInclude(l => l.Tenant)
                 .Include(i => i.Payments)
                 .Where(i => !i.IsDeleted && i.Lease.Property.OrganizationId == organizationId)
-                .OrderByDescending(i => i.DueDate)
+                .OrderByDescending(i => i.DueOn)
                 .ToListAsync();
         }
 
@@ -668,7 +668,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
                     .ThenInclude(l => l.Tenant)
                 .Include(i => i.Payments)
                 .Where(i => !i.IsDeleted && i.Lease.Property.OrganizationId == organizationId)
-                .OrderByDescending(i => i.DueDate)
+                .OrderByDescending(i => i.DueOn)
                 .ToListAsync();
         }
 
@@ -701,7 +701,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
                 .Where(i => i.LeaseId == leaseId
                     && !i.IsDeleted
                     && i.Lease.Property.OrganizationId == organizationId)
-                .OrderByDescending(i => i.DueDate)
+                .OrderByDescending(i => i.DueOn)
                 .ToListAsync();
         }
 
@@ -795,7 +795,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
                     .ThenInclude(i => i!.Lease)
                         .ThenInclude(l => l!.Tenant)
                 .Where(p => !p.IsDeleted && p.Invoice.Lease.Property.OrganizationId == organizationId)
-                .OrderByDescending(p => p.PaymentDate)
+                .OrderByDescending(p => p.PaidOn)
                 .ToListAsync();
         }
 
@@ -809,7 +809,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
                     .ThenInclude(i => i!.Lease)
                         .ThenInclude(l => l!.Tenant)
                 .Where(p => p.UserId == userId && !p.IsDeleted)
-                .OrderByDescending(p => p.PaymentDate)
+                .OrderByDescending(p => p.PaidOn)
                 .ToListAsync();
         }
 
@@ -830,7 +830,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
             return await _dbContext.Payments
                 .Include(p => p.Invoice)
                 .Where(p => p.InvoiceId == invoiceId && !p.IsDeleted)
-                .OrderByDescending(p => p.PaymentDate)
+                .OrderByDescending(p => p.PaidOn)
                 .ToListAsync();
         }
 
@@ -1108,7 +1108,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
                 .Include(i => i.Lease)
                     .ThenInclude(l => l!.Tenant)
                 .Where(i => !i.IsDeleted && i.OrganizationId == organizationId)
-                .OrderByDescending(i => i.InspectionDate)
+                .OrderByDescending(i => i.CompletedOn)
                 .ToListAsync();
         }
 
@@ -1121,7 +1121,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
                 .Include(i => i.Lease)
                     .ThenInclude(l => l!.Tenant)
                 .Where(i => i.PropertyId == propertyId && !i.IsDeleted && i.OrganizationId == organizationId)
-                .OrderByDescending(i => i.InspectionDate)
+                .OrderByDescending(i => i.CompletedOn)
                 .ToListAsync();
         }
 
@@ -1155,7 +1155,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
             {
                 await UpdatePropertyInspectionTrackingAsync(
                     inspection.PropertyId, 
-                    inspection.InspectionDate);
+                    inspection.CompletedOn);
             }
         }
 

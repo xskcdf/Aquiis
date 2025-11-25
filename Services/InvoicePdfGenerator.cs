@@ -50,8 +50,8 @@ namespace Aquiis.SimpleStart.Services
 
                     row.ConstantItem(150).Column(col =>
                     {
-                        col.Item().AlignRight().Text($"Date: {invoice.InvoiceDate:MMMM dd, yyyy}").FontSize(10);
-                        col.Item().AlignRight().Text($"Due Date: {invoice.DueDate:MMMM dd, yyyy}").FontSize(10);
+                        col.Item().AlignRight().Text($"Date: {invoice.InvoicedOn:MMMM dd, yyyy}").FontSize(10);
+                        col.Item().AlignRight().Text($"Due Date: {invoice.DueOn:MMMM dd, yyyy}").FontSize(10);
                         col.Item().PaddingTop(5).AlignRight()
                             .Background(GetStatusColor(invoice.Status))
                             .Padding(5)
@@ -151,7 +151,7 @@ namespace Aquiis.SimpleStart.Services
 
                 // Row
                 table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten1).Padding(8)
-                    .Text($"{invoice.Description}\nPeriod: {invoice.InvoiceDate:MMM dd, yyyy} - {invoice.DueDate:MMM dd, yyyy}");
+                    .Text($"{invoice.Description}\nPeriod: {invoice.InvoicedOn:MMM dd, yyyy} - {invoice.DueOn:MMM dd, yyyy}");
                 table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten1).Padding(8)
                     .AlignRight().Text(invoice.Amount.ToString("C")).FontSize(12);
                 table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten1).Padding(8)
@@ -182,9 +182,9 @@ namespace Aquiis.SimpleStart.Services
                     });
 
                     // Rows
-                    foreach (var payment in invoice.Payments.Where(p => !p.IsDeleted).OrderBy(p => p.PaymentDate))
+                    foreach (var payment in invoice.Payments.Where(p => !p.IsDeleted).OrderBy(p => p.PaidOn))
                     {
-                        table.Cell().Padding(5).Text(payment.PaymentDate.ToString("MMM dd, yyyy")).FontSize(9);
+                        table.Cell().Padding(5).Text(payment.PaidOn.ToString("MMM dd, yyyy")).FontSize(9);
                         table.Cell().Padding(5).Text(payment.PaymentMethod ?? "N/A").FontSize(9);
                         table.Cell().Padding(5).AlignRight().Text(payment.Amount.ToString("C")).FontSize(9);
                     }

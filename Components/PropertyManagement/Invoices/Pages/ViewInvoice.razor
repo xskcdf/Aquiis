@@ -49,7 +49,7 @@ else
                             </div>
                             <div class="mb-3">
                                 <label class="text-muted small">Invoice Date</label>
-                                <div>@invoice.InvoiceDate.ToString("MMMM dd, yyyy")</div>
+                                <div>@invoice.InvoicedOn.ToString("MMMM dd, yyyy")</div>
                             </div>
                             <div class="mb-3">
                                 <label class="text-muted small">Description</label>
@@ -60,7 +60,7 @@ else
                             <div class="mb-3">
                                 <label class="text-muted small">Due Date</label>
                                 <div class="@(invoice.IsOverdue ? "text-danger fw-bold" : "")">
-                                    @invoice.DueDate.ToString("MMMM dd, yyyy")
+                                    @invoice.DueOn.ToString("MMMM dd, yyyy")
                                     @if (invoice.IsOverdue)
                                     {
                                         <br />
@@ -181,10 +181,10 @@ else
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var payment in invoice.Payments.OrderByDescending(p => p.PaymentDate))
+                                    @foreach (var payment in invoice.Payments.OrderByDescending(p => p.PaidOn))
                                     {
                                         <tr>
-                                            <td>@payment.PaymentDate.ToString("MMM dd, yyyy")</td>
+                                            <td>@payment.PaidOn.ToString("MMM dd, yyyy")</td>
                                             <td>@payment.Amount.ToString("C")</td>
                                             <td>@payment.PaymentMethod</td>
                                             <td>@payment.Notes</td>
@@ -389,7 +389,7 @@ else
                 LeaseId = invoice.LeaseId,
                 PropertyId = invoice.Lease?.PropertyId,
                 TenantId = invoice.Lease?.TenantId,
-                UploadedBy = userName,
+                UploadedBy = userId,
                 CreatedBy = userId,
                 CreatedOn = DateTime.UtcNow,
                 LastModifiedBy = userId,

@@ -153,7 +153,7 @@ else
                                         @foreach (var payment in invoiceGroup)
                                         {
                                             <tr @onclick="() => ViewPayment(payment.Id)" style="cursor: pointer;">
-                                                <td>@payment.PaymentDate.ToString("MMM dd, yyyy")</td>
+                                                <td>@payment.PaidOn.ToString("MMM dd, yyyy")</td>
                                                 <td><strong class="text-success">@payment.Amount.ToString("C")</strong></td>
                                                 <td><span class="badge bg-secondary">@payment.PaymentMethod</span></td>
                                                 <td>@(string.IsNullOrEmpty(payment.Notes) ? "-" : payment.Notes)</td>
@@ -186,9 +186,9 @@ else
                         <thead>
                             <tr>
                                 <th>
-                                    <button class="btn btn-link p-0 text-decoration-none text-dark fw-bold" @onclick="() => SortBy(nameof(Payment.PaymentDate))">
+                                    <button class="btn btn-link p-0 text-decoration-none text-dark fw-bold" @onclick="() => SortBy(nameof(Payment.PaidOn))">
                                         Payment Date
-                                        @if (sortColumn == nameof(Payment.PaymentDate))
+                                        @if (sortColumn == nameof(Payment.PaidOn))
                                         {
                                             <i class="bi @(sortAscending ? "bi-caret-up" : "bi-caret-down")"></i>
                                         }
@@ -214,7 +214,7 @@ else
                             @foreach (var payment in pagedPayments)
                             {
                                 <tr @onclick="() => ViewPayment(payment.Id)" style="cursor: pointer;">
-                                    <td>@payment.PaymentDate.ToString("MMM dd, yyyy")</td>
+                                    <td>@payment.PaidOn.ToString("MMM dd, yyyy")</td>
                                     <td>
                                         <a href="/propertymanagement/invoices/view/@payment.InvoiceId" @onclick:stopPropagation="true">
                                             @payment.Invoice?.InvoiceNumber
@@ -305,7 +305,7 @@ else
     private HashSet<int> expandedInvoices = new();
     private string searchTerm = string.Empty;
     private string selectedMethod = string.Empty;
-    private string sortColumn = nameof(Payment.PaymentDate);
+    private string sortColumn = nameof(Payment.PaidOn);
     private bool sortAscending = false;
     private bool groupByInvoice = true;
     
@@ -367,7 +367,7 @@ else
         {
             groupedPayments = filteredPayments
                 .GroupBy(p => p.InvoiceId)
-                .OrderByDescending(g => g.Max(p => p.PaymentDate))
+                .OrderByDescending(g => g.Max(p => p.PaidOn))
                 .ToList();
         }
         else
@@ -407,13 +407,13 @@ else
     {
         filteredPayments = sortColumn switch
         {
-            nameof(Payment.PaymentDate) => sortAscending
-                ? filteredPayments.OrderBy(p => p.PaymentDate).ToList()
-                : filteredPayments.OrderByDescending(p => p.PaymentDate).ToList(),
+            nameof(Payment.PaidOn) => sortAscending
+                ? filteredPayments.OrderBy(p => p.PaidOn).ToList()
+                : filteredPayments.OrderByDescending(p => p.PaidOn).ToList(),
             nameof(Payment.Amount) => sortAscending
                 ? filteredPayments.OrderBy(p => p.Amount).ToList()
                 : filteredPayments.OrderByDescending(p => p.Amount).ToList(),
-            _ => filteredPayments.OrderByDescending(p => p.PaymentDate).ToList()
+            _ => filteredPayments.OrderByDescending(p => p.PaidOn).ToList()
         };
     }
 
@@ -426,12 +426,12 @@ else
         var firstDayOfYear = new DateTime(now.Year, 1, 1);
 
         paymentsCount = payments.Count;
-        thisMonthCount = payments.Count(p => p.PaymentDate >= firstDayOfMonth);
-        thisYearCount = payments.Count(p => p.PaymentDate >= firstDayOfYear);
+        thisMonthCount = payments.Count(p => p.PaidOn >= firstDayOfMonth);
+        thisYearCount = payments.Count(p => p.PaidOn >= firstDayOfYear);
         
         totalAmount = payments.Sum(p => p.Amount);
-        thisMonthAmount = payments.Where(p => p.PaymentDate >= firstDayOfMonth).Sum(p => p.Amount);
-        thisYearAmount = payments.Where(p => p.PaymentDate >= firstDayOfYear).Sum(p => p.Amount);
+        thisMonthAmount = payments.Where(p => p.PaidOn >= firstDayOfMonth).Sum(p => p.Amount);
+        thisYearAmount = payments.Where(p => p.PaidOn >= firstDayOfYear).Sum(p => p.Amount);
         averageAmount = paymentsCount > 0 ? totalAmount / paymentsCount : 0;
     }
 

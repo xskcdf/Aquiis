@@ -26,7 +26,7 @@ else
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1><span class="bi bi-cash-coin" aria-hidden="true"></span> Payment Details</h1>
-            <p class="text-muted">Payment Date: @payment.PaymentDate.ToString("MMMM dd, yyyy")</p>
+            <p class="text-muted">Payment Date: @payment.PaidOn.ToString("MMMM dd, yyyy")</p>
         </div>
         <div>
             <button class="btn btn-outline-secondary me-2" @onclick="GoBack">
@@ -48,7 +48,7 @@ else
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="text-muted small">Payment Date</label>
-                            <p class="fw-bold">@payment.PaymentDate.ToString("MMMM dd, yyyy")</p>
+                            <p class="fw-bold">@payment.PaidOn.ToString("MMMM dd, yyyy")</p>
                         </div>
                         <div class="col-md-6">
                             <label class="text-muted small">Amount</label>
@@ -132,12 +132,12 @@ else
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="text-muted small">Invoice Date</label>
-                                <p>@payment.Invoice.InvoiceDate.ToString("MMM dd, yyyy")</p>
+                                <p>@payment.Invoice.InvoicedOn.ToString("MMM dd, yyyy")</p>
                             </div>
                             <div class="col-md-6">
                                 <label class="text-muted small">Due Date</label>
                                 <p class="@(payment.Invoice.IsOverdue ? "text-danger fw-bold" : "")">
-                                    @payment.Invoice.DueDate.ToString("MMM dd, yyyy")
+                                    @payment.Invoice.DueOn.ToString("MMM dd, yyyy")
                                     @if (payment.Invoice.IsOverdue)
                                     {
                                         <span class="badge bg-danger ms-2">@payment.Invoice.DaysOverdue days overdue</span>
@@ -385,19 +385,19 @@ else
             var document = new Document
             {
                 UserId = userId,
-                FileName = $"Receipt_{payment!.PaymentDate:yyyyMMdd}_{DateTime.Now:HHmmss}.pdf",
+                FileName = $"Receipt_{payment!.PaidOn:yyyyMMdd}_{DateTime.Now:HHmmss}.pdf",
                 FileExtension = ".pdf",
                 FileData = pdfBytes,
                 FileSize = pdfBytes.Length,
                 FileType = "application/pdf",
                 ContentType = "application/pdf",
                 DocumentType = "Payment Receipt",
-                Description = $"Payment receipt for {payment.Amount:C} on {payment.PaymentDate:MMM dd, yyyy}",
+                Description = $"Payment receipt for {payment.Amount:C} on {payment.PaidOn:MMM dd, yyyy}",
                 LeaseId = payment.Invoice?.LeaseId,
                 PropertyId = payment.Invoice?.Lease?.PropertyId,
                 TenantId = payment.Invoice?.Lease?.TenantId,
                 InvoiceId = payment.InvoiceId,
-                UploadedBy = userName,
+                UploadedBy = userId,
                 CreatedBy = userId,
                 CreatedOn = DateTime.UtcNow,
                 LastModifiedBy = userId,

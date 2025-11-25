@@ -161,9 +161,9 @@ else
                                                     <small class="text-muted">@invoice.Description</small>
                                                 </td>
                                                 <td>@invoice.Lease?.Tenant?.FullName</td>
-                                                <td>@invoice.InvoiceDate.ToString("MMM dd, yyyy")</td>
+                                                <td>@invoice.InvoicedOn.ToString("MMM dd, yyyy")</td>
                                                 <td>
-                                                    @invoice.DueDate.ToString("MMM dd, yyyy")
+                                                    @invoice.DueOn.ToString("MMM dd, yyyy")
                                                     @if (invoice.IsOverdue)
                                                     {
                                                         <br />
@@ -235,18 +235,18 @@ else
                                 </button>
                             </th>
                             <th>
-                                <button class="btn btn-link p-0 text-decoration-none text-dark fw-bold" @onclick="() => SortBy(nameof(Invoice.InvoiceDate))">
+                                <button class="btn btn-link p-0 text-decoration-none text-dark fw-bold" @onclick="() => SortBy(nameof(Invoice.InvoicedOn))">
                                     Invoice Date
-                                    @if (sortColumn == nameof(Invoice.InvoiceDate))
+                                    @if (sortColumn == nameof(Invoice.InvoicedOn))
                                     {
                                         <i class="bi @(sortAscending ? "bi-caret-up" : "bi-caret-down")"></i>
                                     }
                                 </button>
                             </th>
                             <th>
-                                <button class="btn btn-link p-0 text-decoration-none text-dark fw-bold" @onclick="() => SortBy(nameof(Invoice.DueDate))">
+                                <button class="btn btn-link p-0 text-decoration-none text-dark fw-bold" @onclick="() => SortBy(nameof(Invoice.DueOn))">
                                     Due Date
-                                    @if (sortColumn == nameof(Invoice.DueDate))
+                                    @if (sortColumn == nameof(Invoice.DueOn))
                                     {
                                         <i class="bi @(sortAscending ? "bi-caret-up" : "bi-caret-down")"></i>
                                     }
@@ -277,9 +277,9 @@ else
                                 </td>
                                 <td>@invoice.Lease?.Property?.Address</td>
                                 <td>@invoice.Lease?.Tenant?.FullName</td>
-                                <td>@invoice.InvoiceDate.ToString("MMM dd, yyyy")</td>
+                                <td>@invoice.InvoicedOn.ToString("MMM dd, yyyy")</td>
                                 <td>
-                                    @invoice.DueDate.ToString("MMM dd, yyyy")
+                                    @invoice.DueOn.ToString("MMM dd, yyyy")
                                     @if (invoice.IsOverdue)
                                     {
                                         <br />
@@ -376,7 +376,7 @@ else
     private HashSet<int> expandedProperties = new();
     private string searchTerm = string.Empty;
     private string selectedStatus = string.Empty;
-    private string sortColumn = nameof(Invoice.DueDate);
+    private string sortColumn = nameof(Invoice.DueOn);
     private bool sortAscending = false;
     private bool groupByProperty = true;
     
@@ -496,16 +496,16 @@ else
             "Tenant" => sortAscending
                 ? filteredInvoices.OrderBy(i => i.Lease?.Tenant?.FullName).ToList()
                 : filteredInvoices.OrderByDescending(i => i.Lease?.Tenant?.FullName).ToList(),
-            nameof(Invoice.InvoiceDate) => sortAscending
-                ? filteredInvoices.OrderBy(i => i.InvoiceDate).ToList()
-                : filteredInvoices.OrderByDescending(i => i.InvoiceDate).ToList(),
-            nameof(Invoice.DueDate) => sortAscending
-                ? filteredInvoices.OrderBy(i => i.DueDate).ToList()
-                : filteredInvoices.OrderByDescending(i => i.DueDate).ToList(),
+            nameof(Invoice.InvoicedOn) => sortAscending
+                ? filteredInvoices.OrderBy(i => i.InvoicedOn).ToList()
+                : filteredInvoices.OrderByDescending(i => i.InvoicedOn).ToList(),
+            nameof(Invoice.DueOn) => sortAscending
+                ? filteredInvoices.OrderBy(i => i.DueOn).ToList()
+                : filteredInvoices.OrderByDescending(i => i.DueOn).ToList(),
             nameof(Invoice.Amount) => sortAscending
                 ? filteredInvoices.OrderBy(i => i.Amount).ToList()
                 : filteredInvoices.OrderByDescending(i => i.Amount).ToList(),
-            _ => filteredInvoices.OrderByDescending(i => i.DueDate).ToList()
+            _ => filteredInvoices.OrderByDescending(i => i.DueOn).ToList()
         };
     }
 

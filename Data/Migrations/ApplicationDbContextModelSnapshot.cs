@@ -256,6 +256,9 @@ namespace Aquiis.SimpleStart.Data.Migrations
                     b.Property<string>("CarbonMonoxideDetectorsNotes")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("CompletedOn")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CreatedBy")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -321,9 +324,6 @@ namespace Aquiis.SimpleStart.Data.Migrations
 
                     b.Property<string>("InspectedBy")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("InspectionDate")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("InspectionType")
@@ -434,9 +434,9 @@ namespace Aquiis.SimpleStart.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DocumentId");
+                    b.HasIndex("CompletedOn");
 
-                    b.HasIndex("InspectionDate");
+                    b.HasIndex("DocumentId");
 
                     b.HasIndex("LeaseId");
 
@@ -475,15 +475,15 @@ namespace Aquiis.SimpleStart.Data.Migrations
                     b.Property<int?>("DocumentId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("DueDate")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("InvoiceDate")
+                    b.Property<DateTime>("DueOn")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("InvoiceNumber")
                         .IsRequired()
                         .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("InvoicedOn")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
@@ -502,7 +502,7 @@ namespace Aquiis.SimpleStart.Data.Migrations
                     b.Property<bool?>("LateFeeApplied")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime?>("LateFeeAppliedDate")
+                    b.Property<DateTime?>("LateFeeAppliedOn")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("LeaseId")
@@ -519,7 +519,7 @@ namespace Aquiis.SimpleStart.Data.Migrations
                     b.Property<bool?>("ReminderSent")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime?>("ReminderSentDate")
+                    b.Property<DateTime?>("ReminderSentOn")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
@@ -808,7 +808,7 @@ namespace Aquiis.SimpleStart.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("PaymentDate")
+                    b.Property<DateTime>("PaidOn")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PaymentMethod")
@@ -1019,6 +1019,94 @@ namespace Aquiis.SimpleStart.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Tenants");
+                });
+
+            modelBuilder.Entity("Aquiis.SimpleStart.Models.ApplicationScreening", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("BackgroundCheckCompletedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BackgroundCheckNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool?>("BackgroundCheckPassed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("BackgroundCheckRequested")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("BackgroundCheckRequestedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CreditCheckCompletedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreditCheckNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool?>("CreditCheckPassed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("CreditCheckRequested")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("CreditCheckRequestedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("CreditScore")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OrganizationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OverallResult")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RentalApplicationId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ResultNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("OverallResult");
+
+                    b.HasIndex("RentalApplicationId")
+                        .IsUnique();
+
+                    b.ToTable("ApplicationScreenings");
                 });
 
             modelBuilder.Entity("Aquiis.SimpleStart.Models.Checklist", b =>
@@ -1354,6 +1442,248 @@ namespace Aquiis.SimpleStart.Data.Migrations
                     b.ToTable("OrganizationSettings");
                 });
 
+            modelBuilder.Entity("Aquiis.SimpleStart.Models.ProspectiveTenant", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DesiredMoveInDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("FirstContactedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("InterestedPropertyId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OrganizationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Source")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("InterestedPropertyId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("ProspectiveTenants");
+                });
+
+            modelBuilder.Entity("Aquiis.SimpleStart.Models.RentalApplication", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("ApplicationFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("ApplicationFeePaid")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ApplicationFeePaidOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("AppliedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CurrentAddress")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CurrentCity")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("CurrentRent")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("CurrentState")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CurrentZipCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DecidedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DecisionBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DenialReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EmployerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EmploymentLengthMonths")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("JobTitle")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LandlordName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LandlordPhone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("MonthlyIncome")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("OrganizationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ProspectiveTenantId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Reference1Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reference1Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reference1Relationship")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reference2Name")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reference2Phone")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reference2Relationship")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppliedOn");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("PropertyId");
+
+                    b.HasIndex("ProspectiveTenantId")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("RentalApplications");
+                });
+
             modelBuilder.Entity("Aquiis.SimpleStart.Models.SchemaVersion", b =>
                 {
                     b.Property<int>("Id")
@@ -1376,6 +1706,84 @@ namespace Aquiis.SimpleStart.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("SchemaVersions");
+                });
+
+            modelBuilder.Entity("Aquiis.SimpleStart.Models.Tour", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ChecklistId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConductedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Feedback")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InterestLevel")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OrganizationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ProspectiveTenantId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("ScheduledOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChecklistId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("PropertyId");
+
+                    b.HasIndex("ProspectiveTenantId");
+
+                    b.HasIndex("ScheduledOn");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("Tours");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -1691,6 +2099,17 @@ namespace Aquiis.SimpleStart.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Aquiis.SimpleStart.Models.ApplicationScreening", b =>
+                {
+                    b.HasOne("Aquiis.SimpleStart.Models.RentalApplication", "RentalApplication")
+                        .WithOne("Screening")
+                        .HasForeignKey("Aquiis.SimpleStart.Models.ApplicationScreening", "RentalApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RentalApplication");
+                });
+
             modelBuilder.Entity("Aquiis.SimpleStart.Models.Checklist", b =>
                 {
                     b.HasOne("Aquiis.SimpleStart.Models.ChecklistTemplate", "ChecklistTemplate")
@@ -1743,6 +2162,60 @@ namespace Aquiis.SimpleStart.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("ChecklistTemplate");
+                });
+
+            modelBuilder.Entity("Aquiis.SimpleStart.Models.ProspectiveTenant", b =>
+                {
+                    b.HasOne("Aquiis.SimpleStart.Components.PropertyManagement.Properties.Property", "InterestedProperty")
+                        .WithMany()
+                        .HasForeignKey("InterestedPropertyId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("InterestedProperty");
+                });
+
+            modelBuilder.Entity("Aquiis.SimpleStart.Models.RentalApplication", b =>
+                {
+                    b.HasOne("Aquiis.SimpleStart.Components.PropertyManagement.Properties.Property", "Property")
+                        .WithMany()
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Aquiis.SimpleStart.Models.ProspectiveTenant", "ProspectiveTenant")
+                        .WithOne("Application")
+                        .HasForeignKey("Aquiis.SimpleStart.Models.RentalApplication", "ProspectiveTenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Property");
+
+                    b.Navigation("ProspectiveTenant");
+                });
+
+            modelBuilder.Entity("Aquiis.SimpleStart.Models.Tour", b =>
+                {
+                    b.HasOne("Aquiis.SimpleStart.Models.Checklist", "Checklist")
+                        .WithMany()
+                        .HasForeignKey("ChecklistId");
+
+                    b.HasOne("Aquiis.SimpleStart.Components.PropertyManagement.Properties.Property", "Property")
+                        .WithMany()
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Aquiis.SimpleStart.Models.ProspectiveTenant", "ProspectiveTenant")
+                        .WithMany("Tours")
+                        .HasForeignKey("ProspectiveTenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Checklist");
+
+                    b.Navigation("Property");
+
+                    b.Navigation("ProspectiveTenant");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -1830,6 +2303,18 @@ namespace Aquiis.SimpleStart.Data.Migrations
                     b.Navigation("Checklists");
 
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("Aquiis.SimpleStart.Models.ProspectiveTenant", b =>
+                {
+                    b.Navigation("Application");
+
+                    b.Navigation("Tours");
+                });
+
+            modelBuilder.Entity("Aquiis.SimpleStart.Models.RentalApplication", b =>
+                {
+                    b.Navigation("Screening");
                 });
 #pragma warning restore 612, 618
         }

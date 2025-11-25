@@ -1,5 +1,237 @@
 # Aquiis - Revision History
 
+## November 25, 2025
+
+### Checklist System - Complete Implementation
+
+**Property-Centric Checklist Management**
+
+- ✅ Refactored checklist workflow to be property-centric
+- ✅ Completed checklists now display on property view pages
+- ✅ Created comprehensive template library system
+- ✅ Implemented automatic checklist creation from templates
+- ✅ Added general notes field for overall checklist comments
+- ✅ Made value fields required when needed
+- ✅ Added "Check All" buttons for efficient section completion
+
+**Workflow Redesign:**
+
+1. **Template Library Page** (`/propertymanagement/checklists`):
+
+   - Changed from checklist listing to template selection page
+   - Card-based template display with statistics
+   - Search and category filtering
+   - "Complete New Checklist" button on each template
+   - No property/status/completed fields shown
+
+2. **Automatic Checklist Creation:**
+
+   - Created `CreateChecklistFromTemplateAsync()` service method
+   - Clicking "Complete New Checklist" creates draft checklist instantly
+   - Navigates directly to completion page (skips customization step)
+   - Template items automatically copied to checklist items
+
+3. **Property View Integration:**
+   - Added "Completed Checklists" section to ViewProperty.razor
+   - Shows all checklists for specific property
+   - Quick actions: View, Complete (for drafts)
+   - "New Checklist" button links to template library
+
+**General Notes Feature:**
+
+1. **Database Changes:**
+
+   - Added `GeneralNotes` (2000 char) field to Checklist model
+   - Created migration `AddGeneralNotesToChecklist`
+   - Applied to database successfully
+
+2. **Complete.razor Enhancements:**
+
+   - Added general notes section before action buttons
+   - Large textarea for overall observations/summary
+   - Helpful text explaining difference from item notes
+   - Item-level notes remain for specific observations
+
+3. **View.razor Display:**
+
+   - Shows general notes section only if notes exist
+   - Preserves line breaks with `white-space: pre-wrap`
+   - Clean card layout matching other sections
+
+4. **PDF Generator Integration:**
+   - General notes section added between items and summary
+   - Formatted with border and light background
+   - Only appears in PDF if notes exist
+
+**Required Value Fields:**
+
+- Added `required` attribute to value input fields when `RequiresValue=true`
+- Form validation ensures users enter values for items that need them
+- Prevents incomplete data entry for critical items (meter readings, deposits, etc.)
+
+**Check All Feature:**
+
+1. **Implementation:**
+
+   - Added "Check All" button to each section header
+   - `CheckAllInSection(sectionName)` method marks all items in section as checked
+   - Useful for sections where everything is in good condition
+   - Saves time during inspections
+
+2. **User Experience:**
+   - One-click to mark entire section complete
+   - Visual feedback with state update
+   - Individual items can still be unchecked if needed
+
+**Use Cases:**
+
+**Item-Level Notes (Specific Details):**
+
+- "Kitchen faucet - minor drip, needs washer replacement"
+- "Bedroom 2 carpet - small stain near closet, 3 inches"
+- "Living room wall - nail holes from previous tenant"
+
+**General Notes (Overall Summary):**
+
+- "Property in excellent condition overall. Tenant very cooperative during inspection."
+- "Minor wear consistent with 2-year lease term. No major issues requiring immediate attention."
+- "Unit ready for new tenant with standard cleaning and minor touch-ups."
+
+**Checklist Entities:**
+
+1. **ChecklistTemplate** - Reusable checklist patterns
+
+   - System templates (Move-In, Move-Out, Open House)
+   - Custom templates created by users
+   - Soft delete support
+
+2. **ChecklistTemplateItem** - Items in templates
+
+   - ItemText, ItemOrder, CategorySection
+   - RequiresValue flag for items needing data entry
+   - IsRequired flag for mandatory items
+
+3. **Checklist** - Individual checklist instances
+
+   - Links to Property and Lease
+   - Status: Draft → In Progress → Completed
+   - CompletedBy, CompletedOn tracking
+   - DocumentId for generated PDF
+   - **GeneralNotes for overall comments** (NEW)
+
+4. **ChecklistItem** - Responses in checklists
+   - IsChecked status
+   - Value field for meter readings, amounts, etc.
+   - Notes field for item-specific observations
+   - PhotoUrl for image attachments (future)
+
+**Service Methods:**
+
+```csharp
+// Template management
+Task<List<ChecklistTemplate>> GetChecklistTemplatesAsync()
+Task<ChecklistTemplate?> GetChecklistTemplateByIdAsync(int templateId)
+Task DeleteChecklistTemplateAsync(int templateId)
+
+// Checklist operations
+Task<Checklist> CreateChecklistFromTemplateAsync(int templateId) // NEW
+Task<List<Checklist>> GetChecklistsAsync(bool includeArchived)
+Task<Checklist?> GetChecklistByIdAsync(int checklistId)
+Task CompleteChecklistAsync(int checklistId)
+Task ArchiveChecklistAsync(int checklistId)
+Task UnarchiveChecklistAsync(int checklistId)
+```
+
+**PDF Generation:**
+
+- ChecklistPdfGenerator service using QuestPDF
+- Professional multi-page reports
+- Item-level notes displayed per item
+- **General notes section** (NEW) - appears before summary
+- Summary statistics (completion, values, notes)
+- Automatic storage in Documents table
+- Smart button (Generate/View based on DocumentId)
+
+**Files Created:**
+
+```
+Aquiis.SimpleStart/
+├── Components/PropertyManagement/Checklists/
+│   ├── ChecklistService.cs (Enhanced with CreateChecklistFromTemplateAsync)
+│   └── Pages/
+│       ├── Checklists.razor (Template library)
+│       ├── Templates.razor (Template management)
+│       ├── Create.razor (Manual checklist creation - optional)
+│       ├── Complete.razor (Checklist completion with general notes)
+│       └── View.razor (View completed with general notes)
+├── Services/
+│   └── ChecklistPdfGenerator.cs (PDF generation with general notes)
+├── Models/
+│   ├── Checklist.cs (Added GeneralNotes field)
+│   ├── ChecklistTemplate.cs
+│   ├── ChecklistItem.cs
+│   └── ChecklistTemplateItem.cs
+└── Data/
+    └── Migrations/
+        └── 20251124202223_AddGeneralNotesToChecklist.cs
+```
+
+**Files Modified:**
+
+```
+Aquiis.SimpleStart/
+├── Components/PropertyManagement/
+│   ├── Checklists/
+│   │   ├── ChecklistService.cs (Added CreateChecklistFromTemplateAsync)
+│   │   └── Pages/
+│   │       ├── Checklists.razor (Refactored to template library)
+│   │       ├── Complete.razor (Added general notes, required fields, Check All)
+│   │       └── View.razor (Added general notes display)
+│   └── Properties/Pages/
+│       └── ViewProperty.razor (Added completed checklists section)
+├── Services/
+│   └── ChecklistPdfGenerator.cs (Added general notes to PDF)
+├── Models/
+│   └── Checklist.cs (Added GeneralNotes property)
+└── wwwroot/
+    └── app.css (Added hover-shadow class for template cards)
+```
+
+**Database Migrations:**
+
+1. Initial checklist system migration (previously applied)
+2. **AddGeneralNotesToChecklist** (NEW):
+   - Adds nullable `GeneralNotes` TEXT column
+   - Max length: 2000 characters
+   - Applied successfully
+
+**Benefits:**
+
+- ✅ **Property-Centric**: Completed checklists live with their properties
+- ✅ **Template Library**: Clean separation of templates vs instances
+- ✅ **Dual Notes System**: Both general and item-specific observations
+- ✅ **Required Values**: Data integrity for critical items
+- ✅ **Efficient Entry**: Check All buttons save time
+- ✅ **Direct Workflow**: Template → Complete (skips creation step)
+- ✅ **Professional PDFs**: Includes all notes and observations
+- ✅ **Archive Support**: Keep history without clutter
+
+**Testing Recommendations:**
+
+1. Navigate to `/propertymanagement/checklists` (template library)
+2. Click "Complete New Checklist" on any template
+3. Verify navigation to Complete page with pre-populated items
+4. Test "Check All" button on a section
+5. Enter values in required value fields
+6. Add item-specific notes to some items
+7. Add general notes in the general notes section
+8. Complete checklist and generate PDF
+9. Verify general notes appear in PDF before summary
+10. View checklist from property page
+11. Confirm both note types display properly
+
+---
+
 ## November 23, 2025
 
 ### Session Timeout Implementation

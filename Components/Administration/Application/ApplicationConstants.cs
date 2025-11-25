@@ -310,6 +310,7 @@ namespace Aquiis.SimpleStart.Components.Administration.Application
             public const string MoveIn = "Move-In";
             public const string MoveOut = "Move-Out";
             public const string OpenHouse = "Open House";
+            public const string Tour = "Tour";
             public const string Custom = "Custom";
 
             public static IReadOnlyList<string> AllChecklistTypes { get; } = new List<string>
@@ -317,6 +318,7 @@ namespace Aquiis.SimpleStart.Components.Administration.Application
                 MoveIn,
                 MoveOut,
                 OpenHouse,
+                Tour,
                 Custom
             };
         }
@@ -335,6 +337,117 @@ namespace Aquiis.SimpleStart.Components.Administration.Application
             };
         }
 
+        public static class ProspectiveStatuses
+        {
+            public const string Lead = "Lead";
+            public const string TourScheduled = "TourScheduled";
+            public const string Applied = "Applied";
+            public const string Screening = "Screening";
+            public const string Approved = "Approved";
+            public const string Denied = "Denied";
+            public const string ConvertedToTenant = "ConvertedToTenant";
+
+            public static IReadOnlyList<string> AllProspectiveStatuses { get; } = new List<string>
+            {
+                Lead,
+                TourScheduled,
+                Applied,
+                Screening,
+                Approved,
+                Denied,
+                ConvertedToTenant
+            };
+        }
+
+        public static class ProspectiveSources
+        {
+            public const string Website = "Website";
+            public const string Referral = "Referral";
+            public const string WalkIn = "Walk-in";
+            public const string Zillow = "Zillow";
+            public const string Apartments = "Apartments.com";
+            public const string SignCall = "Sign Call";
+            public const string SocialMedia = "Social Media";
+            public const string Other = "Other";
+
+            public static IReadOnlyList<string> AllProspectiveSources { get; } = new List<string>
+            {
+                Website,
+                Referral,
+                WalkIn,
+                Zillow,
+                Apartments,
+                SignCall,
+                SocialMedia,
+                Other
+            };
+        }
+
+        public static class TourStatuses
+        {
+            public const string Scheduled = "Scheduled";
+            public const string Completed = "Completed";
+            public const string Cancelled = "Cancelled";
+            public const string NoShow = "NoShow";
+
+            public static IReadOnlyList<string> AllTourStatuses { get; } = new List<string>
+            {
+                Scheduled,
+                Completed,
+                Cancelled,
+                NoShow
+            };
+        }
+
+        public static class TourInterestLevels
+        {
+            public const string VeryInterested = "VeryInterested";
+            public const string Interested = "Interested";
+            public const string Neutral = "Neutral";
+            public const string NotInterested = "NotInterested";
+
+            public static IReadOnlyList<string> AllTourInterestLevels { get; } = new List<string>
+            {
+                VeryInterested,
+                Interested,
+                Neutral,
+                NotInterested
+            };
+        }
+
+        public static class ApplicationStatuses
+        {
+            public const string Submitted = "Submitted";
+            public const string UnderReview = "UnderReview";
+            public const string Screening = "Screening";
+            public const string Approved = "Approved";
+            public const string Denied = "Denied";
+
+            public static IReadOnlyList<string> AllApplicationStatuses { get; } = new List<string>
+            {
+                Submitted,
+                UnderReview,
+                Screening,
+                Approved,
+                Denied
+            };
+        }
+
+        public static class ScreeningResults
+        {
+            public const string Pending = "Pending";
+            public const string Passed = "Passed";
+            public const string Failed = "Failed";
+            public const string ConditionalPass = "ConditionalPass";
+
+            public static IReadOnlyList<string> AllScreeningResults { get; } = new List<string>
+            {
+                Pending,
+                Passed,
+                Failed,
+                ConditionalPass
+            };
+        }
 
         
 

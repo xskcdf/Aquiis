@@ -45,8 +45,8 @@ public class FinancialReportService
             .Include(p => p.Invoice)
             .ThenInclude(i => i.Lease)
             .Where(p => p.Invoice.Lease.Property.OrganizationId == organizationId &&
-                       p.PaymentDate >= startDate &&
-                       p.PaymentDate <= endDate);
+                       p.PaidOn >= startDate &&
+                       p.PaidOn <= endDate);
 
         if (propertyId.HasValue)
         {
@@ -155,8 +155,8 @@ public class FinancialReportService
                 .Include(p => p.Invoice)
                 .ThenInclude(i => i.Lease)
                 .Where(p => p.Invoice.Lease.PropertyId == property.Id &&
-                           p.PaymentDate >= startDate &&
-                           p.PaymentDate <= endDate)
+                           p.PaidOn >= startDate &&
+                           p.PaidOn <= endDate)
                 .SumAsync(p => p.Amount);
 
             // Calculate expenses from maintenance requests only
@@ -234,8 +234,8 @@ public class FinancialReportService
                 .Include(p => p.Invoice)
                 .ThenInclude(i => i.Lease)
                 .Where(p => p.Invoice.Lease.PropertyId == property.Id &&
-                           p.PaymentDate >= startDate &&
-                           p.PaymentDate <= endDate)
+                           p.PaidOn >= startDate &&
+                           p.PaidOn <= endDate)
                 .SumAsync(p => p.Amount);
 
             // Get maintenance expenses (this is the only expense type currently tracked)

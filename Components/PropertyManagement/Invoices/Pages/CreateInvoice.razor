@@ -57,13 +57,13 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Invoice Date <span class="text-danger">*</span></label>
-                            <InputDate @bind-Value="invoiceModel.InvoiceDate" class="form-control" />
-                            <ValidationMessage For="() => invoiceModel.InvoiceDate" class="text-danger" />
+                            <InputDate @bind-Value="invoiceModel.InvoicedOn" class="form-control" />
+                            <ValidationMessage For="() => invoiceModel.InvoicedOn" class="text-danger" />
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Due Date <span class="text-danger">*</span></label>
-                            <InputDate @bind-Value="invoiceModel.DueDate" class="form-control" />
-                            <ValidationMessage For="() => invoiceModel.DueDate" class="text-danger" />
+                            <InputDate @bind-Value="invoiceModel.DueOn" class="form-control" />
+                            <ValidationMessage For="() => invoiceModel.DueOn" class="text-danger" />
                         </div>
                     </div>
 
@@ -197,8 +197,8 @@
     {
         await LoadLeases();
         invoiceModel.InvoiceNumber = await PropertyManagementService.GenerateInvoiceNumberAsync();
-        invoiceModel.InvoiceDate = DateTime.Now;
-        invoiceModel.DueDate = DateTime.Now.AddDays(30);
+        invoiceModel.InvoicedOn = DateTime.Now;
+        invoiceModel.DueOn = DateTime.Now.AddDays(30);
         if (LeaseId.HasValue)
         {
             invoiceModel.LeaseId = LeaseId.Value;
@@ -256,8 +256,8 @@
                 UserId = userId,
                 LeaseId = invoiceModel.LeaseId,
                 InvoiceNumber = invoiceModel.InvoiceNumber,
-                InvoiceDate = invoiceModel.InvoiceDate,
-                DueDate = invoiceModel.DueDate,
+                InvoicedOn = invoiceModel.InvoicedOn,
+                DueOn = invoiceModel.DueOn,
                 Amount = invoiceModel.Amount,
                 Description = invoiceModel.Description,
                 Status = invoiceModel.Status,
@@ -298,10 +298,10 @@
         public string InvoiceNumber { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Invoice date is required")]
-        public DateTime InvoiceDate { get; set; } = DateTime.Now;
+        public DateTime InvoicedOn { get; set; } = DateTime.Now;
 
         [Required(ErrorMessage = "Due date is required")]
-        public DateTime DueDate { get; set; } = DateTime.Now.AddDays(30);
+        public DateTime DueOn { get; set; } = DateTime.Now.AddDays(30);
 
         [Required(ErrorMessage = "Amount is required")]
         [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than 0")]

@@ -265,7 +265,7 @@ else
                 FilePath = string.Empty,
                 Description = uploadModel.Description ?? string.Empty,
                 LeaseId = LeaseId,
-                UploadedBy = userName,
+                UploadedBy = userId ?? string.Empty,
                 CreatedBy = userId ?? string.Empty,
                 CreatedOn = DateTime.UtcNow
             };

@@ -22,11 +22,11 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Invoices {
 
         [Required]
         [DataType(DataType.Date)]
-        public DateTime InvoiceDate { get; set; }
+        public DateTime InvoicedOn { get; set; }
 
         [Required]
         [DataType(DataType.Date)]
-        public DateTime DueDate { get; set; }
+        public DateTime DueOn { get; set; }
 
         [Required]
         [Column(TypeName = "decimal(18,2)")]
@@ -53,12 +53,12 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Invoices {
 
         public bool? LateFeeApplied { get; set; }
 
-        public DateTime? LateFeeAppliedDate { get; set; }
+        public DateTime? LateFeeAppliedOn { get; set; }
 
         // Reminder Properties
         public bool? ReminderSent { get; set; }
 
-        public DateTime? ReminderSentDate { get; set; }
+        public DateTime? ReminderSentOn { get; set; }
 
     // Document Tracking
     public int? DocumentId { get; set; }
@@ -74,7 +74,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Invoices {
 
         // Computed properties
         public decimal BalanceDue => Amount - AmountPaid;
-        public bool IsOverdue => Status != "Paid" && DueDate < DateTime.Now;
-        public int DaysOverdue => IsOverdue ? (DateTime.Now - DueDate).Days : 0;
+        public bool IsOverdue => Status != "Paid" && DueOn < DateTime.Now;
+        public int DaysOverdue => IsOverdue ? (DateTime.Now - DueOn).Days : 0;
     }
 }

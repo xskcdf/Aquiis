@@ -36,6 +36,10 @@ namespace Aquiis.SimpleStart.Data
         public DbSet<ChecklistTemplateItem> ChecklistTemplateItems { get; set; }
         public DbSet<Checklist> Checklists { get; set; }
         public DbSet<ChecklistItem> ChecklistItems { get; set; }
+        public DbSet<ProspectiveTenant> ProspectiveTenants { get; set; }
+        public DbSet<Tour> Tours { get; set; }
+        public DbSet<RentalApplication> RentalApplications { get; set; }
+        public DbSet<ApplicationScreening> ApplicationScreenings { get; set; }
 
          protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -198,7 +202,7 @@ namespace Aquiis.SimpleStart.Data
                     .OnDelete(DeleteBehavior.SetNull);
                 
                 entity.HasIndex(e => e.PropertyId);
-                entity.HasIndex(e => e.InspectionDate);
+                entity.HasIndex(e => e.CompletedOn);
             });
 
             // Configure MaintenanceRequest entity
@@ -289,6 +293,71 @@ namespace Aquiis.SimpleStart.Data
                     .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasIndex(e => e.ChecklistId);
+            });
+
+            // Configure ProspectiveTenant entity
+            modelBuilder.Entity<ProspectiveTenant>(entity =>
+            {
+                entity.HasOne(pt => pt.InterestedProperty)
+                    .WithMany()
+                    .HasForeignKey(pt => pt.InterestedPropertyId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasIndex(e => e.Email);
+                entity.HasIndex(e => e.OrganizationId);
+                entity.HasIndex(e => e.Status);
+            });
+
+            // Configure Tour entity
+            modelBuilder.Entity<Tour>(entity =>
+            {
+                entity.HasOne(s => s.ProspectiveTenant)
+                    .WithMany(pt => pt.Tours)
+                    .HasForeignKey(s => s.ProspectiveTenantId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(s => s.Property)
+                    .WithMany()
+                    .HasForeignKey(s => s.PropertyId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.OrganizationId);
+                entity.HasIndex(e => e.ScheduledOn);
+                entity.HasIndex(e => e.Status);
+            });
+
+            // Configure RentalApplication entity
+            modelBuilder.Entity<RentalApplication>(entity =>
+            {
+                entity.HasOne(ra => ra.ProspectiveTenant)
+                    .WithOne(pt => pt.Application)
+                    .HasForeignKey<RentalApplication>(ra => ra.ProspectiveTenantId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(ra => ra.Property)
+                    .WithMany()
+                    .HasForeignKey(ra => ra.PropertyId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(e => e.CurrentRent).HasPrecision(18, 2);
+                entity.Property(e => e.MonthlyIncome).HasPrecision(18, 2);
+                entity.Property(e => e.ApplicationFee).HasPrecision(18, 2);
+
+                entity.HasIndex(e => e.OrganizationId);
+                entity.HasIndex(e => e.AppliedOn);
+                entity.HasIndex(e => e.Status);
+            });
+
+            // Configure ApplicationScreening entity
+            modelBuilder.Entity<ApplicationScreening>(entity =>
+            {
+                entity.HasOne(asc => asc.RentalApplication)
+                    .WithOne(ra => ra.Screening)
+                    .HasForeignKey<ApplicationScreening>(asc => asc.RentalApplicationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => e.OrganizationId);
+                entity.HasIndex(e => e.OverallResult);
             });
         }
 

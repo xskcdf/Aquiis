@@ -50,12 +50,12 @@ public class ChecklistPdfGenerator
                                 if (checklist.Property != null)
                                 {
                                     col.Item().Text("Property:").FontSize(10).Bold();
-                                    col.Item().Text($"{checklist.Property.Address}").FontSize(10);
-                                    col.Item().Text($"{checklist.Property.City}, {checklist.Property.State} {checklist.Property.ZipCode}").FontSize(10);
+                                    col.Item().Text($"{checklist.Property.Address ?? "N/A"}").FontSize(10);
+                                    col.Item().Text($"{checklist.Property.City ?? ""}, {checklist.Property.State ?? ""} {checklist.Property.ZipCode ?? ""}").FontSize(10);
                                 }
                                 if (checklist.Lease?.Tenant != null)
                                 {
-                                    col.Item().Text($"Tenant: {checklist.Lease.Tenant.FullName}").FontSize(10);
+                                    col.Item().Text($"Tenant: {checklist.Lease.Tenant.FirstName ?? ""} {checklist.Lease.Tenant.LastName ?? ""}").FontSize(10);
                                 }
                             });
                         });

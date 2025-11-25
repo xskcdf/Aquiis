@@ -95,7 +95,7 @@ else
                     <div class="row">
                         <div class="col-md-4 mb-2">
                             <strong>Inspection Date:</strong>
-                            <p>@inspection.InspectionDate.ToString("MMMM dd, yyyy")</p>
+                            <p>@inspection.CompletedOn.ToString("MMMM dd, yyyy")</p>
                         </div>
                         <div class="col-md-4 mb-2">
                             <strong>Type:</strong>
@@ -349,7 +349,7 @@ else
 
             var newDocument = new Document
             {
-                FileName = $"Inspection_{inspection!.Property?.Address}_{inspection.InspectionDate:yyyyMMdd}.pdf",
+                FileName = $"Inspection_{inspection!.Property?.Address}_{inspection.CompletedOn:yyyyMMdd}.pdf",
                 FileData = pdfBytes,
                 FileExtension = ".pdf",
                 FileSize = pdfBytes.Length,
@@ -360,10 +360,10 @@ else
                 LeaseId = inspection.LeaseId,
                 UserId = userId!,
                 OrganizationId = organizationId!,
-                UploadedBy = userEmail!,
+                UploadedBy = userId!,
                 CreatedOn = DateTime.UtcNow,
                 CreatedBy = userId!,
-                Description = $"{inspection.InspectionType} Inspection - {inspection.InspectionDate:MMM dd, yyyy}"
+                Description = $"{inspection.InspectionType} Inspection - {inspection.CompletedOn:MMM dd, yyyy}"
             };
 
             await PropertyManagementService.AddDocumentAsync(newDocument);

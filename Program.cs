@@ -133,7 +133,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddScoped<PropertyManagementService>();
 builder.Services.AddScoped<Aquiis.SimpleStart.Components.PropertyManagement.Checklists.ChecklistService>();
-builder.Services.AddScoped<ApplicationService>();
+builder.Services.AddScoped<RentalApplicationService>();
 builder.Services.AddScoped<UserContextService>();
 builder.Services.AddScoped<DocumentService>();
 builder.Services.AddSingleton<ToastService>();

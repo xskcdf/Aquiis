@@ -173,22 +173,43 @@ else
                                                 @if (item.RequiresValue || RequiresValueByKeyword(item.ItemText))
                                                 {
                                                     <div class="mt-2">
-                                                        <input type="text" class="form-control form-control-sm" 
-                                                               @bind="item.Value" 
-                                                               @bind:after="@(() => OnItemChanged(item))"
-                                                               placeholder="@GetValuePlaceholder(item.ItemText)"
-                                                               required />
+                                                        @if (IsInterestLevelItem(item.ItemText))
+                                                        {
+                                                            <div class="btn-group d-flex" role="group">
+                                                                @foreach (var level in ApplicationConstants.TourInterestLevels.AllTourInterestLevels)
+                                                                {
+                                                                    <input type="radio" 
+                                                                           class="btn-check" 
+                                                                           name="interest_@item.Id" 
+                                                                           id="interest_@(item.Id)_@level" 
+                                                                           value="@level"
+                                                                           checked="@(item.Value == level)"
+                                                                           @onchange="@(() => { item.Value = level; OnItemChanged(item); })" />
+                                                                    <label class="btn btn-outline-primary btn-sm" for="interest_@(item.Id)_@level">
+                                                                        @GetInterestLevelDisplay(level)
+                                                                    </label>
+                                                                }
+                                                            </div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <input type="text" class="form-control form-control-sm" 
+                                                                   @bind="item.Value" 
+                                                                   @bind:after="@(() => OnItemChanged(item))"
+                                                                   placeholder="@GetValuePlaceholder(item.ItemText)"
+                                                                   required />
+                                                        }
                                                     </div>
                                                 }
                                             </div>
-                                            <div class="col-md-7">
+                                            @* <div class="col-md-7">
                                                 <label class="form-label small mb-1">Notes @(item.RequiresValue ? "(optional)" : "")</label>
                                                 <textarea class="form-control form-control-sm" 
                                                           rows="2" 
                                                           @bind="item.Notes" 
                                                           @bind:after="@(() => OnItemChanged(item))"
                                                           placeholder="@(item.RequiresValue ? "Additional details..." : "Optional notes...")"></textarea>
-                                            </div>
+                                            </div> *@
                                         </div>
                                         @if (!string.IsNullOrEmpty(item.PhotoUrl))
                                         {
@@ -445,6 +466,22 @@ else
                lowerText.Contains("amount") ||
                lowerText.Contains("forwarding address") ||
                lowerText.Contains("address obtained");
+    }
+
+    private bool IsInterestLevelItem(string itemText)
+    {
+        var lowerText = itemText.ToLower();
+        return lowerText.Contains("interest level");
+    }
+
+    private string GetInterestLevelDisplay(string level)
+    {
+        return level switch
+        {
+            var l when l == ApplicationConstants.TourInterestLevels.VeryInterested => "Very Interested",
+            var l when l == ApplicationConstants.TourInterestLevels.NotInterested => "Not Interested",
+            _ => level
+        };
     }
 
     private string GetValuePlaceholder(string itemText)

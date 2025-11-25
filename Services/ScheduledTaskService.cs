@@ -145,7 +145,7 @@ namespace Aquiis.SimpleStart.Services
                     .Where(i => !i.IsDeleted &&
                                i.UserId == organizationId &&
                                i.Status == "Pending" &&
-                               i.DueDate < today.AddDays(-settings.LateFeeGracePeriodDays) &&
+                               i.DueOn < today.AddDays(-settings.LateFeeGracePeriodDays) &&
                                (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
                     .ToListAsync(stoppingToken);
 
@@ -155,7 +155,7 @@ namespace Aquiis.SimpleStart.Services
                     
                     invoice.LateFeeAmount = lateFee;
                     invoice.LateFeeApplied = true;
-                    invoice.LateFeeAppliedDate = DateTime.UtcNow;
+                    invoice.LateFeeAppliedOn = DateTime.UtcNow;
                     invoice.Amount += lateFee;
                     invoice.Status = "Overdue";
                     invoice.LastModifiedOn = DateTime.UtcNow;
@@ -193,7 +193,7 @@ namespace Aquiis.SimpleStart.Services
                     .Where(i => !i.IsDeleted &&
                                i.UserId == organizationId &&
                                i.Status == "Pending" &&
-                               i.DueDate < today &&
+                               i.DueOn < today &&
                                (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
                     .ToListAsync(stoppingToken);
 
@@ -236,8 +236,8 @@ namespace Aquiis.SimpleStart.Services
                     .Where(i => !i.IsDeleted &&
                                i.UserId == organizationId &&
                                i.Status == "Pending" &&
-                               i.DueDate >= today &&
-                               i.DueDate <= today.AddDays(settings.PaymentReminderDaysBefore) &&
+                               i.DueOn >= today &&
+                               i.DueOn <= today.AddDays(settings.PaymentReminderDaysBefore) &&
                                (i.ReminderSent == null || !i.ReminderSent.Value))
                     .ToListAsync(stoppingToken);
 
@@ -248,12 +248,12 @@ namespace Aquiis.SimpleStart.Services
                     _logger.LogInformation(
                         "Payment reminder needed for invoice {InvoiceNumber} due {DueDate} for tenant {TenantName} in organization {OrganizationId}",
                         invoice.InvoiceNumber,
-                        invoice.DueDate.ToString("MMM dd, yyyy"),
+                        invoice.DueOn.ToString("MMM dd, yyyy"),
                         invoice.Lease?.Tenant?.FullName ?? "Unknown",
                         organizationId);
 
                     invoice.ReminderSent = true;
-                    invoice.ReminderSentDate = DateTime.UtcNow;
+                    invoice.ReminderSentOn = DateTime.UtcNow;
                     invoice.LastModifiedOn = DateTime.UtcNow;
                     invoice.LastModifiedBy = "System";
                 }
@@ -414,7 +414,7 @@ namespace Aquiis.SimpleStart.Services
                 var today = DateTime.Today;
                 var todayPayments = await propertyManagementService.GetPaymentsAsync();
                 var dailyTotal = todayPayments
-                    .Where(p => p.PaymentDate.Date == today && !p.IsDeleted)
+                    .Where(p => p.PaidOn.Date == today && !p.IsDeleted)
                     .Sum(p => p.Amount);
 
                 _logger.LogInformation("Daily Payment Total for {Date}: ${Amount:N2}", 

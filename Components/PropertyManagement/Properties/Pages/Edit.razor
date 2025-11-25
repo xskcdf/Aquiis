@@ -2,6 +2,7 @@
 
 @using System.ComponentModel.DataAnnotations
 @using Aquiis.SimpleStart.Components.PropertyManagement.Properties
+@using Aquiis.SimpleStart.Components.Administration.Application
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Components
@@ -72,7 +73,13 @@ else
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">State</label>
-                                <InputText @bind-Value="propertyModel.State" class="form-control" placeholder="State" />
+                                <InputSelect @bind-Value="propertyModel.State" class="form-select">
+                                <option value="">Select State</option>
+                                @foreach (var state in States.StatesArray())
+                                {
+                                    <option value="@state.Abbreviation">@state.Name</option>
+                                }
+                            </InputSelect>
                                 <ValidationMessage For="() => propertyModel.State" class="text-danger" />
                             </div>
                             <div class="col-md-4 mb-3">

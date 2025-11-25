@@ -45,13 +45,31 @@ else
             <button class="btn btn-outline-primary" @onclick="ShowSaveTemplateModal">
                 <i class="bi bi-save"></i> Save as Template
             </button>
-            <button class="btn btn-success" @onclick="HandlePdfAction" disabled="@isGeneratingPdf">
-                @if (isGeneratingPdf)
-                {
-                    <span class="spinner-border spinner-border-sm me-2"></span>
-                }
-                <i class="bi @(checklist.DocumentId.HasValue ? "bi-eye" : "bi-file-pdf")"></i> @(checklist.DocumentId.HasValue ? "View PDF" : "Generate PDF")
-            </button>
+            @if (checklist.DocumentId.HasValue)
+            {
+                <div class="btn-group">
+                    <button class="btn btn-success" @onclick="ViewPdf" disabled="@isGeneratingPdf">
+                        @if (isGeneratingPdf)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        <i class="bi bi-eye"></i> View PDF
+                    </button>
+                    <button class="btn btn-outline-success" @onclick="DownloadPdf" disabled="@isGeneratingPdf">
+                        <i class="bi bi-download"></i> Download PDF
+                    </button>
+                </div>
+            }
+            else
+            {
+                <button class="btn btn-success" @onclick="GeneratePdf" disabled="@isGeneratingPdf">
+                    @if (isGeneratingPdf)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                    }
+                    <i class="bi bi-file-pdf"></i> Generate PDF
+                </button>
+            }
             <button class="btn btn-outline-secondary" @onclick="BackToList">
                 <i class="bi bi-arrow-left"></i> Back to List
             </button>
@@ -422,6 +440,36 @@ else
         }
     }
 
+    private async Task DownloadPdf()
+    {
+        if (checklist?.DocumentId == null) return;
+
+        try
+        {
+            isGeneratingPdf = true;
+            errorMessage = null;
+
+            var document = await DocumentService.GetDocumentByIdAsync(checklist.DocumentId.Value);
+            if (document != null)
+            {
+                var filename = $"Checklist_{checklist.Name.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf";
+                await JSRuntime.InvokeVoidAsync("downloadFile", filename, Convert.ToBase64String(document.FileData), document.FileType);
+            }
+            else
+            {
+                errorMessage = "PDF document not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error downloading PDF: {ex.Message}";
+        }
+        finally
+        {
+            isGeneratingPdf = false;
+        }
+    }
+
     private async Task ViewPdf()
     {
         if (checklist?.DocumentId == null) return;
@@ -434,7 +482,7 @@ else
             var document = await DocumentService.GetDocumentByIdAsync(checklist.DocumentId.Value);
             if (document != null)
             {
-                await JSRuntime.InvokeVoidAsync("viewFile", Convert.ToBase64String(document.FileData), "application/pdf");
+                await JSRuntime.InvokeVoidAsync("viewFile", Convert.ToBase64String(document.FileData), document.FileType);
             }
             else
             {
@@ -469,20 +517,20 @@ else
             // Create document record
             var document = new Document
             {
-                OrganizationId = organizationId,
-                UserId = userId,
+                OrganizationId = organizationId!,
+                UserId = userId!,
                 FileName = $"Checklist_{checklist.Name.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf",
                 FileExtension = ".pdf",
                 FileData = pdfBytes,
                 ContentType = "application/pdf",
-                FileType = "PDF",
+                FileType = "application/pdf",
                 FileSize = pdfBytes.Length,
                 DocumentType = "Checklist Report",
                 Description = $"Checklist report for {checklist.Name}",
                 PropertyId = checklist.PropertyId,
                 LeaseId = checklist.LeaseId,
-                UploadedBy = userId,
-                CreatedBy = userId,
+                UploadedBy = userId!,
+                CreatedBy = userId!,
                 CreatedOn = DateTime.UtcNow
             };
 
@@ -494,7 +542,7 @@ else
             await ChecklistService.UpdateChecklistAsync(checklist);
 
             // View the PDF
-            await JSRuntime.InvokeVoidAsync("viewFile", Convert.ToBase64String(pdfBytes), "application/pdf");
+            //await JSRuntime.InvokeVoidAsync("viewFile", Convert.ToBase64String(pdfBytes), "application/pdf");
 
             successMessage = "PDF generated and saved successfully!";
             

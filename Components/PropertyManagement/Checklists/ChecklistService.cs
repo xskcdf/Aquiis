@@ -27,7 +27,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task<List<ChecklistTemplate>> GetChecklistTemplatesAsync()
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -44,7 +44,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task<ChecklistTemplate?> GetChecklistTemplateByIdAsync(int templateId)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -60,7 +60,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task<ChecklistTemplate> AddChecklistTemplateAsync(ChecklistTemplate template)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -91,7 +91,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task UpdateChecklistTemplateAsync(ChecklistTemplate template)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -106,7 +106,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task DeleteChecklistTemplateAsync(int templateId)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -128,7 +128,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task<ChecklistTemplateItem> AddChecklistTemplateItemAsync(ChecklistTemplateItem item)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -148,7 +148,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task UpdateChecklistTemplateItemAsync(ChecklistTemplateItem item)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -163,7 +163,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task DeleteChecklistTemplateItemAsync(int itemId)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -172,9 +172,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
             var item = await _dbContext.ChecklistTemplateItems.FindAsync(itemId);
             if (item != null)
             {
-                item.IsDeleted = true;
-                item.LastModifiedBy = userId;
-                item.LastModifiedOn = DateTime.UtcNow;
+                _dbContext.ChecklistTemplateItems.Remove(item);
                 await _dbContext.SaveChangesAsync();
             }
         }
@@ -185,7 +183,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task<List<Checklist>> GetChecklistsAsync(bool includeArchived = false)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -216,7 +214,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task<List<Checklist>> GetChecklistsByPropertyIdAsync(int propertyId)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -236,7 +234,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task<List<Checklist>> GetChecklistsByLeaseIdAsync(int leaseId)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -256,7 +254,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task<Checklist?> GetChecklistByIdAsync(int checklistId)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -267,6 +265,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
             return await _dbContext.Checklists
                 .Include(c => c.Property)
                 .Include(c => c.Lease)
+                    .ThenInclude(l => l.Tenant)
                 .Include(c => c.ChecklistTemplate)
                 .Include(c => c.Items.OrderBy(i => i.ItemOrder))
                 .Include(c => c.Document)
@@ -278,7 +277,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
         /// </summary>
         public async Task<Checklist> CreateChecklistFromTemplateAsync(int templateId)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -332,7 +331,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task<Checklist> AddChecklistAsync(Checklist checklist)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -352,7 +351,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task UpdateChecklistAsync(Checklist checklist)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -367,7 +366,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task DeleteChecklistAsync(int checklistId)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -396,7 +395,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task ArchiveChecklistAsync(int checklistId)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -418,7 +417,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task UnarchiveChecklistAsync(int checklistId)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -440,7 +439,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task CompleteChecklistAsync(int checklistId)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -455,12 +454,48 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
                 checklist.LastModifiedBy = userId;
                 checklist.LastModifiedOn = DateTime.UtcNow;
                 await _dbContext.SaveChangesAsync();
+
+                // Check if this is a Property Tour checklist linked to a tour
+                var tour = await _dbContext.Tours
+                    .Include(s => s.ProspectiveTenant)
+                    .FirstOrDefaultAsync(s => s.ChecklistId == checklistId && !s.IsDeleted);
+
+                if (tour != null)
+                {
+                    // Mark tour as completed
+                    tour.Status = ApplicationConstants.TourStatuses.Completed;
+                    tour.ConductedBy = userId;
+                    tour.LastModifiedBy = userId;
+                    tour.LastModifiedOn = DateTime.UtcNow;
+
+                    // Update prospect status back to Lead (tour completed, awaiting application)
+                    if (tour.ProspectiveTenant != null && 
+                        tour.ProspectiveTenant.Status == ApplicationConstants.ProspectiveStatuses.TourScheduled)
+                    {
+                        // Check if they have other scheduled tours
+                        var hasOtherScheduledTours = await _dbContext.Tours
+                            .AnyAsync(s => s.ProspectiveTenantId == tour.ProspectiveTenantId
+                                && s.Id != tour.Id
+                                && !s.IsDeleted
+                                && s.Status == ApplicationConstants.TourStatuses.Scheduled);
+
+                        // Only revert to Lead if no other scheduled tours
+                        if (!hasOtherScheduledTours)
+                        {
+                            tour.ProspectiveTenant.Status = ApplicationConstants.ProspectiveStatuses.Lead;
+                            tour.ProspectiveTenant.LastModifiedBy = userId;
+                            tour.ProspectiveTenant.LastModifiedOn = DateTime.UtcNow;
+                        }
+                    }
+
+                    await _dbContext.SaveChangesAsync();
+                }
             }
         }
 
         public async Task<ChecklistTemplate> SaveChecklistAsTemplateAsync(int checklistId, string templateName, string? templateDescription = null)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -535,7 +570,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task<ChecklistItem> AddChecklistItemAsync(ChecklistItem item)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -555,7 +590,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task UpdateChecklistItemAsync(ChecklistItem item)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
@@ -570,7 +605,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 
         public async Task DeleteChecklistItemAsync(int itemId)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");

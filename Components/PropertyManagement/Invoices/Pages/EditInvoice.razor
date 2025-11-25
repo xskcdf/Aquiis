@@ -67,13 +67,13 @@ else
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Invoice Date <span class="text-danger">*</span></label>
-                                <InputDate @bind-Value="invoiceModel.InvoiceDate" class="form-control" />
-                                <ValidationMessage For="() => invoiceModel.InvoiceDate" class="text-danger" />
+                                <InputDate @bind-Value="invoiceModel.InvoicedOn" class="form-control" />
+                                <ValidationMessage For="() => invoiceModel.InvoicedOn" class="text-danger" />
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Due Date <span class="text-danger">*</span></label>
-                                <InputDate @bind-Value="invoiceModel.DueDate" class="form-control" />
-                                <ValidationMessage For="() => invoiceModel.DueDate" class="text-danger" />
+                                <InputDate @bind-Value="invoiceModel.DueOn" class="form-control" />
+                                <ValidationMessage For="() => invoiceModel.DueOn" class="text-danger" />
                             </div>
                         </div>
 
@@ -252,8 +252,8 @@ else
             {
                 LeaseId = invoice.LeaseId,
                 InvoiceNumber = invoice.InvoiceNumber,
-                InvoiceDate = invoice.InvoiceDate,
-                DueDate = invoice.DueDate,
+                InvoicedOn = invoice.InvoicedOn,
+                DueOn = invoice.DueOn,
                 Amount = invoice.Amount,
                 Description = invoice.Description,
                 Status = invoice.Status,
@@ -298,8 +298,8 @@ else
                 return;
             }
 
-            invoice.InvoiceDate = invoiceModel.InvoiceDate;
-            invoice.DueDate = invoiceModel.DueDate;
+            invoice.InvoicedOn = invoiceModel.InvoicedOn;
+            invoice.DueOn = invoiceModel.DueOn;
             invoice.Amount = invoiceModel.Amount;
             invoice.Description = invoiceModel.Description;
             invoice.Status = invoiceModel.Status;
@@ -367,10 +367,10 @@ else
         public string InvoiceNumber { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Invoice date is required")]
-        public DateTime InvoiceDate { get; set; }
+        public DateTime InvoicedOn { get; set; }
 
         [Required(ErrorMessage = "Due date is required")]
-        public DateTime DueDate { get; set; }
+        public DateTime DueOn { get; set; }
 
         [Required(ErrorMessage = "Amount is required")]
         [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than 0")]

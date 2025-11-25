@@ -43,7 +43,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Documents
                     row.RelativeItem().Column(col =>
                     {
                         col.Item().Text("PAYMENT RECEIPT").FontSize(24).Bold();
-                        col.Item().PaddingTop(5).Text($"Receipt Date: {payment.PaymentDate:MMMM dd, yyyy}").FontSize(12);
+                        col.Item().PaddingTop(5).Text($"Receipt Date: {payment.PaidOn:MMMM dd, yyyy}").FontSize(12);
                     });
 
                     row.ConstantItem(150).Column(col =>
@@ -113,7 +113,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Documents
                     col.Item().Row(row =>
                     {
                         row.ConstantItem(150).Text("Payment Date:").Bold();
-                        row.RelativeItem().Text(payment.PaymentDate.ToString("MMMM dd, yyyy"));
+                        row.RelativeItem().Text(payment.PaidOn.ToString("MMMM dd, yyyy"));
                     });
 
                     col.Item().Row(row =>
@@ -158,13 +158,13 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Documents
                     col.Item().Row(row =>
                     {
                         row.ConstantItem(150).Text("Invoice Date:").Bold();
-                        row.RelativeItem().Text(payment.Invoice.InvoiceDate.ToString("MMMM dd, yyyy"));
+                        row.RelativeItem().Text(payment.Invoice.InvoicedOn.ToString("MMMM dd, yyyy"));
                     });
 
                     col.Item().Row(row =>
                     {
                         row.ConstantItem(150).Text("Due Date:").Bold();
-                        row.RelativeItem().Text(payment.Invoice.DueDate.ToString("MMMM dd, yyyy"));
+                        row.RelativeItem().Text(payment.Invoice.DueOn.ToString("MMMM dd, yyyy"));
                     });
 
                     col.Item().Row(row =>
