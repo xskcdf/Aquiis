@@ -1,6 +1,7 @@
 @page "/PropertyManagement/Calendar"
 @using Aquiis.SimpleStart.Models
 @using Aquiis.SimpleStart.Services
+@using Aquiis.SimpleStart.Utilities
 @using Aquiis.SimpleStart.Components.Administration.Application
 @using Aquiis.SimpleStart.Components.PropertyManagement.Inspections
 @using Aquiis.SimpleStart.Components.PropertyManagement.Properties
@@ -9,6 +10,8 @@
 
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "SuperAdministrator,Administrator,PropertyManager")]
+@inject CalendarEventService CalendarEventService
+@inject CalendarSettingsService CalendarSettingsService
 @inject RentalApplicationService ApplicationService
 @inject UserContextService UserContext
 @inject NavigationManager Navigation
@@ -42,11 +45,42 @@
                     <i class="bi bi-calendar-month"></i> Month
                 </button>
             </div>
+            <button class="btn btn-outline-secondary me-2" @onclick="ToggleFilters">
+                <i class="bi bi-funnel"></i> Filters
+            </button>
             <button class="btn btn-primary" @onclick="NavigateToDashboard">
                 <i class="bi bi-speedometer2"></i> Dashboard
             </button>
         </div>
     </div>
+
+    @if (showFilters)
+    {
+        <div class="card mb-3">
+            <div class="card-body">
+                <h6 class="card-title">Event Types</h6>
+                <div class="row">
+                    @foreach (var eventType in CalendarEventTypes.GetAllTypes())
+                    {
+                        var config = CalendarEventTypes.Config[eventType];
+                        <div class="col-auto mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       id="@($"filter-{eventType}")"
+                                       checked="@selectedEventTypes.Contains(eventType)"
+                                       @onchange="@(async () => await ToggleEventType(eventType))">
+                                <label class="form-check-label" for="@($"filter-{eventType}")">
+                                    <i class="bi @config.Icon" style="color: @config.Color;"></i>
+                                    @config.DisplayName
+                                </label>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
 
     @if (loading)
     {
@@ -103,88 +137,247 @@
     }
 </div>
 
-<!-- Tour Detail Modal -->
-@if (selectedTour != null)
+<!-- Generic Event Detail Modal -->
+@if (selectedEvent != null)
 {
     <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Tour Details</h5>
+                <div class="modal-header" style="border-left: 4px solid @selectedEvent.Color;">
+                    <div>
+                        <h5 class="modal-title">
+                            <i class="bi @(selectedEvent.Icon ?? "bi-calendar-event") me-2" style="color: @selectedEvent.Color;"></i>
+                            @selectedEvent.Title
+                        </h5>
+                        <small class="text-muted">@CalendarEventTypes.GetDisplayName(selectedEvent.EventType)</small>
+                    </div>
                     <button type="button" class="btn-close" @onclick="CloseModal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
+                    <!-- Event Basic Info -->
+                    <div class="row mb-3">
                         <div class="col-md-6">
-                            <h6>Prospective Tenant</h6>
+                            <h6><i class="bi bi-clock"></i> Schedule</h6>
                             <p>
-                                <strong>@selectedTour.ProspectiveTenant?.FullName</strong><br/>
-                                <i class="bi bi-envelope"></i> @selectedTour.ProspectiveTenant?.Email<br/>
-                                <i class="bi bi-telephone"></i> @selectedTour.ProspectiveTenant?.Phone
-                            </p>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Property</h6>
-                            <p>
-                                <strong>@selectedTour.Property?.Address</strong><br/>
-                                @selectedTour.Property?.City, @selectedTour.Property?.State @selectedTour.Property?.ZipCode
-                            </p>
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <h6>Scheduled</h6>
-                            <p>
-                                <i class="bi bi-calendar"></i> @selectedTour.ScheduledOn.ToString("MMM dd, yyyy")<br/>
-                                <i class="bi bi-clock"></i> @selectedTour.ScheduledOn.ToString("h:mm tt") - @selectedTour.ScheduledOn.AddMinutes(selectedTour.DurationMinutes).ToString("h:mm tt")<br/>
-                                <small class="text-muted">Duration: @selectedTour.DurationMinutes minutes</small>
-                            </p>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Status</h6>
-                            <p>
-                                <span class="badge @GetStatusBadgeClass(selectedTour.Status)">@selectedTour.Status</span>
-                                @if (selectedTour.Checklist != null)
+                                <strong>@selectedEvent.StartOn.ToString("MMM dd, yyyy")</strong><br/>
+                                @selectedEvent.StartOn.ToString("h:mm tt")
+                                @if (selectedEvent.EndOn.HasValue)
                                 {
-                                    <br/>
-                                    <span class="badge @GetChecklistStatusBadgeClass(selectedTour.Checklist.Status) mt-1">
-                                        <i class="bi bi-list-check"></i> Checklist: @selectedTour.Checklist.Status
-                                    </span>
+                                    <text> - @selectedEvent.EndOn.Value.ToString("h:mm tt")</text>
+                                }
+                                <br/>
+                                <small class="text-muted">Duration: @selectedEvent.DurationMinutes minutes</small>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-info-circle"></i> Status</h6>
+                            <p>
+                                @if (!string.IsNullOrEmpty(selectedEvent.Status))
+                                {
+                                    <span class="badge @GetEventStatusBadgeClass(selectedEvent.Status)">@selectedEvent.Status</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">No Status</span>
                                 }
                             </p>
                         </div>
                     </div>
-                    @if (!string.IsNullOrEmpty(selectedTour.InterestLevel))
+
+                    @if (!string.IsNullOrEmpty(selectedEvent.Location))
                     {
-                        <div class="row mt-3">
+                        <div class="row mb-3">
                             <div class="col-12">
-                                <h6>Interest Level</h6>
-                                <span class="badge @GetInterestBadgeClass(selectedTour.InterestLevel)">
+                                <h6><i class="bi bi-geo-alt"></i> Location</h6>
+                                <p>@selectedEvent.Location</p>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(selectedEvent.Description))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <h6><i class="bi bi-card-text"></i> Description</h6>
+                                <p>@selectedEvent.Description</p>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Entity-Specific Details -->
+                    @if (selectedTour != null)
+                    {
+                        <hr/>
+                        <h6 class="text-primary"><i class="bi bi-house-door"></i> Tour Details</h6>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <strong>Prospective Tenant</strong>
+                                <p>
+                                    @selectedTour.ProspectiveTenant?.FullName<br/>
+                                    <small class="text-muted">
+                                        <i class="bi bi-envelope"></i> @selectedTour.ProspectiveTenant?.Email<br/>
+                                        <i class="bi bi-telephone"></i> @selectedTour.ProspectiveTenant?.Phone
+                                    </small>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Property</strong>
+                                <p>
+                                    @selectedTour.Property?.Address<br/>
+                                    <small class="text-muted">@selectedTour.Property?.City, @selectedTour.Property?.State @selectedTour.Property?.ZipCode</small>
+                                </p>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(selectedTour.InterestLevel))
+                        {
+                            <div class="mt-2">
+                                <strong>Interest Level:</strong>
+                                <span class="badge @GetInterestBadgeClass(selectedTour.InterestLevel) ms-2">
                                     @GetInterestDisplay(selectedTour.InterestLevel)
                                 </span>
                             </div>
-                        </div>
+                        }
+                        @if (!string.IsNullOrEmpty(selectedTour.Feedback))
+                        {
+                            <div class="mt-2">
+                                <strong>Feedback:</strong>
+                                <p class="text-muted">@selectedTour.Feedback</p>
+                            </div>
+                        }
+                        @if (selectedTour.Checklist != null)
+                        {
+                            <div class="mt-2">
+                                <span class="badge @GetChecklistStatusBadgeClass(selectedTour.Checklist.Status)">
+                                    <i class="bi bi-list-check"></i> Checklist: @selectedTour.Checklist.Status
+                                </span>
+                            </div>
+                        }
                     }
-                    @if (!string.IsNullOrEmpty(selectedTour.Feedback))
+
+                    @if (selectedInspection != null)
                     {
+                        <hr/>
+                        <h6 class="text-success"><i class="bi bi-clipboard-check"></i> Inspection Details</h6>
                         <div class="row mt-3">
-                            <div class="col-12">
-                                <h6>Feedback</h6>
-                                <p>@selectedTour.Feedback</p>
+                            <div class="col-md-6">
+                                <strong>Type</strong>
+                                <p>@selectedInspection.InspectionType</p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Property</strong>
+                                <p>
+                                    @selectedInspection.Property?.Address<br/>
+                                    <small class="text-muted">@selectedInspection.Property?.City, @selectedInspection.Property?.State</small>
+                                </p>
                             </div>
                         </div>
+                        @if (!string.IsNullOrEmpty(selectedInspection.InspectedBy))
+                        {
+                            <div class="mt-2">
+                                <strong>Inspector:</strong> @selectedInspection.InspectedBy
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(selectedInspection.GeneralNotes))
+                        {
+                            <div class="mt-2">
+                                <strong>Notes:</strong>
+                                <p class="text-muted">@selectedInspection.GeneralNotes</p>
+                            </div>
+                        }
+                    }
+
+                    @if (selectedMaintenanceRequest != null)
+                    {
+                        <hr/>
+                        <h6 class="text-danger"><i class="bi bi-tools"></i> Maintenance Details</h6>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <strong>Type</strong>
+                                <p>@selectedMaintenanceRequest.RequestType</p>
+                                <strong>Priority</strong>
+                                <p>
+                                    <span class="badge @GetPriorityBadgeClass(selectedMaintenanceRequest.Priority)">
+                                        @selectedMaintenanceRequest.Priority
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Property</strong>
+                                <p>
+                                    @selectedMaintenanceRequest.Property?.Address<br/>
+                                    <small class="text-muted">@selectedMaintenanceRequest.Property?.City, @selectedMaintenanceRequest.Property?.State</small>
+                                </p>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(selectedMaintenanceRequest.AssignedTo))
+                        {
+                            <div class="mt-2">
+                                <strong>Assigned To:</strong> @selectedMaintenanceRequest.AssignedTo
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(selectedMaintenanceRequest.RequestedBy))
+                        {
+                            <div class="mt-2">
+                                <strong>Requested By:</strong> @selectedMaintenanceRequest.RequestedBy
+                                @if (!string.IsNullOrEmpty(selectedMaintenanceRequest.RequestedByPhone))
+                                {
+                                    <text> - <i class="bi bi-telephone"></i> @selectedMaintenanceRequest.RequestedByPhone</text>
+                                }
+                            </div>
+                        }
+                        @if (selectedMaintenanceRequest.EstimatedCost > 0)
+                        {
+                            <div class="mt-2">
+                                <strong>Estimated Cost:</strong> @selectedMaintenanceRequest.EstimatedCost.ToString("C")
+                            </div>
+                        }
                     }
                 </div>
                 <div class="modal-footer">
-                    @if (selectedTour.Status == ApplicationConstants.TourStatuses.Scheduled)
+                    <!-- Entity-specific actions -->
+                    @if (selectedTour != null && selectedTour.Status == ApplicationConstants.TourStatuses.Scheduled)
                     {
-                        <button class="btn btn-success" @onclick="() => MarkCompleted(selectedTour.Id)">
+                        <button class="btn btn-success" @onclick="() => CompleteTour(selectedTour.Id)">
                             <i class="bi bi-check-circle"></i> Complete Tour
                         </button>
+                        <button class="btn btn-warning text-dark" @onclick="() => MarkTourAsNoShow(selectedTour.Id)">
+                            <i class="bi bi-person-x"></i> Mark as No Show
+                        </button>
                         <button class="btn btn-danger" @onclick="() => CancelTour(selectedTour.Id)">
-                            <i class="bi bi-x-circle"></i> Cancel Tour
+                            <i class="bi bi-x-circle"></i> Cancel
                         </button>
                     }
+
+                    @if (selectedMaintenanceRequest != null)
+                    {
+                        @if (selectedMaintenanceRequest.Status == ApplicationConstants.MaintenanceRequestStatuses.Submitted)
+                        {
+                            <button class="btn btn-primary" @onclick="() => StartWork(selectedMaintenanceRequest.Id)">
+                                <i class="bi bi-play-circle"></i> Start Work
+                            </button>
+                            <button class="btn btn-danger" @onclick="() => CancelMaintenanceRequest(selectedMaintenanceRequest.Id)">
+                                <i class="bi bi-x-circle"></i> Cancel Request
+                            </button>
+                        }
+                        else if (selectedMaintenanceRequest.Status == ApplicationConstants.MaintenanceRequestStatuses.InProgress)
+                        {
+                            <button class="btn btn-success" @onclick="() => CompleteMaintenanceRequest(selectedMaintenanceRequest.Id)">
+                                <i class="bi bi-check-circle"></i> Mark Complete
+                            </button>
+                            <button class="btn btn-danger" @onclick="() => CancelMaintenanceRequest(selectedMaintenanceRequest.Id)">
+                                <i class="bi bi-x-circle"></i> Cancel Request
+                            </button>
+                        }
+                    }
+
+                    <!-- View Details button - navigates to full detail page -->
+                    @if (CalendarEventRouter.IsRoutable(selectedEvent))
+                    {
+                        <button class="btn btn-primary" @onclick="NavigateToEventDetail">
+                            <i class="bi bi-box-arrow-up-right"></i> View Full Details
+                        </button>
+                    }
+
                     <button class="btn btn-secondary" @onclick="CloseModal">Close</button>
                 </div>
             </div>
@@ -193,26 +386,40 @@
 }
 
 @code {
-    private List<Tour> allTours = new();
+    private List<CalendarEvent> allEvents = new();
+    private CalendarEvent? selectedEvent;
     private Tour? selectedTour;
+    private Inspection? selectedInspection;
+    private MaintenanceRequest? selectedMaintenanceRequest;
     private bool loading = true;
     private string viewMode = "week"; // day, week, month
     private DateTime currentDate = DateTime.Today;
-
-    private List<MaintenanceRequest> maintenanceRequests = new();  
-    private List<Inspection> inspections = new();
-
-    private List<Property> properties = new();
+    private List<string> selectedEventTypes = new();
+    private bool showFilters = false;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadTours();
-        await LoadMaintenanceRequests();
-        await LoadInspections();
-        await LoadProperties();
+        // Load filter defaults from settings
+        var orgId = await UserContext.GetOrganizationIdAsync();
+        if (!string.IsNullOrEmpty(orgId))
+        {
+            var settings = await CalendarSettingsService.GetSettingsAsync(orgId);
+            selectedEventTypes = settings
+                .Where(s => s.ShowOnCalendar)
+                .Select(s => s.EntityType)
+                .ToList();
+        }
+        
+        // Fallback to all types if no settings
+        if (!selectedEventTypes.Any())
+        {
+            selectedEventTypes = CalendarEventTypes.GetAllTypes().ToList();
+        }
+        
+        await LoadEvents();
     }
 
-    private async Task LoadTours()
+    private async Task LoadEvents()
     {
         loading = true;
         try
@@ -220,12 +427,27 @@
             var orgId = await UserContext.GetOrganizationIdAsync();
             if (!string.IsNullOrEmpty(orgId))
             {
-                allTours = await ApplicationService.GetAllToursAsync(orgId);
+                // Get date range based on current view
+                var (startDate, endDate) = viewMode switch
+                {
+                    "day" => (currentDate.Date, currentDate.Date.AddDays(1)),
+                    "week" => (GetWeekStart(), GetWeekEnd().AddDays(1)),
+                    "month" => (new DateTime(currentDate.Year, currentDate.Month, 1), 
+                               new DateTime(currentDate.Year, currentDate.Month, 1).AddMonths(1)),
+                    _ => (currentDate.Date, currentDate.Date.AddDays(1))
+                };
+
+                allEvents = await CalendarEventService.GetEventsAsync(
+                    orgId, 
+                    startDate, 
+                    endDate,
+                    selectedEventTypes.Any() ? selectedEventTypes : null
+                );
             }
         }
         catch (Exception ex)
         {
-            ToastService.ShowError($"Error loading tours: {ex.Message}");
+            ToastService.ShowError($"Error loading calendar events: {ex.Message}");
         }
         finally
         {
@@ -233,59 +455,27 @@
         }
     }
 
-    private async Task LoadMaintenanceRequests()
+    private async Task OnEventTypeFilterChanged()
     {
-        try
-        {
-            var orgId = await UserContext.GetOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(orgId))
-            {
-                maintenanceRequests = await PropertyManagementService.GetMaintenanceRequestsAsync();
-                maintenanceRequests = maintenanceRequests
-                .Where(r => r.Status != "Completed" && r.Status != "Cancelled" && !r.IsDeleted && r.ScheduledOn != null)
-                .ToList();
-            }
-        }
-        catch (Exception ex)
-        {
-            ToastService.ShowError($"Error loading maintenance requests: {ex.Message}");
-        }
-
-        
+        await LoadEvents();
     }
 
-    private async Task LoadInspections()
+    private void ToggleFilters()
     {
-        try
-        {
-            var orgId = await UserContext.GetOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(orgId))
-            {
-                inspections = await PropertyManagementService.GetInspectionsAsync();
-            }
-        }
-        catch (Exception ex)
-        {
-            ToastService.ShowError($"Error loading inspections: {ex.Message}");
-        }
+        showFilters = !showFilters;
     }
 
-    private async Task LoadProperties()
+    private async Task ToggleEventType(string eventType)
     {
-        try
+        if (selectedEventTypes.Contains(eventType))
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(orgId))
-            {
-                var allProperties = await PropertyManagementService.GetPropertiesAsync();
-                properties = allProperties.Where(p => !p.IsDeleted && p.NextRoutineInspectionDueDate != null).ToList();
-            }
+            selectedEventTypes.Remove(eventType);
         }
-        catch (Exception ex)
+        else
         {
-            ToastService.ShowError($"Error loading properties: {ex.Message}");
+            selectedEventTypes.Add(eventType);
         }
-
+        await LoadEvents();
     }
 
     private void NavigateToDashboard()
@@ -293,12 +483,13 @@
         Navigation.NavigateTo("/");
     }
 
-    private void ChangeView(string mode)
+    private async Task ChangeView(string mode)
     {
         viewMode = mode;
+        await LoadEvents();
     }
 
-    private void NavigatePrevious()
+    private async Task NavigatePrevious()
     {
         currentDate = viewMode switch
         {
@@ -307,9 +498,10 @@
             "month" => currentDate.AddMonths(-1),
             _ => currentDate
         };
+        await LoadEvents();
     }
 
-    private void NavigateNext()
+    private async Task NavigateNext()
     {
         currentDate = viewMode switch
         {
@@ -318,11 +510,13 @@
             "month" => currentDate.AddMonths(1),
             _ => currentDate
         };
+        await LoadEvents();
     }
 
-    private void NavigateToday()
+    private async Task NavigateToday()
     {
         currentDate = DateTime.Today;
+        await LoadEvents();
     }
 
     private string GetDateRangeTitle()
@@ -349,22 +543,12 @@
 
     private RenderFragment RenderDayView() => builder =>
     {
-        var dayTours = allTours
-            .Where(t => t.ScheduledOn.Date == currentDate.Date)
-            .OrderBy(t => t.ScheduledOn)
-            .ToList();
-        
-        var dayProperties = properties
-            .Where(p => p.NextRoutineInspectionDueDate?.Date == currentDate.Date)
-            .OrderBy(p => p.NextRoutineInspectionDueDate)
+        var dayEvents = allEvents
+            .Where(e => e.StartOn.Date == currentDate.Date)
+            .OrderBy(e => e.StartOn)
             .ToList();
 
-        var dayMaintenanceRequests = maintenanceRequests
-            .Where(r => r.ScheduledOn?.Date == currentDate.Date)
-            .OrderBy(r => r.ScheduledOn)
-            .ToList();
-
-        if (!dayTours.Any() && !dayProperties.Any() && !dayMaintenanceRequests.Any())
+        if (!dayEvents.Any())
         {
             builder.OpenElement(0, "div");
             builder.AddAttribute(1, "class", "text-center text-muted p-4");
@@ -374,7 +558,7 @@
             builder.CloseElement();
             builder.OpenElement(5, "p");
             builder.AddAttribute(6, "class", "mt-2");
-            builder.AddContent(7, "No tours, inspections, or maintenance requests scheduled for this day");
+            builder.AddContent(7, "No events scheduled for this day");
             builder.CloseElement();
             builder.CloseElement();
         }
@@ -383,12 +567,12 @@
             builder.OpenElement(10, "div");
             builder.AddAttribute(11, "class", "list-group");
             
-            foreach (var tour in dayTours)
+            foreach (var evt in dayEvents)
             {
                 builder.OpenElement(20, "div");
                 builder.AddAttribute(21, "class", "list-group-item list-group-item-action");
-                builder.AddAttribute(22, "onclick", EventCallback.Factory.Create(this, () => ShowTourDetail(tour)));
-                builder.AddAttribute(23, "style", "cursor: pointer;");
+                builder.AddAttribute(22, "onclick", EventCallback.Factory.Create(this, async () => await ShowEventDetail(evt)));
+                builder.AddAttribute(23, "style", $"cursor: pointer; border-left: 4px solid {evt.Color};");
                 
                 builder.OpenElement(30, "div");
                 builder.AddAttribute(31, "class", "d-flex justify-content-between align-items-start");
@@ -397,111 +581,36 @@
                 builder.OpenElement(41, "h6");
                 builder.AddAttribute(42, "class", "mb-1");
                 builder.OpenElement(43, "i");
-                builder.AddAttribute(44, "class", "bi bi-clock");
+                builder.AddAttribute(44, "class", evt.Icon ?? "bi bi-calendar-event");
                 builder.CloseElement();
-                builder.AddContent(45, $" {tour.ScheduledOn.ToString("h:mm tt")} - {tour.ScheduledOn.AddMinutes(tour.DurationMinutes).ToString("h:mm tt")}");
+                var endTime = evt.EndOn?.ToString("h:mm tt") ?? "";
+                var timeDisplay = !string.IsNullOrEmpty(endTime) ? $" {evt.StartOn.ToString("h:mm tt")} - {endTime}" : $" {evt.StartOn.ToString("h:mm tt")}";
+                builder.AddContent(45, timeDisplay);
                 builder.CloseElement();
                 
                 builder.OpenElement(50, "p");
                 builder.AddAttribute(51, "class", "mb-1");
-                builder.AddContent(52, $"{tour.ProspectiveTenant?.FullName} → {tour.Property?.Address}");
+                builder.AddContent(52, evt.Title);
                 builder.CloseElement();
                 
                 builder.OpenElement(60, "small");
                 builder.AddAttribute(61, "class", "text-muted");
-                builder.AddContent(62, $"{tour.DurationMinutes} minutes");
+                builder.AddContent(62, evt.Description ?? "");
                 builder.CloseElement();
                 builder.CloseElement();
                 
                 builder.OpenElement(70, "div");
                 builder.OpenElement(71, "span");
-                builder.AddAttribute(72, "class", $"badge {GetStatusBadgeClass(tour.Status)}");
-                builder.AddContent(73, tour.Status);
+                builder.AddAttribute(72, "class", $"badge bg-secondary");
+                builder.AddContent(73, CalendarEventTypes.GetDisplayName(evt.EventType));
                 builder.CloseElement();
-                builder.CloseElement();
-                
-                builder.CloseElement();
-                builder.CloseElement();
-            }
-
-            // list routine inspections
-            foreach (var property in dayProperties)
-            {
-                builder.OpenElement(20, "div");
-                builder.AddAttribute(21, "class", "list-group-item list-group-item-action");
-                builder.AddAttribute(22, "onclick", EventCallback.Factory.Create(this, () => ShowPropertyDetail(property)));
-                builder.AddAttribute(23, "style", "cursor: pointer;");
-                
-                builder.OpenElement(30, "div");
-                builder.AddAttribute(31, "class", "d-flex justify-content-between align-items-start");
-                
-                builder.OpenElement(40, "div");
-                builder.OpenElement(41, "h6");
-                builder.AddAttribute(42, "class", "mb-1");
-                builder.OpenElement(43, "i");
-                builder.AddAttribute(44, "class", "bi bi-clock");
-                builder.CloseElement();
-                builder.AddContent(45, $" {property.NextRoutineInspectionDueDate?.ToString("h:mm tt")}");
-                builder.CloseElement();
-                
-                builder.OpenElement(50, "p");
-                builder.AddAttribute(51, "class", "mb-1");
-                builder.AddContent(52, $"{property.Address}");
-                builder.CloseElement();
-                
-                builder.OpenElement(60, "small");
-                builder.AddAttribute(61, "class", "text-muted");
-                builder.AddContent(62, $"{property.Address}");
-                builder.CloseElement();
-                builder.CloseElement();
-                
-                builder.OpenElement(70, "div");
-                builder.OpenElement(71, "span");
-                builder.AddAttribute(72, "class", $"badge {GetStatusBadgeClass(property.Status)}");
-                builder.AddContent(73, property.Status);
-                builder.CloseElement();
-                builder.CloseElement();
-                
-                builder.CloseElement();
-                builder.CloseElement();
-            }
-
-            // list maintenance requests
-            foreach (var request in dayMaintenanceRequests)
-            {
-                builder.OpenElement(20, "div");
-                builder.AddAttribute(21, "class", "list-group-item list-group-item-action");
-                builder.AddAttribute(22, "onclick", EventCallback.Factory.Create(this, () => ShowMaintenanceRequestDetail(request)));
-                builder.AddAttribute(23, "style", "cursor: pointer;");
-                
-                builder.OpenElement(30, "div");
-                builder.AddAttribute(31, "class", "d-flex justify-content-between align-items-start");
-                
-                builder.OpenElement(40, "div");
-                builder.OpenElement(41, "h6");
-                builder.AddAttribute(42, "class", "mb-1");
-                builder.OpenElement(43, "i");
-                builder.AddAttribute(44, "class", "bi bi-clock");
-                builder.CloseElement();
-                builder.AddContent(45, $" {request.ScheduledOn?.ToString("h:mm tt")}");
-                builder.CloseElement();
-                
-                builder.OpenElement(50, "p");
-                builder.AddAttribute(51, "class", "mb-1");
-                builder.AddContent(52, $"{request.AssignedTo}");
-                builder.CloseElement();
-                
-                builder.OpenElement(60, "small");
-                builder.AddAttribute(61, "class", "text-muted");
-                builder.AddContent(62, $"{request.RequestedBy}");
-                builder.CloseElement();
-                builder.CloseElement();
-                
-                builder.OpenElement(70, "div");
-                builder.OpenElement(71, "span");
-                builder.AddAttribute(72, "class", $"badge {GetStatusBadgeClass(request.Status)}");
-                builder.AddContent(73, request.Status);
-                builder.CloseElement();
+                if (!string.IsNullOrEmpty(evt.Status))
+                {
+                    builder.OpenElement(74, "span");
+                    builder.AddAttribute(75, "class", $"badge {GetEventStatusBadgeClass(evt.Status)} ms-1");
+                    builder.AddContent(76, evt.Status);
+                    builder.CloseElement();
+                }
                 builder.CloseElement();
                 
                 builder.CloseElement();
@@ -559,44 +668,59 @@
         for (int i = 0; i < 7; i++)
         {
             var date = weekStart.AddDays(i);
-            var dayTours = allTours
-                .Where(t => t.ScheduledOn.Date == date.Date)
-                .OrderBy(t => t.ScheduledOn)
+            var dayEvents = allEvents
+                .Where(e => e.StartOn.Date == date.Date)
+                .OrderBy(e => e.StartOn)
                 .ToList();
             
             builder.OpenElement(110 + i, "td");
             builder.AddAttribute(111 + i, "class", "align-top");
             builder.AddAttribute(112 + i, "style", "min-height: 300px; vertical-align: top;");
             
-            if (dayTours.Any())
+            if (dayEvents.Any())
             {
                 builder.OpenElement(120 + i, "div");
                 builder.AddAttribute(121 + i, "class", "d-flex flex-column gap-1");
                 
-                foreach (var tour in dayTours)
+                foreach (var evt in dayEvents)
                 {
-                    var index = 130 + (i * 100) + dayTours.IndexOf(tour);
+                    var index = 130 + (i * 100) + dayEvents.IndexOf(evt);
                     builder.OpenElement(index, "div");
-                    builder.AddAttribute(index + 1, "class", $"card border-start border-4 {GetBorderColorClass(tour.Status)} mb-1");
-                    builder.AddAttribute(index + 2, "onclick", EventCallback.Factory.Create(this, () => ShowTourDetail(tour)));
-                    builder.AddAttribute(index + 3, "style", "cursor: pointer;");
+                    builder.AddAttribute(index + 1, "class", "card border-start border-4 mb-1");
+                    builder.AddAttribute(index + 2, "onclick", EventCallback.Factory.Create(this, async () => await ShowEventDetail(evt)));
+                    builder.AddAttribute(index + 3, "style", $"cursor: pointer; border-left-color: {evt.Color} !important;");
                     
                     builder.OpenElement(index + 10, "div");
                     builder.AddAttribute(index + 11, "class", "card-body p-2");
                     
                     builder.OpenElement(index + 20, "small");
                     builder.AddAttribute(index + 21, "class", "fw-bold d-block");
-                    builder.AddContent(index + 22, tour.ScheduledOn.ToString("h:mm tt"));
+                    builder.OpenElement(index + 22, "i");
+                    builder.AddAttribute(index + 23, "class", evt.Icon ?? "bi bi-calendar-event");
+                    builder.CloseElement();
+                    builder.AddContent(index + 24, $" {evt.StartOn.ToString("h:mm tt")}");
                     builder.CloseElement();
                     
                     builder.OpenElement(index + 30, "small");
                     builder.AddAttribute(index + 31, "class", "d-block text-truncate");
-                    builder.AddContent(index + 32, tour.ProspectiveTenant?.FullName);
+                    builder.AddContent(index + 32, evt.Title);
                     builder.CloseElement();
                     
                     builder.OpenElement(index + 40, "small");
                     builder.AddAttribute(index + 41, "class", "d-block text-truncate text-muted");
-                    builder.AddContent(index + 42, tour.Property?.Address);
+                    builder.OpenElement(index + 42, "span");
+                    builder.AddAttribute(index + 43, "class", "badge bg-secondary" );
+                    builder.AddAttribute(index + 44, "style", "font-size: 0.65rem;");
+                    builder.AddContent(index + 45, CalendarEventTypes.GetDisplayName(evt.EventType));
+                    builder.CloseElement();
+                    if (!string.IsNullOrEmpty(evt.Status))
+                    {
+                        builder.OpenElement(index + 46, "span");
+                        builder.AddAttribute(index + 47, "class", $"badge {GetEventStatusBadgeClass(evt.Status)} ms-1");
+                        builder.AddAttribute(index + 48, "style", "font-size: 0.65rem;");
+                        builder.AddContent(index + 49, evt.Status);
+                        builder.CloseElement();
+                    }
                     builder.CloseElement();
                     
                     builder.CloseElement();
@@ -609,13 +733,12 @@
             builder.CloseElement();
         }
         
-        builder.CloseElement();
-        builder.CloseElement();
-        
-        builder.CloseElement();
-        builder.CloseElement();
-        builder.CloseElement();
-        builder.CloseElement();
+        builder.CloseElement(); // Close tr
+        builder.CloseElement(); // Close tbody
+        builder.CloseElement(); // Close table
+        builder.CloseElement(); // Close table-responsive div
+        builder.CloseElement(); // Close card-body
+        builder.CloseElement(); // Close card
     };
 
     private RenderFragment RenderMonthView() => builder =>
@@ -664,8 +787,10 @@
                 var date = currentWeekDate;
                 var isCurrentMonth = date.Month == currentDate.Month;
                 var isToday = date.Date == DateTime.Today;
-                var dayTours = allTours.Where(t => t.ScheduledOn.Date == date.Date).OrderBy(t => t.ScheduledOn).ToList();
-                var dayMaintenance = maintenanceRequests.Where(r => r.ScheduledOn?.Date == date.Date).OrderBy(r => r.ScheduledOn).ToList();
+                var dayEvents = allEvents
+                    .Where(e => e.StartOn.Date == date.Date)
+                    .OrderBy(e => e.StartOn)
+                    .ToList();
 
                 var cellIndex = 200 + (week * 10) + day;
                 builder.OpenElement(cellIndex, "td");
@@ -677,27 +802,30 @@
                 builder.AddContent(cellIndex + 12, date.Day.ToString());
                 builder.CloseElement();
                 
-                if (dayTours.Any())
+                if (dayEvents.Any())
                 {
                     builder.OpenElement(cellIndex + 20, "div");
                     builder.AddAttribute(cellIndex + 21, "class", "d-flex flex-column gap-1");
                     
-                    foreach (var tour in dayTours.Take(3))
+                    foreach (var evt in dayEvents.Take(3))
                     {
-                        var tourIndex = cellIndex + 30 + dayTours.IndexOf(tour);
-                        builder.OpenElement(tourIndex, "div");
-                        builder.AddAttribute(tourIndex + 1, "class", $"badge {GetStatusBadgeClass(tour.Status)} text-start text-truncate");
-                        builder.AddAttribute(tourIndex + 2, "onclick", EventCallback.Factory.Create(this, () => ShowTourDetail(tour)));
-                        builder.AddAttribute(tourIndex + 3, "style", "cursor: pointer; font-size: 0.7rem;");
-                        builder.AddContent(tourIndex + 4, $"{tour.ScheduledOn.ToString("h:mm tt")} - {tour.ProspectiveTenant?.FullName}");
+                        var eventIndex = cellIndex + 30 + dayEvents.IndexOf(evt);
+                        builder.OpenElement(eventIndex, "div");
+                        builder.AddAttribute(eventIndex + 1, "class", "badge bg-secondary text-start text-truncate");
+                        builder.AddAttribute(eventIndex + 2, "onclick", EventCallback.Factory.Create(this, async () => await ShowEventDetail(evt)));
+                        builder.AddAttribute(eventIndex + 3, "style", $"cursor: pointer; font-size: 0.7rem; border-left: 3px solid {evt.Color};");
+                        builder.OpenElement(eventIndex + 4, "i");
+                        builder.AddAttribute(eventIndex + 5, "class", evt.Icon ?? "bi bi-calendar-event");
+                        builder.CloseElement();
+                        builder.AddContent(eventIndex + 6, $" {evt.StartOn.ToString("h:mm tt")} - {evt.Title}");
                         builder.CloseElement();
                     }
                     
-                    if (dayTours.Count > 3)
+                    if (dayEvents.Count > 3)
                     {
                         builder.OpenElement(cellIndex + 80, "small");
                         builder.AddAttribute(cellIndex + 81, "class", "text-muted");
-                        builder.AddContent(cellIndex + 82, $"+{dayTours.Count - 3} more");
+                        builder.AddContent(cellIndex + 82, $"+{dayEvents.Count - 3} more");
                         builder.CloseElement();
                     }
                     
@@ -723,22 +851,119 @@
         selectedTour = tour;
     }
 
+    private async Task ShowEventDetail(CalendarEvent calendarEvent)
+    {
+        // Load entity and show modal for all event types
+        selectedEvent = calendarEvent;
+
+        if (!calendarEvent.SourceEntityId.HasValue)
+        {
+            // Custom event without source entity - just show basic info
+            return;
+        }
+
+        try
+        {
+            var orgId = await UserContext.GetOrganizationIdAsync();
+            if (string.IsNullOrEmpty(orgId)) return;
+
+            switch (calendarEvent.EventType)
+            {
+                case CalendarEventTypes.Tour:
+                    await ShowTourDetailById(calendarEvent.SourceEntityId.Value, orgId);
+                    break;
+
+                case CalendarEventTypes.Inspection:
+                    await ShowInspectionDetailById(calendarEvent.SourceEntityId.Value, orgId);
+                    break;
+
+                case CalendarEventTypes.Maintenance:
+                    await ShowMaintenanceRequestDetailById(calendarEvent.SourceEntityId.Value, orgId);
+                    break;
+
+                // Other event types (LeaseExpiry, RentDue, Custom) just show basic info
+                default:
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading event details: {ex.Message}");
+        }
+    }
+
+    private async Task ShowTourDetailById(int tourId, string orgId)
+    {
+        var tour = await ApplicationService.GetTourByIdAsync(tourId, orgId);
+        if (tour != null)
+        {
+            selectedTour = tour;
+        }
+        else
+        {
+            ToastService.ShowError("Tour not found");
+        }
+    }
+
+    private async Task ShowInspectionDetailById(int inspectionId, string orgId)
+    {
+        var inspection = await PropertyManagementService.GetInspectionByIdAsync(inspectionId);
+        if (inspection != null)
+        {
+            selectedInspection = inspection;
+        }
+        else
+        {
+            ToastService.ShowError("Inspection not found");
+        }
+    }
+
+    private async Task ShowMaintenanceRequestDetailById(int maintenanceId, string orgId)
+    {
+        var maintenanceRequest = await PropertyManagementService.GetMaintenanceRequestByIdAsync(maintenanceId);
+        if (maintenanceRequest != null)
+        {
+            selectedMaintenanceRequest = maintenanceRequest;
+        }
+        else
+        {
+            ToastService.ShowError("Maintenance request not found");
+        }
+    }
+
     private void CloseModal()
     {
+        selectedEvent = null;
         selectedTour = null;
+        selectedInspection = null;
+        selectedMaintenanceRequest = null;
+    }
+
+    private void NavigateToEventDetail()
+    {
+        if (selectedEvent != null && CalendarEventRouter.IsRoutable(selectedEvent))
+        {
+            var route = CalendarEventRouter.GetRouteForEvent(selectedEvent);
+            if (!string.IsNullOrEmpty(route))
+            {
+                Navigation.NavigateTo(route);
+            }
+        }
     }
 
     private void ShowMaintenanceRequestDetail(MaintenanceRequest request)
     {
-        // Implementation for showing maintenance request details can be added here
+        // Navigate to maintenance request detail page
+        Navigation.NavigateTo($"/PropertyManagement/Maintenance/View/{request.Id}");
     }
 
     private void ShowPropertyDetail(Property property)
     {
-        // Implementation for showing property details can be added here
+        // Navigate to property detail page
+        Navigation.NavigateTo($"/PropertyManagement/Properties/View/{property.Id}");
     }
 
-    private async Task MarkCompleted(int tourId)
+    private async Task CompleteTour(int tourId)
     {
         try
         {
@@ -778,12 +1003,124 @@
                 await ApplicationService.CancelTourAsync(tourId, orgId, userId);
                 ToastService.ShowSuccess("Tour cancelled successfully");
                 CloseModal();
-                await LoadTours();
+                await LoadEvents();
             }
         }
         catch (Exception ex)
         {
             ToastService.ShowError($"Error cancelling tour: {ex.Message}");
+        }
+    }
+
+    private async Task MarkTourAsNoShow(int tourId)
+    {
+        try
+        {
+            var orgId = await UserContext.GetOrganizationIdAsync();
+            var userId = await UserContext.GetUserIdAsync();
+            
+            if (!string.IsNullOrEmpty(orgId) && !string.IsNullOrEmpty(userId))
+            {
+                await ApplicationService.MarkTourAsNoShowAsync(tourId, orgId, userId);
+                ToastService.ShowSuccess("Tour marked as No Show");
+                CloseModal();
+                await LoadEvents();
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error marking tour as no show: {ex.Message}");
+        }
+    }
+
+    private async Task StartWork(int maintenanceRequestId)
+    {
+        try
+        {
+            var orgId = await UserContext.GetOrganizationIdAsync();
+            var userId = await UserContext.GetUserIdAsync();
+            
+            if (!string.IsNullOrEmpty(orgId) && !string.IsNullOrEmpty(userId))
+            {
+                var request = await PropertyManagementService.GetMaintenanceRequestByIdAsync(maintenanceRequestId);
+                if (request != null)
+                {
+                    request.Status = ApplicationConstants.MaintenanceRequestStatuses.InProgress;
+                    request.LastModifiedBy = userId;
+                    request.LastModifiedOn = DateTime.UtcNow;
+                    
+                    await PropertyManagementService.UpdateMaintenanceRequestAsync(request);
+                    ToastService.ShowSuccess("Work started on maintenance request");
+                    
+                    // Reload the maintenance request to show updated status
+                    await ShowMaintenanceRequestDetailById(maintenanceRequestId, orgId);
+                    await LoadEvents();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error starting work: {ex.Message}");
+        }
+    }
+
+    private async Task CompleteMaintenanceRequest(int maintenanceRequestId)
+    {
+        try
+        {
+            var orgId = await UserContext.GetOrganizationIdAsync();
+            var userId = await UserContext.GetUserIdAsync();
+            
+            if (!string.IsNullOrEmpty(orgId) && !string.IsNullOrEmpty(userId))
+            {
+                var request = await PropertyManagementService.GetMaintenanceRequestByIdAsync(maintenanceRequestId);
+                if (request != null)
+                {
+                    request.Status = ApplicationConstants.MaintenanceRequestStatuses.Completed;
+                    request.LastModifiedBy = userId;
+                    request.LastModifiedOn = DateTime.UtcNow;
+                    
+                    await PropertyManagementService.UpdateMaintenanceRequestAsync(request);
+                    ToastService.ShowSuccess("Maintenance request marked as complete");
+                    
+                    // Reload the maintenance request to show updated status
+                    await ShowMaintenanceRequestDetailById(maintenanceRequestId, orgId);
+                    await LoadEvents();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error completing request: {ex.Message}");
+        }
+    }
+
+    private async Task CancelMaintenanceRequest(int maintenanceRequestId)
+    {
+        try
+        {
+            var orgId = await UserContext.GetOrganizationIdAsync();
+            var userId = await UserContext.GetUserIdAsync();
+            
+            if (!string.IsNullOrEmpty(orgId) && !string.IsNullOrEmpty(userId))
+            {
+                var request = await PropertyManagementService.GetMaintenanceRequestByIdAsync(maintenanceRequestId);
+                if (request != null)
+                {
+                    request.Status = ApplicationConstants.MaintenanceRequestStatuses.Cancelled;
+                    request.LastModifiedBy = userId;
+                    request.LastModifiedOn = DateTime.UtcNow;
+                    
+                    await PropertyManagementService.UpdateMaintenanceRequestAsync(request);
+                    ToastService.ShowSuccess("Maintenance request cancelled");
+                    CloseModal();
+                    await LoadEvents();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error cancelling request: {ex.Message}");
         }
     }
 
@@ -839,5 +1176,22 @@
         var l when l == ApplicationConstants.TourInterestLevels.Neutral => "Neutral",
         var l when l == ApplicationConstants.TourInterestLevels.NotInterested => "Not Interested",
         _ => "Unknown"
+    };
+
+    private string GetEventStatusBadgeClass(string status) => status switch
+    {
+        var s when s == ApplicationConstants.TourStatuses.Scheduled => "bg-info",
+        var s when s == ApplicationConstants.TourStatuses.Completed => "bg-success",
+        var s when s == ApplicationConstants.TourStatuses.Cancelled => "bg-danger",
+        var s when s == ApplicationConstants.TourStatuses.NoShow => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+
+    private string GetPriorityBadgeClass(string priority) => priority switch
+    {
+        "High" => "bg-danger",
+        "Medium" => "bg-warning text-dark",
+        "Low" => "bg-info",
+        _ => "bg-secondary"
     };
 }

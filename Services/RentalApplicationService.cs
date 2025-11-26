@@ -11,11 +11,16 @@ namespace Aquiis.SimpleStart.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ChecklistService _checklistService;
+        private readonly CalendarEventService _calendarEventService;
 
-        public RentalApplicationService(ApplicationDbContext context, ChecklistService checklistService)
+        public RentalApplicationService(
+            ApplicationDbContext context, 
+            ChecklistService checklistService,
+            CalendarEventService calendarEventService)
         {
             _context = context;
             _checklistService = checklistService;
+            _calendarEventService = calendarEventService;
         }
 
         #region ProspectiveTenant CRUD
@@ -159,6 +164,9 @@ namespace Aquiis.SimpleStart.Services
             _context.Tours.Add(tour);
             await _context.SaveChangesAsync();
 
+            // Create calendar event for the tour
+            await _calendarEventService.CreateOrUpdateEventAsync(tour);
+
             // Update ProspectiveTenant status
             if (prospective != null && prospective.Status == ApplicationConstants.ProspectiveStatuses.Lead)
             {
@@ -175,6 +183,10 @@ namespace Aquiis.SimpleStart.Services
             tour.LastModifiedOn = DateTime.UtcNow;
             _context.Tours.Update(tour);
             await _context.SaveChangesAsync();
+
+            // Update calendar event
+            await _calendarEventService.CreateOrUpdateEventAsync(tour);
+
             return tour;
         }
 
@@ -187,6 +199,9 @@ namespace Aquiis.SimpleStart.Services
                 tour.LastModifiedOn = DateTime.UtcNow;
                 tour.LastModifiedBy = deletedBy;
                 await _context.SaveChangesAsync();
+
+                // Delete associated calendar event
+                await _calendarEventService.DeleteEventAsync(tour.CalendarEventId);
             }
         }
 
@@ -200,6 +215,9 @@ namespace Aquiis.SimpleStart.Services
             tour.LastModifiedOn = DateTime.UtcNow;
             tour.LastModifiedBy = cancelledBy;
             await _context.SaveChangesAsync();
+
+            // Update calendar event status
+            await _calendarEventService.CreateOrUpdateEventAsync(tour);
 
             // Check if prospect has any other scheduled tours
             var prospective = await _context.ProspectiveTenants.FindAsync(tour.ProspectiveTenantId);
@@ -238,6 +256,33 @@ namespace Aquiis.SimpleStart.Services
             tour.LastModifiedBy = completedBy;
             await _context.SaveChangesAsync();
 
+            return true;
+        }
+
+        public async Task<bool> MarkTourAsNoShowAsync(int tourId, string organizationId, string markedBy)
+        {
+            var tour = await GetTourByIdAsync(tourId, organizationId);
+            if (tour == null) return false;
+
+            // Update tour status to NoShow
+            tour.Status = ApplicationConstants.TourStatuses.NoShow;
+            tour.LastModifiedOn = DateTime.UtcNow;
+            tour.LastModifiedBy = markedBy;
+
+            // Update calendar event status
+            if (tour.CalendarEventId.HasValue)
+            {
+                var calendarEvent = await _context.CalendarEvents
+                    .FirstOrDefaultAsync(e => e.Id == tour.CalendarEventId.Value);
+                if (calendarEvent != null)
+                {
+                    calendarEvent.Status = ApplicationConstants.TourStatuses.NoShow;
+                    calendarEvent.LastModifiedBy = markedBy;
+                    calendarEvent.LastModifiedOn = DateTime.UtcNow;
+                }
+            }
+
+            await _context.SaveChangesAsync();
             return true;
         }
 

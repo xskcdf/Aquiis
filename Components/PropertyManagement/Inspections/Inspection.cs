@@ -7,7 +7,7 @@ using Aquiis.SimpleStart.Models;
 
 namespace Aquiis.SimpleStart.Components.PropertyManagement.Inspections;
 
-public class Inspection : BaseModel
+public class Inspection : BaseModel, ISchedulableEntity
 {
     [Required]
     public string OrganizationId { get; set; } = string.Empty;
@@ -17,6 +17,8 @@ public class Inspection : BaseModel
 
     [Required]
     public int PropertyId { get; set; }
+
+    public int? CalendarEventId { get; set; }
 
     public int? LeaseId { get; set; }
 
@@ -136,4 +138,19 @@ public class Inspection : BaseModel
 
     // Audit Fields
     // SEE BASE MODEL
+
+    // ISchedulableEntity implementation
+    public string GetEventTitle() => $"{InspectionType} Inspection: {Property?.Address ?? "Property"}";
+    
+    public DateTime GetEventStart() => CompletedOn;
+    
+    public int GetEventDuration() => 60; // Default 1 hour for inspections
+    
+    public string GetEventType() => CalendarEventTypes.Inspection;
+    
+    public int? GetPropertyId() => PropertyId;
+    
+    public string GetEventDescription() => $"{InspectionType} - {OverallCondition}";
+    
+    public string GetEventStatus() => OverallCondition;
 }

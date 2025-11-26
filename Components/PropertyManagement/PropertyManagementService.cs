@@ -25,19 +25,22 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
         private readonly ApplicationSettings _applicationSettings;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly UserContextService _userContext;
+        private readonly CalendarEventService _calendarEventService;
 
         public PropertyManagementService(
             ApplicationDbContext dbContext, 
             UserManager<ApplicationUser> userManager, 
             IOptions<ApplicationSettings> settings, 
             IHttpContextAccessor httpContextAccessor,
-            UserContextService userContext)
+            UserContextService userContext,
+            CalendarEventService calendarEventService)
         {
             _dbContext = dbContext;
             _userManager = userManager;
             _applicationSettings = settings.Value;
             _httpContextAccessor = httpContextAccessor;
             _userContext = userContext;
+            _calendarEventService = calendarEventService;
 
 
         }
@@ -1150,6 +1153,9 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
             await _dbContext.Inspections.AddAsync(inspection);
             await _dbContext.SaveChangesAsync();
 
+            // Create calendar event for the inspection
+            await _calendarEventService.CreateOrUpdateEventAsync(inspection);
+
             // Update property inspection tracking if this is a routine inspection
             if (inspection.InspectionType == "Routine")
             {
@@ -1170,6 +1176,9 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
             inspection.LastModifiedOn = DateTime.UtcNow;
             _dbContext.Inspections.Update(inspection);
             await _dbContext.SaveChangesAsync();
+
+            // Update calendar event
+            await _calendarEventService.CreateOrUpdateEventAsync(inspection);
         }
 
         public async Task DeleteInspectionAsync(int inspectionId)
@@ -1195,6 +1204,9 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
                     _dbContext.Inspections.Remove(inspection);
                 }
                 await _dbContext.SaveChangesAsync();
+
+                // Delete associated calendar event
+                await _calendarEventService.DeleteEventAsync(inspection.CalendarEventId);
             }
         }
 
@@ -1431,6 +1443,9 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
 
             await _dbContext.MaintenanceRequests.AddAsync(maintenanceRequest);
             await _dbContext.SaveChangesAsync();
+
+            // Create calendar event for the maintenance request
+            await _calendarEventService.CreateOrUpdateEventAsync(maintenanceRequest);
         }
 
         public async Task UpdateMaintenanceRequestAsync(MaintenanceRequest maintenanceRequest)
@@ -1454,6 +1469,9 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
 
             _dbContext.MaintenanceRequests.Update(maintenanceRequest);
             await _dbContext.SaveChangesAsync();
+
+            // Update calendar event
+            await _calendarEventService.CreateOrUpdateEventAsync(maintenanceRequest);
         }
 
         public async Task DeleteMaintenanceRequestAsync(int id)
@@ -1478,6 +1496,9 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
 
                 _dbContext.MaintenanceRequests.Update(maintenanceRequest);
                 await _dbContext.SaveChangesAsync();
+
+                // Delete associated calendar event
+                await _calendarEventService.DeleteEventAsync(maintenanceRequest.CalendarEventId);
             }
         }
 

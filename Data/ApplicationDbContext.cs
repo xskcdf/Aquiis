@@ -40,6 +40,8 @@ namespace Aquiis.SimpleStart.Data
         public DbSet<Tour> Tours { get; set; }
         public DbSet<RentalApplication> RentalApplications { get; set; }
         public DbSet<ApplicationScreening> ApplicationScreenings { get; set; }
+        public DbSet<CalendarEvent> CalendarEvents { get; set; }
+        public DbSet<CalendarSettings> CalendarSettings { get; set; }
 
          protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -358,6 +360,28 @@ namespace Aquiis.SimpleStart.Data
 
                 entity.HasIndex(e => e.OrganizationId);
                 entity.HasIndex(e => e.OverallResult);
+            });
+
+            // Configure CalendarEvent entity
+            modelBuilder.Entity<CalendarEvent>(entity =>
+            {
+                entity.HasOne(ce => ce.Property)
+                    .WithMany()
+                    .HasForeignKey(ce => ce.PropertyId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasIndex(e => e.OrganizationId);
+                entity.HasIndex(e => e.StartOn);
+                entity.HasIndex(e => e.EventType);
+                entity.HasIndex(e => e.SourceEntityId);
+                entity.HasIndex(e => new { e.SourceEntityType, e.SourceEntityId });
+            });
+
+            // Configure CalendarSettings entity
+            modelBuilder.Entity<CalendarSettings>(entity =>
+            {
+                entity.HasIndex(e => e.OrganizationId);
+                entity.HasIndex(e => new { e.OrganizationId, e.EntityType }).IsUnique();
             });
         }
 

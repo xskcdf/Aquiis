@@ -3,6 +3,7 @@ using System;
 using Aquiis.SimpleStart.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Aquiis.SimpleStart.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251126143634_AddCalendarEventsSystem")]
+    partial class AddCalendarEventsSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.11");
@@ -1213,62 +1216,6 @@ namespace Aquiis.SimpleStart.Data.Migrations
                     b.ToTable("CalendarEvents");
                 });
 
-            modelBuilder.Entity("Aquiis.SimpleStart.Models.CalendarSettings", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("AutoCreateEvents")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("DefaultColor")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("DefaultIcon")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("EntityType")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("LastModifiedOn")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("ShowOnCalendar")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrganizationId");
-
-                    b.HasIndex("OrganizationId", "EntityType")
-                        .IsUnique();
-
-                    b.ToTable("CalendarSettings");
-                });
-
             modelBuilder.Entity("Aquiis.SimpleStart.Models.Checklist", b =>
                 {
                     b.Property<int>("Id")
@@ -1598,9 +1545,6 @@ namespace Aquiis.SimpleStart.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("PaymentReminderEnabled")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("TourNoShowGracePeriodHours")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");

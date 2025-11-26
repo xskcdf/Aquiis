@@ -1,5 +1,522 @@
 # Aquiis - Revision History
 
+## November 26, 2025
+
+### Tour No-Show Tracking System
+
+**Automatic and Manual No-Show Detection**
+
+- ✅ Implemented automatic background process to mark tours as "No Show"
+- ✅ Added configurable grace period (default 24 hours in production, 1 hour in development)
+- ✅ Created manual "Mark as No Show" button for immediate action
+- ✅ Dual approach balances automation with user control
+
+**Configuration Settings:**
+
+1. **appsettings.json** (Production):
+
+   ```json
+   "TourSettings": {
+     "NoShowGracePeriodHours": 24
+   }
+   ```
+
+2. **appsettings.Development.json** (Development):
+   ```json
+   "TourSettings": {
+     "NoShowGracePeriodHours": 1
+   }
+   ```
+
+**Automatic Background Processing:**
+
+1. **ScheduledTaskService Enhancement:**
+
+   - Hourly task checks for tours past their scheduled time + grace period
+   - Compares tour ScheduledOn time against current time minus grace period
+   - Automatically marks tours still in "Scheduled" status as "No Show"
+   - Updates both Tour record and linked CalendarEvent
+   - Logs each no-show marking with timestamp details
+   - Processes across all organizations in the system
+
+2. **Grace Period Logic:**
+   - Gives property managers time to complete tour documentation
+   - Prevents immediate no-show marking if manager is delayed
+   - Configurable per environment (testing vs production)
+   - Example: Tour at 2:00 PM with 24-hour grace period marked as no-show after 2:00 PM next day
+
+**Manual "Mark as No Show" Button:**
+
+1. **Calendar Modal Button:**
+
+   - Appears for tours in "Scheduled" status
+   - Yellow/Warning styled button with person-x icon
+   - Positioned between "Complete Tour" and "Cancel" buttons
+   - Provides immediate no-show marking without waiting for background process
+
+2. **MarkTourAsNoShow() Method:**
+   - Updates tour status to "No Show"
+   - Updates linked calendar event status
+   - Sets LastModifiedBy and LastModifiedOn for audit trail
+   - Closes modal and refreshes calendar view
+   - Success toast notification
+
+**Service Layer:**
+
+1. **RentalApplicationService.MarkTourAsNoShowAsync()**:
+   - Accepts tourId, organizationId, and markedBy (user ID or "System")
+   - Updates Tour.Status to ApplicationConstants.TourStatuses.NoShow
+   - Finds and updates linked CalendarEvent.Status
+   - Maintains audit trail with timestamps
+   - Returns boolean success indicator
+
+**Workflow:**
+
+**Automatic:**
+
+```
+Tour Scheduled at 2:00 PM
+    ↓
+Time passes...
+    ↓
+Grace period expires (2:00 PM + 24 hours = next day 2:00 PM)
+    ↓
+Hourly background task runs
+    ↓
+Tour still "Scheduled"? → Mark as "No Show"
+    ↓
+Calendar event updated, logged
+```
+
+**Manual:**
+
+```
+User views tour in calendar modal
+    ↓
+Tour is "Scheduled" (past or future)
+    ↓
+User clicks "Mark as No Show"
+    ↓
+Immediate status update
+    ↓
+Modal closes, calendar refreshes
+```
+
+**Benefits:**
+
+- ✅ **Automatic tracking**: No-shows detected without manual intervention
+- ✅ **Grace period**: Allows time for documentation before auto-marking
+- ✅ **Manual override**: Users can mark no-shows immediately when needed
+- ✅ **Configurable**: Different grace periods for different environments
+- ✅ **Audit trail**: All changes tracked with user/system identification
+- ✅ **Multi-org support**: Works across all organizations in system
+
+**Technical Implementation:**
+
+- Configuration loaded from appsettings.json per environment
+- Background task runs hourly checking all organizations
+- LINQ query finds tours: Scheduled + (ScheduledOn < Now - GracePeriod)
+- Service method handles both Tour and CalendarEvent updates in single transaction
+- Button visibility controlled by tour status (Scheduled only)
+- Toast notifications for user feedback
+
+**Modal Button Layout (Scheduled Tours):**
+
+```
+[Complete Tour] [Mark as No Show] [Cancel] | [View Full Details] [Close]
+```
+
+**Files Modified:**
+
+```
+Aquiis.SimpleStart/
+├── appsettings.json (Added TourSettings with 24-hour grace period)
+├── appsettings.Development.json (Added TourSettings with 1-hour grace period)
+├── Services/
+│   ├── RentalApplicationService.cs (Added MarkTourAsNoShowAsync method)
+│   └── ScheduledTaskService.cs (Added no-show check in ExecuteHourlyTasks)
+└── Components/PropertyManagement/
+    └── Calendar.razor
+        - Added "Mark as No Show" button to modal
+        - Added MarkTourAsNoShow() method
+```
+
+**Testing Recommendations:**
+
+1. **Development Environment** (1-hour grace period):
+
+   - Create tour scheduled 2 hours ago
+   - Wait for hourly task to run (check logs)
+   - Verify tour automatically marked as "No Show"
+   - Create another tour, click "Mark as No Show" button manually
+   - Verify immediate status update
+
+2. **Production Environment** (24-hour grace period):
+
+   - Tours remain "Scheduled" for 24 hours after scheduled time
+   - Allows full business day for documentation
+   - Auto-marks as no-show after grace period expires
+
+3. **Verify**:
+   - Calendar shows "NoShow" status badge (warning/yellow)
+   - Tour detail shows correct status
+   - Audit trail shows "System" or user ID as LastModifiedBy
+   - Both Tour and CalendarEvent updated consistently
+
+---
+
+### Calendar Event System - Maintenance Request Workflow Integration
+
+**Status-Based Action Buttons in Calendar Modal**
+
+- ✅ Added workflow buttons to maintenance request modal
+- ✅ Implemented status-based button visibility (Submitted → In Progress → Completed)
+- ✅ Enabled complete maintenance lifecycle management from calendar
+- ✅ Parallel workflow pattern to Tour checklist completion
+
+**Workflow Button Implementation:**
+
+1. **Submitted Status Actions:**
+
+   - **Start Work** button (Primary/Blue) - Changes status to "In Progress"
+   - **Cancel Request** button (Danger/Red) - Changes status to "Cancelled"
+   - User can begin work or cancel before starting
+
+2. **In Progress Status Actions:**
+
+   - **Mark Complete** button (Success/Green) - Changes status to "Completed"
+   - **Cancel Request** button (Danger/Red) - Changes status to "Cancelled"
+   - User can complete work or cancel if needed
+
+3. **Completed/Cancelled Status:**
+   - No workflow buttons shown (request lifecycle complete)
+   - Only "View Full Details" and "Close" buttons available
+
+**New Service Methods:**
+
+1. **StartWork(maintenanceRequestId)**:
+
+   - Updates status to "In Progress"
+   - Sets LastModifiedBy and LastModifiedOn
+   - Reloads maintenance request in modal to show updated status
+   - Refreshes calendar events
+   - Success toast notification
+
+2. **CompleteMaintenanceRequest(maintenanceRequestId)**:
+
+   - Updates status to "Completed"
+   - Sets LastModifiedBy and LastModifiedOn
+   - Reloads maintenance request in modal to show updated status
+   - Refreshes calendar events
+   - Success toast notification
+
+3. **CancelMaintenanceRequest(maintenanceRequestId)**:
+   - Updates status to "Cancelled"
+   - Sets LastModifiedBy and LastModifiedOn
+   - Closes modal and refreshes calendar events
+   - Success toast notification
+
+**Technical Implementation:**
+
+- Uses PropertyManagementService.UpdateMaintenanceRequestAsync() for status updates
+- Follows same pattern as Tour workflow (CompleteTour, CancelTour)
+- Proper async/await throughout
+- Comprehensive error handling with user-friendly messages
+- Audit trail maintained with LastModifiedBy/LastModifiedOn
+- Modal stays open after Start/Complete to show status change
+- Modal closes after Cancel (request removed from active view)
+
+**User Experience:**
+
+- **Calendar-First Workflow**: Manage maintenance without leaving calendar view
+- **Visual Feedback**: Status badge updates immediately in modal
+- **Clear Actions**: Button text clearly indicates next step (Start Work → Mark Complete)
+- **Consistent Pattern**: Matches Tour workflow (Complete Tour, Cancel Tour)
+- **Flexible Operations**: Can cancel at any stage if needed
+
+**Status Transition Flow:**
+
+```
+Submitted
+  ├─ Start Work → In Progress
+  │                 ├─ Mark Complete → Completed
+  │                 └─ Cancel Request → Cancelled
+  └─ Cancel Request → Cancelled
+```
+
+**Modal Footer Button Layout:**
+
+**For Submitted Maintenance Requests:**
+
+- [Start Work] [Cancel Request] | [View Full Details] [Close]
+
+**For In Progress Maintenance Requests:**
+
+- [Mark Complete] [Cancel Request] | [View Full Details] [Close]
+
+**For Tours (Scheduled):**
+
+- [Complete Tour] [Cancel] | [View Full Details] [Close]
+
+**For Other Events:**
+
+- [View Full Details] [Close]
+
+**Files Modified:**
+
+```
+Aquiis.SimpleStart/
+└── Components/PropertyManagement/
+    └── Calendar.razor
+        - Added maintenance workflow buttons in modal footer (lines 348-368)
+        - Added StartWork() method
+        - Added CompleteMaintenanceRequest() method
+        - Added CancelMaintenanceRequest() method
+```
+
+**Benefits:**
+
+- ✅ Complete maintenance lifecycle management from calendar
+- ✅ No navigation required for common operations
+- ✅ Status-aware button display
+- ✅ Consistent with existing Tour workflow
+- ✅ Proper audit trail maintenance
+- ✅ Immediate visual feedback
+
+**Testing Recommendations:**
+
+1. Create maintenance request with "Submitted" status
+2. View on calendar → Modal shows "Start Work" and "Cancel Request"
+3. Click "Start Work" → Status updates to "In Progress"
+4. Modal now shows "Mark Complete" and "Cancel Request"
+5. Click "Mark Complete" → Status updates to "Completed"
+6. Close and reopen → No workflow buttons, only "View Full Details"
+7. Test cancellation at various stages
+
+---
+
+### Calendar Event System - Generic Event Modal
+
+**Enhanced User Experience with Universal Modal Display**
+
+- ✅ Refactored event detail modal to work generically for ALL event types
+- ✅ Eliminated navigation away from calendar for event viewing
+- ✅ Implemented entity-specific loading and display logic
+- ✅ Added conditional rendering based on event type
+
+**Modal Enhancements:**
+
+1. **Generic Modal Structure:**
+
+   - Replaced Tour-specific modal with universal event modal
+   - Shows basic event info (title, schedule, status, location, description) for ALL types
+   - Uses CalendarEvent.Color and Icon for consistent branding
+   - Displays event type name from CalendarEventTypes.GetDisplayName()
+   - Conditional entity-specific sections based on loaded data
+
+2. **Entity Loading System:**
+
+   - **Tours**: Loads Tour entity with ProspectiveTenant, Property, Checklist navigation properties
+   - **Inspections**: Loads Inspection entity with Property, InspectionType, Inspector details
+   - **Maintenance Requests**: Loads MaintenanceRequest entity with Property, Priority, AssignedTo details
+   - **Other Types**: Shows basic CalendarEvent info (LeaseExpiry, RentDue, Custom events)
+   - All loading uses existing service methods (RentalApplicationService, PropertyManagementService)
+
+3. **ShowEventDetail Method Refactoring:**
+
+   - Sets `selectedEvent` to CalendarEvent for all types
+   - Switch statement routes to appropriate entity loader based on EventType
+   - Calls specialized loading methods for each entity type
+   - Falls through to basic info display for non-detailed event types
+   - Comprehensive error handling with user-friendly messages
+
+4. **Entity-Specific Detail Sections:**
+
+   **Tour Details Section:**
+
+   - Prospective tenant information (name, email, phone)
+   - Property details (address, city, state)
+   - Interest level badge (if set)
+   - Feedback display (if provided)
+   - Checklist status badge (if checklist exists)
+
+   **Inspection Details Section:**
+
+   - Inspection type display
+   - Property information (address, city, state)
+   - Inspector name (if assigned)
+   - General notes (if provided)
+
+   **Maintenance Request Details Section:**
+
+   - Request type and priority badge
+   - Property information
+   - Assigned to (if assigned)
+   - Requested by with phone number
+   - Estimated cost (if > 0)
+
+5. **Smart Action Buttons:**
+
+   - **Tour-Specific Actions** (only for scheduled tours):
+     - "Complete Tour" button → Navigates to tour checklist
+     - "Cancel Tour" button → Cancels the tour
+   - **Generic Actions** (all routable events):
+     - "View Full Details" button → Navigates to entity detail page
+   - **Universal Action**:
+     - "Close" button → Closes modal for all types
+
+6. **Modal Display Logic:**
+   - Modal shows when `selectedEvent != null`
+   - Checks for entity variables (selectedTour, selectedInspection, selectedMaintenanceRequest)
+   - Renders appropriate sections based on which entity is loaded
+   - CloseModal() clears all entity variables and selectedEvent
+
+**Component State Variables:**
+
+```csharp
+private CalendarEvent? selectedEvent;        // Set for all event types
+private Tour? selectedTour;                  // Set when viewing tours
+private Inspection? selectedInspection;      // Set when viewing inspections
+private MaintenanceRequest? selectedMaintenanceRequest; // Set when viewing maintenance
+```
+
+**Loading Methods:**
+
+1. **ShowTourDetailById(tourId, orgId)**:
+
+   - Calls RentalApplicationService.GetTourByIdAsync()
+   - Loads Tour with ProspectiveTenant, Property, Checklist navigation properties
+   - Sets selectedTour variable
+
+2. **ShowInspectionDetailById(inspectionId, orgId)**:
+
+   - Calls PropertyManagementService.GetInspectionByIdAsync()
+   - Loads Inspection with Property navigation property
+   - Sets selectedInspection variable
+
+3. **ShowMaintenanceRequestDetailById(maintenanceId, orgId)**:
+   - Calls PropertyManagementService.GetMaintenanceRequestByIdAsync()
+   - Loads MaintenanceRequest with Property navigation property
+   - Sets selectedMaintenanceRequest variable
+
+**Helper Methods:**
+
+1. **CloseModal()**:
+
+   - Clears selectedEvent
+   - Clears all entity variables (selectedTour, selectedInspection, selectedMaintenanceRequest)
+   - Hides modal overlay
+
+2. **NavigateToEventDetail()**:
+
+   - Checks if selectedEvent is routable
+   - Uses CalendarEventRouter.GetRouteForEvent()
+   - Navigates to appropriate detail page
+
+3. **GetEventStatusBadgeClass(status)**:
+
+   - Returns Bootstrap badge classes based on status
+   - Supports tour statuses (Scheduled, Completed, Cancelled, NoShow)
+
+4. **GetPriorityBadgeClass(priority)** (NEW):
+   - Returns badge classes for maintenance priority
+   - High → bg-danger (red)
+   - Medium → bg-warning (yellow)
+   - Low → bg-info (blue)
+
+**User Experience Benefits:**
+
+- ✅ **Stay on Calendar**: Users don't navigate away to view event details
+- ✅ **Consistent Pattern**: Same modal experience for all event types
+- ✅ **Quick Info Access**: View essential details without leaving calendar
+- ✅ **Selective Navigation**: Only navigate when choosing specific actions
+- ✅ **Visual Consistency**: Uses event colors and icons from settings
+- ✅ **Action-Oriented**: Appropriate buttons per event type (Complete Tour, View Details)
+
+**Workflow Examples:**
+
+1. **Viewing a Tour**:
+
+   - Click tour event on calendar
+   - Modal shows tour details with prospect and property info
+   - See checklist status and interest level
+   - Click "Complete Tour" to navigate to checklist (if scheduled)
+   - Click "View Full Details" to go to tour detail page
+   - Click "Close" to stay on calendar
+
+2. **Viewing an Inspection**:
+
+   - Click inspection event on calendar
+   - Modal shows inspection type, property, and inspector
+   - See general notes if provided
+   - Click "View Full Details" to go to inspection report
+   - Click "Close" to stay on calendar
+
+3. **Viewing Maintenance Request**:
+   - Click maintenance event on calendar
+   - Modal shows priority, assigned to, and estimated cost
+   - See requester information and phone
+   - Click "View Full Details" to go to maintenance detail
+   - Click "Close" to stay on calendar
+
+**Technical Implementation:**
+
+- Changed modal condition from `@if (selectedTour != null)` to `@if (selectedEvent != null)`
+- Added nested conditional sections for entity-specific details
+- Updated CompleteTour method name (previously MarkCompleted)
+- All entity loading methods check orgId from UserContext
+- Proper async/await patterns throughout
+- Error handling displays toast notifications
+- Build succeeded with 0 errors (11 pre-existing warnings)
+
+**Files Modified:**
+
+```
+Aquiis.SimpleStart/
+└── Components/PropertyManagement/
+    └── Calendar.razor
+        - Replaced Tour-specific modal with generic event modal (lines 140-335)
+        - Added selectedInspection and selectedMaintenanceRequest variables
+        - Refactored ShowEventDetail to load all entity types
+        - Added ShowInspectionDetailById and ShowMaintenanceRequestDetailById methods
+        - Updated CloseModal to clear all entity variables
+        - Added NavigateToEventDetail method
+        - Added GetPriorityBadgeClass helper method
+        - Renamed MarkCompleted to CompleteTour
+```
+
+**Key Design Decisions:**
+
+1. **Multiple Entity Variables vs Single Dynamic**:
+
+   - Chose multiple typed variables (selectedTour, selectedInspection, etc.)
+   - Provides type safety and IntelliSense support
+   - Easier to maintain and debug
+   - Clear separation of concerns
+
+2. **Conditional Rendering Over Multiple Modals**:
+
+   - Single modal with conditional sections
+   - Reduces code duplication
+   - Consistent modal structure
+   - Easier to maintain
+
+3. **Basic Info for All, Details for Some**:
+   - All events show title, schedule, status, location, description
+   - Only Tours, Inspections, Maintenance load full entity details
+   - Other types (LeaseExpiry, RentDue, Custom) just show CalendarEvent info
+   - Scalable for future entity types
+
+**Future Enhancements:**
+
+- Add entity-specific actions for Inspections (Mark Complete)
+- Add entity-specific actions for Maintenance (Update Status)
+- Consider loading LeaseExpiry and RentDue entity details
+- Add inline editing capabilities in modal
+- Support for image attachments display
+
+---
+
 ## November 25, 2025
 
 ### Checklist System - Complete Implementation

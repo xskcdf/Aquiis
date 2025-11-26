@@ -133,6 +133,8 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddScoped<PropertyManagementService>();
 builder.Services.AddScoped<Aquiis.SimpleStart.Components.PropertyManagement.Checklists.ChecklistService>();
+builder.Services.AddScoped<CalendarSettingsService>();
+builder.Services.AddScoped<CalendarEventService>();
 builder.Services.AddScoped<RentalApplicationService>();
 builder.Services.AddScoped<UserContextService>();
 builder.Services.AddScoped<DocumentService>();

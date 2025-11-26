@@ -1,4 +1,5 @@
 using Aquiis.SimpleStart.Components.PropertyManagement;
+using Aquiis.SimpleStart.Components.Administration.Application;
 using Aquiis.SimpleStart.Data;
 using Aquiis.SimpleStart.Models;
 using Microsoft.EntityFrameworkCore;
@@ -467,27 +468,66 @@ namespace Aquiis.SimpleStart.Services
             {
                 using var scope = _serviceProvider.CreateScope();
                 var propertyManagementService = scope.ServiceProvider.GetRequiredService<PropertyManagementService>();
-                var httpContextAccessor = scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>();
-                
-                // Skip if no user is authenticated (background service context)
-                var userId = httpContextAccessor.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userId))
+                var rentalApplicationService = scope.ServiceProvider.GetRequiredService<RentalApplicationService>();
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                // Get all organizations
+                var organizations = await dbContext.OrganizationSettings
+                    .Where(s => !s.IsDeleted)
+                    .ToListAsync();
+
+                int totalMarkedNoShow = 0;
+
+                foreach (var orgSettings in organizations)
                 {
-                    _logger.LogDebug("Skipping hourly tasks - no authenticated user context");
-                    return;
+                    var organizationId = orgSettings.OrganizationId.ToString();
+                    var gracePeriodHours = orgSettings.TourNoShowGracePeriodHours;
+
+                    // Check for tours that should be marked as no-show
+                    var cutoffTime = DateTime.Now.AddHours(-gracePeriodHours);
+                    var potentialNoShowTours = await rentalApplicationService.GetAllToursAsync(organizationId);
+                    
+                    var noShowTours = potentialNoShowTours
+                        .Where(t => t.Status == ApplicationConstants.TourStatuses.Scheduled &&
+                                   t.ScheduledOn < cutoffTime &&
+                                   !t.IsDeleted)
+                        .ToList();
+
+                    foreach (var tour in noShowTours)
+                    {
+                        await rentalApplicationService.MarkTourAsNoShowAsync(tour.Id, organizationId, "System");
+                        totalMarkedNoShow++;
+                        
+                        _logger.LogInformation(
+                            "Marked tour {TourId} as No Show - Scheduled: {ScheduledTime}, Grace period: {Hours} hours",
+                            tour.Id,
+                            tour.ScheduledOn.ToString("yyyy-MM-dd HH:mm"),
+                            gracePeriodHours);
+                    }
+                }
+
+                if (totalMarkedNoShow > 0)
+                {
+                    _logger.LogInformation("Marked {Count} tour(s) as No Show across all organizations", totalMarkedNoShow);
                 }
 
                 // Example hourly task: Check for upcoming lease expirations
-                var upcomingLeases = await propertyManagementService.GetLeasesAsync();
-                var expiringIn30Days = upcomingLeases
-                    .Where(l => l.EndDate >= DateTime.Today && 
-                               l.EndDate <= DateTime.Today.AddDays(30) && 
-                               !l.IsDeleted)
-                    .Count();
-
-                if (expiringIn30Days > 0)
+                var httpContextAccessor = scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>();
+                var userId = httpContextAccessor.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                
+                if (!string.IsNullOrEmpty(userId))
                 {
-                    _logger.LogInformation("{Count} lease(s) expiring in the next 30 days", expiringIn30Days);
+                    var upcomingLeases = await propertyManagementService.GetLeasesAsync();
+                    var expiringIn30Days = upcomingLeases
+                        .Where(l => l.EndDate >= DateTime.Today && 
+                                   l.EndDate <= DateTime.Today.AddDays(30) && 
+                                   !l.IsDeleted)
+                        .Count();
+
+                    if (expiringIn30Days > 0)
+                    {
+                        _logger.LogInformation("{Count} lease(s) expiring in the next 30 days", expiringIn30Days);
+                    }
                 }
 
                 // You can add more hourly tasks here:

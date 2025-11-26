@@ -4,7 +4,7 @@ using Aquiis.SimpleStart.Components.PropertyManagement.Properties;
 
 namespace Aquiis.SimpleStart.Models
 {
-    public class Tour : BaseModel
+    public class Tour : BaseModel, ISchedulableEntity
     {
         [Required]
         [Display(Name = "Prospective Tenant")]
@@ -40,6 +40,9 @@ namespace Aquiis.SimpleStart.Models
         [Display(Name = "Property Tour Checklist")]
         public int? ChecklistId { get; set; } // Links to property tour checklist
 
+        [Display(Name = "Calendar Event")]
+        public int? CalendarEventId { get; set; }
+
         [Required]
         [StringLength(100)]
         [Display(Name = "Organization ID")]
@@ -54,5 +57,20 @@ namespace Aquiis.SimpleStart.Models
 
         [ForeignKey(nameof(ChecklistId))]
         public virtual Checklist? Checklist { get; set; }
+
+        // ISchedulableEntity implementation
+        public string GetEventTitle() => $"Tour: {ProspectiveTenant?.FullName ?? "Prospect"}";
+        
+        public DateTime GetEventStart() => ScheduledOn;
+        
+        public int GetEventDuration() => DurationMinutes;
+        
+        public string GetEventType() => CalendarEventTypes.Tour;
+        
+        public int? GetPropertyId() => PropertyId;
+        
+        public string GetEventDescription() => Property?.Address ?? string.Empty;
+        
+        public string GetEventStatus() => Status;
     }
 }

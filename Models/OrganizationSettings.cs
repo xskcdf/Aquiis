@@ -51,6 +51,15 @@ namespace Aquiis.SimpleStart.Models
 
         #endregion
 
+        #region Tour Settings
+
+        [Required]
+        [Range(1, 168)]
+        [Display(Name = "Tour No-Show Grace Period (Hours)")]
+        public int TourNoShowGracePeriodHours { get; set; } = 24;
+
+        #endregion
+
         // Future settings can be added here as new regions:
         // - Default lease terms
         // - Routine inspection intervals

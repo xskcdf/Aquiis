@@ -113,6 +113,30 @@
                         <ValidationMessage For="() => viewModel.PaymentReminderDaysBefore" class="text-danger" />
                     </div>
 
+                    <hr class="my-4"/>
+
+                    <h6 class="mb-3">Tour Settings</h6>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tour No-Show Grace Period (Hours)</label>
+                        <InputNumber @bind-Value="viewModel.TourNoShowGracePeriodHours" class="form-control" />
+                        <small class="text-muted">Hours after scheduled time before tour is automatically marked as "No Show"</small>
+                        <ValidationMessage For="() => viewModel.TourNoShowGracePeriodHours" class="text-danger" />
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>How it works:</strong> If a tour remains in "Scheduled" status @viewModel.TourNoShowGracePeriodHours hours after its scheduled time, 
+                        it will automatically be marked as "No Show". This gives property managers time to complete documentation while ensuring accurate tracking.
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <strong>Example:</strong><br/>
+                        Tour Scheduled: Today at 2:00 PM<br/>
+                        Grace Period: @viewModel.TourNoShowGracePeriodHours hours<br/>
+                        Auto Mark as No-Show After: @DateTime.Now.Date.AddHours(14 + viewModel.TourNoShowGracePeriodHours).ToString("MMM dd, yyyy h:mm tt")
+                    </div>
+
                     <div class="alert alert-warning">
                         <strong>Example Calculation:</strong><br/>
                         Invoice Amount: $1,000<br/>
@@ -197,6 +221,9 @@
 
                     <dt>Reminder Timing</dt>
                     <dd>@viewModel.PaymentReminderDaysBefore days before due</dd>
+
+                    <dt class="mt-3">Tour No-Show Grace Period</dt>
+                    <dd>@viewModel.TourNoShowGracePeriodHours hours</dd>
                 </dl>
             </div>
         </div>
@@ -240,7 +267,8 @@
                     LateFeePercentage = settings.LateFeePercentage * 100, // Convert to percentage display
                     MaxLateFeeAmount = settings.MaxLateFeeAmount,
                     PaymentReminderEnabled = settings.PaymentReminderEnabled,
-                    PaymentReminderDaysBefore = settings.PaymentReminderDaysBefore
+                    PaymentReminderDaysBefore = settings.PaymentReminderDaysBefore,
+                    TourNoShowGracePeriodHours = settings.TourNoShowGracePeriodHours
                 };
             }
         }
@@ -274,6 +302,7 @@
             settings.MaxLateFeeAmount = viewModel.MaxLateFeeAmount;
             settings.PaymentReminderEnabled = viewModel.PaymentReminderEnabled;
             settings.PaymentReminderDaysBefore = viewModel.PaymentReminderDaysBefore;
+            settings.TourNoShowGracePeriodHours = viewModel.TourNoShowGracePeriodHours;
 
             await PropertyService.UpdateOrganizationSettingsAsync(settings);
 
@@ -298,6 +327,7 @@
         viewModel.MaxLateFeeAmount = 50.00m;
         viewModel.PaymentReminderEnabled = true;
         viewModel.PaymentReminderDaysBefore = 3;
+        viewModel.TourNoShowGracePeriodHours = 24;
 
         ToastService.ShowInfo("Settings reset to defaults");
     }
@@ -349,5 +379,10 @@
         [Range(1, 30, ErrorMessage = "Reminder days must be between 1 and 30")]
         [Display(Name = "Send Reminder (Days Before Due)")]
         public int PaymentReminderDaysBefore { get; set; } = 3;
+
+        [Required]
+        [Range(1, 168, ErrorMessage = "Grace period must be between 1 and 168 hours")]
+        [Display(Name = "Tour No-Show Grace Period (Hours)")]
+        public int TourNoShowGracePeriodHours { get; set; } = 24;
     }
 }

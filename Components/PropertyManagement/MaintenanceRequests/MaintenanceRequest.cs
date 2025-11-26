@@ -6,12 +6,14 @@ using Aquiis.SimpleStart.Models;
 
 namespace Aquiis.SimpleStart.Components.PropertyManagement.MaintenanceRequests
 {
-    public class MaintenanceRequest : BaseModel
+    public class MaintenanceRequest : BaseModel, ISchedulableEntity
     {
         public string OrganizationId { get; set; } = string.Empty;
 
         [Required]
         public int PropertyId { get; set; }
+
+        public int? CalendarEventId { get; set; }
 
         public int? LeaseId { get; set; }
 
@@ -124,5 +126,20 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.MaintenanceRequests
                 };
             }
         }
+
+        // ISchedulableEntity implementation
+        public string GetEventTitle() => $"{RequestType}: {Title}";
+        
+        public DateTime GetEventStart() => ScheduledOn ?? RequestedOn;
+        
+        public int GetEventDuration() => 120; // Default 2 hours for maintenance
+        
+        public string GetEventType() => CalendarEventTypes.Maintenance;
+        
+        public int? GetPropertyId() => PropertyId;
+        
+        public string GetEventDescription() => $"{Property?.Address ?? "Property"} - {Priority} Priority";
+        
+        public string GetEventStatus() => Status;
     }
 }
