@@ -121,6 +121,9 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
 
             await _dbContext.Properties.AddAsync(property);
             await _dbContext.SaveChangesAsync();
+
+            // Create calendar event for the first routine inspection
+            await CreateRoutineInspectionCalendarEventAsync(property);
         }
 
         public async Task UpdatePropertyAsync(Property property)
@@ -1159,6 +1162,21 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
             // Update property inspection tracking if this is a routine inspection
             if (inspection.InspectionType == "Routine")
             {
+                // Find and update/delete the original property-based routine inspection calendar event
+                var propertyBasedEvent = await _dbContext.CalendarEvents
+                    .FirstOrDefaultAsync(e => 
+                        e.PropertyId == inspection.PropertyId &&
+                        e.SourceEntityType == "Property" &&
+                        e.EventType == CalendarEventTypes.Inspection &&
+                        !e.IsDeleted);
+
+                if (propertyBasedEvent != null)
+                {
+                    // Remove the old property-based event since we now have an actual inspection record
+                    _dbContext.CalendarEvents.Remove(propertyBasedEvent);
+                    await _dbContext.SaveChangesAsync();
+                }
+
                 await UpdatePropertyInspectionTrackingAsync(
                     inspection.PropertyId, 
                     inspection.CompletedOn);
@@ -1308,6 +1326,41 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement
                 _dbContext.Properties.Update(property);
                 await _dbContext.SaveChangesAsync();
             }
+        }
+
+        /// <summary>
+        /// Creates a calendar event for a routine property inspection
+        /// </summary>
+        private async Task CreateRoutineInspectionCalendarEventAsync(Property property)
+        {
+            if (!property.NextRoutineInspectionDueDate.HasValue)
+            {
+                return;
+            }
+
+            var userId = await _userContext.GetUserIdAsync();
+
+            var calendarEvent = new CalendarEvent
+            {
+                Title = $"Routine Inspection - {property.Address}",
+                Description = $"Routine inspection due for property at {property.Address}, {property.City}, {property.State}",
+                StartOn = property.NextRoutineInspectionDueDate.Value,
+                DurationMinutes = 60, // Default 1 hour for inspection
+                EventType = CalendarEventTypes.Inspection,
+                Status = "Scheduled",
+                PropertyId = property.Id,
+                Location = $"{property.Address}, {property.City}, {property.State} {property.ZipCode}",
+                Color = CalendarEventTypes.GetColor(CalendarEventTypes.Inspection),
+                Icon = CalendarEventTypes.GetIcon(CalendarEventTypes.Inspection),
+                OrganizationId = property.OrganizationId,
+                CreatedBy = userId ?? "System",
+                CreatedOn = DateTime.UtcNow,
+                SourceEntityType = "Property",
+                SourceEntityId = property.Id
+            };
+
+            _dbContext.CalendarEvents.Add(calendarEvent);
+            await _dbContext.SaveChangesAsync();
         }
 
         #endregion

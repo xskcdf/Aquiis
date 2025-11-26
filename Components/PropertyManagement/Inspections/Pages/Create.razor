@@ -256,6 +256,9 @@ else
     [Parameter]
     public int? PropertyId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "propertyId")]
+    public int? PropertyIdFromQuery { get; set; }
+
     private Property? property;
     private Inspection inspection = new();
     private string? errorMessage;
@@ -264,6 +267,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // Use query parameter if route parameter is not provided
+        if (!PropertyId.HasValue && PropertyIdFromQuery.HasValue)
+        {
+            PropertyId = PropertyIdFromQuery;
+        }
+
         // Get the current user's organization and user ID first
         var organizationId = await UserContext.GetOrganizationIdAsync();
         var userId = await UserContext.GetUserIdAsync();

@@ -254,6 +254,20 @@ namespace Aquiis.SimpleStart.Services
             tour.ConductedBy = completedBy;
             tour.LastModifiedOn = DateTime.UtcNow;
             tour.LastModifiedBy = completedBy;
+
+            // Update calendar event status
+            if (tour.CalendarEventId.HasValue)
+            {
+                var calendarEvent = await _context.CalendarEvents
+                    .FirstOrDefaultAsync(e => e.Id == tour.CalendarEventId.Value);
+                if (calendarEvent != null)
+                {
+                    calendarEvent.Status = ApplicationConstants.TourStatuses.Completed;
+                    calendarEvent.LastModifiedBy = completedBy;
+                    calendarEvent.LastModifiedOn = DateTime.UtcNow;
+                }
+            }
+
             await _context.SaveChangesAsync();
 
             return true;

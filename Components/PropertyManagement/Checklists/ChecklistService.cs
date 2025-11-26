@@ -469,6 +469,19 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
                     tour.LastModifiedBy = userId;
                     tour.LastModifiedOn = DateTime.UtcNow;
 
+                    // Update calendar event status
+                    if (tour.CalendarEventId.HasValue)
+                    {
+                        var calendarEvent = await _dbContext.CalendarEvents
+                            .FirstOrDefaultAsync(e => e.Id == tour.CalendarEventId.Value);
+                        if (calendarEvent != null)
+                        {
+                            calendarEvent.Status = ApplicationConstants.TourStatuses.Completed;
+                            calendarEvent.LastModifiedBy = userId;
+                            calendarEvent.LastModifiedOn = DateTime.UtcNow;
+                        }
+                    }
+
                     // Update prospect status back to Lead (tour completed, awaiting application)
                     if (tour.ProspectiveTenant != null && 
                         tour.ProspectiveTenant.Status == ApplicationConstants.ProspectiveStatuses.TourScheduled)

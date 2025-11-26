@@ -48,6 +48,9 @@
             <button class="btn btn-outline-secondary me-2" @onclick="ToggleFilters">
                 <i class="bi bi-funnel"></i> Filters
             </button>
+            <button class="btn btn-success me-2" @onclick="ShowAddEventModal">
+                <i class="bi bi-plus-circle"></i> Add Event
+            </button>
             <button class="btn btn-primary" @onclick="NavigateToDashboard">
                 <i class="bi bi-speedometer2"></i> Dashboard
             </button>
@@ -100,7 +103,14 @@
                         <i class="bi bi-chevron-left"></i> Previous
                     </button>
                     
-                    <h4 class="mb-0">@GetDateRangeTitle()</h4>
+                    <div class="d-flex align-items-center gap-3">
+                        <h4 class="mb-0">@GetDateRangeTitle()</h4>
+                        <input type="date" 
+                               class="form-control form-control-sm" 
+                               style="width: 150px;"
+                               value="@currentDate.ToString("yyyy-MM-dd")"
+                               @onchange="OnDateSelected" />
+                    </div>
                     
                     <div class="d-flex gap-2">
                         <button class="btn btn-outline-secondary" @onclick="NavigateToday">
@@ -204,6 +214,21 @@
                         </div>
                     }
 
+                    @* Notes field for custom events (visible when In Progress, Completed, or Cancelled) *@
+                    @if (selectedEvent != null && selectedEvent.IsCustomEvent && 
+                         (selectedEvent.Status == "In Progress" || selectedEvent.Status == "Completed" || selectedEvent.Status == "Cancelled"))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <h6><i class="bi bi-journal-text"></i> Notes</h6>
+                                <textarea class="form-control" rows="4" @bind="eventNotes" placeholder="Add notes about this event..."></textarea>
+                                <button class="btn btn-sm btn-primary mt-2" @onclick="SaveEventNotes">
+                                    <i class="bi bi-save"></i> Save Notes
+                                </button>
+                            </div>
+                        </div>
+                    }
+
                     <!-- Entity-Specific Details -->
                     @if (selectedTour != null)
                     {
@@ -258,6 +283,13 @@
                     {
                         <hr/>
                         <h6 class="text-success"><i class="bi bi-clipboard-check"></i> Inspection Details</h6>
+                        @if (!string.IsNullOrEmpty(selectedInspection.OverallCondition))
+                        {
+                            <div class="mb-3">
+                                <strong>Overall Condition:</strong>
+                                <span class="badge @GetInspectionStatusBadgeClass(selectedInspection.OverallCondition) ms-2">@selectedInspection.OverallCondition</span>
+                            </div>
+                        }
                         <div class="row mt-3">
                             <div class="col-md-6">
                                 <strong>Type</strong>
@@ -370,8 +402,70 @@
                         }
                     }
 
+                    @* Show Complete Inspection button for property-based routine inspections *@
+                    @if (selectedEvent != null && selectedEvent.EventType == CalendarEventTypes.Inspection && 
+                         selectedEvent.SourceEntityType == "Property" && selectedEvent.PropertyId.HasValue)
+                    {
+                        <button class="btn btn-success" @onclick="() => CompleteRoutineInspection(selectedEvent.PropertyId.Value)">
+                            <i class="bi bi-check-circle"></i> Complete Inspection
+                        </button>
+                    }
+
+                    @* Custom event workflow buttons *@
+                    @if (selectedEvent != null && selectedEvent.IsCustomEvent)
+                    {
+                        @if (selectedEvent.Status == "Scheduled")
+                        {
+                            <button class="btn btn-primary" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "In Progress"))">
+                                <i class="bi bi-play-circle"></i> Start
+                            </button>
+                            <button class="btn btn-success" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Completed"))">
+                                <i class="bi bi-check-circle"></i> Complete
+                            </button>
+                            <button class="btn btn-danger" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Cancelled"))">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </button>
+                        }
+                        else if (selectedEvent.Status == "In Progress")
+                        {
+                            <button class="btn btn-success" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Completed"))">
+                                <i class="bi bi-check-circle"></i> Complete
+                            </button>
+                            <button class="btn btn-danger" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Cancelled"))">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </button>
+                        }
+                        else if (selectedEvent.Status == "Completed" || selectedEvent.Status == "Cancelled")
+                        {
+                            <button class="btn btn-secondary" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Scheduled"))">
+                                <i class="bi bi-arrow-counterclockwise"></i> Reopen
+                            </button>
+                        }
+                        else if (selectedEvent.Status == "Confirmed")
+                        {
+                            <button class="btn btn-primary" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "In Progress"))">
+                                <i class="bi bi-play-circle"></i> Start
+                            </button>
+                            <button class="btn btn-success" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Completed"))">
+                                <i class="bi bi-check-circle"></i> Complete
+                            </button>
+                            <button class="btn btn-danger" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Cancelled"))">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </button>
+                        }
+                        else if (selectedEvent.Status == "Postponed")
+                        {
+                            <button class="btn btn-info" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Scheduled"))">
+                                <i class="bi bi-calendar-check"></i> Reschedule
+                            </button>
+                            <button class="btn btn-danger" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Cancelled"))">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </button>
+                        }
+                    }
+
                     <!-- View Details button - navigates to full detail page -->
-                    @if (CalendarEventRouter.IsRoutable(selectedEvent))
+                    @if (selectedEvent != null && CalendarEventRouter.IsRoutable(selectedEvent))
                     {
                         <button class="btn btn-primary" @onclick="NavigateToEventDetail">
                             <i class="bi bi-box-arrow-up-right"></i> View Full Details
@@ -380,6 +474,104 @@
 
                     <button class="btn btn-secondary" @onclick="CloseModal">Close</button>
                 </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Add Custom Event Modal -->
+@if (showAddEventModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Add Custom Event</h5>
+                    <button type="button" class="btn-close" @onclick="CloseAddEventModal"></button>
+                </div>
+                <EditForm Model="newEvent" OnValidSubmit="SaveCustomEvent">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="alert alert-danger" />
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Title <span class="text-danger">*</span></label>
+                                <InputText @bind-Value="newEvent.Title" class="form-control" placeholder="Event title" />
+                                <ValidationMessage For="@(() => newEvent.Title)" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Event Type <span class="text-danger">*</span></label>
+                                <InputSelect @bind-Value="newEvent.EventType" class="form-select">
+                                    <option value="">Select type...</option>
+                                    @foreach (var type in CalendarEventTypes.GetAllTypes())
+                                    {
+                                        <option value="@type">@CalendarEventTypes.GetDisplayName(type)</option>
+                                    }
+                                </InputSelect>
+                                <ValidationMessage For="@(() => newEvent.EventType)" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Start Date & Time <span class="text-danger">*</span></label>
+                                <InputDate Type="InputDateType.DateTimeLocal" @bind-Value="newEvent.StartOn" class="form-control" />
+                                <ValidationMessage For="@(() => newEvent.StartOn)" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">End Date & Time</label>
+                                <InputDate Type="InputDateType.DateTimeLocal" @bind-Value="newEvent.EndOn" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Status</label>
+                                <InputSelect @bind-Value="newEvent.Status" class="form-select">
+                                    <option value="Scheduled">Scheduled</option>
+                                    <option value="Confirmed">Confirmed</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                    <option value="Postponed">Postponed</option>
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Location</label>
+                                <InputText @bind-Value="newEvent.Location" class="form-control" placeholder="Event location" />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <InputTextArea @bind-Value="newEvent.Description" class="form-control" rows="3" placeholder="Event description" />
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Color</label>
+                                <InputText type="color" @bind-Value="newEvent.Color" class="form-control form-control-color" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Icon</label>
+                                <InputSelect @bind-Value="newEvent.Icon" class="form-select">
+                                    <option value="bi-calendar-event">📅 Calendar Event</option>
+                                    <option value="bi-bell">🔔 Bell</option>
+                                    <option value="bi-clock">🕐 Clock</option>
+                                    <option value="bi-flag">🚩 Flag</option>
+                                    <option value="bi-star">⭐ Star</option>
+                                    <option value="bi-geo-alt">📍 Location Pin</option>
+                                    <option value="bi-people">👥 People</option>
+                                    <option value="bi-briefcase">💼 Briefcase</option>
+                                    <option value="bi-calendar-check">✅ Calendar Check</option>
+                                    <option value="bi-calendar-x">❌ Calendar X</option>
+                                </InputSelect>
+                                <small class="text-muted">Choose an icon for this event</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseAddEventModal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Save Event
+                        </button>
+                    </div>
+                </EditForm>
             </div>
         </div>
     </div>
@@ -396,6 +588,9 @@
     private DateTime currentDate = DateTime.Today;
     private List<string> selectedEventTypes = new();
     private bool showFilters = false;
+    private bool showAddEventModal = false;
+    private CalendarEvent newEvent = new();
+    private string eventNotes = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -437,11 +632,16 @@
                     _ => (currentDate.Date, currentDate.Date.AddDays(1))
                 };
 
+                // Include "Custom" event type in filters to show user-created events
+                var eventTypesToLoad = selectedEventTypes.Any() 
+                    ? selectedEventTypes.Union(new[] { CalendarEventTypes.Custom }).ToList()
+                    : null;
+
                 allEvents = await CalendarEventService.GetEventsAsync(
                     orgId, 
                     startDate, 
                     endDate,
-                    selectedEventTypes.Any() ? selectedEventTypes : null
+                    eventTypesToLoad
                 );
             }
         }
@@ -481,6 +681,59 @@
     private void NavigateToDashboard()
     {
         Navigation.NavigateTo("/");
+    }
+
+    private async Task ShowAddEventModal()
+    {
+        var orgId = await UserContext.GetOrganizationIdAsync();
+        var userId = await UserContext.GetUserIdAsync();
+        
+        newEvent = new CalendarEvent
+        {
+            StartOn = currentDate.Date.AddHours(9), // Default to 9 AM on current date
+            Color = "#6c757d",
+            Icon = "bi-calendar-event",
+            EventType = CalendarEventTypes.Custom,
+            Status = "Scheduled",
+            OrganizationId = orgId ?? string.Empty,
+            CreatedBy = userId ?? string.Empty,
+            CreatedOn = DateTime.UtcNow
+        };
+        showAddEventModal = true;
+    }
+
+    private void CloseAddEventModal()
+    {
+        showAddEventModal = false;
+        newEvent = new();
+    }
+
+    private async Task SaveCustomEvent()
+    {
+        try
+        {
+            var userId = await UserContext.GetUserIdAsync();
+            
+            // Update last modified fields
+            newEvent.LastModifiedBy = userId ?? string.Empty;
+            newEvent.LastModifiedOn = DateTime.UtcNow;
+
+            // Calculate duration if end time is set
+            if (newEvent.EndOn.HasValue)
+            {
+                newEvent.DurationMinutes = (int)(newEvent.EndOn.Value - newEvent.StartOn).TotalMinutes;
+            }
+
+            await CalendarEventService.CreateCustomEventAsync(newEvent);
+            
+            ToastService.ShowSuccess("Event created successfully");
+            CloseAddEventModal();
+            await LoadEvents();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error creating event: {ex.Message}");
+        }
     }
 
     private async Task ChangeView(string mode)
@@ -539,6 +792,15 @@
     private DateTime GetWeekEnd()
     {
         return GetWeekStart().AddDays(6);
+    }
+
+    private async Task OnDateSelected(ChangeEventArgs e)
+    {
+        if (e.Value != null && DateTime.TryParse(e.Value.ToString(), out var selectedDate))
+        {
+            currentDate = selectedDate;
+            await LoadEvents();
+        }
     }
 
     private RenderFragment RenderDayView() => builder =>
@@ -811,7 +1073,7 @@
                     {
                         var eventIndex = cellIndex + 30 + dayEvents.IndexOf(evt);
                         builder.OpenElement(eventIndex, "div");
-                        builder.AddAttribute(eventIndex + 1, "class", "badge bg-secondary text-start text-truncate");
+                        builder.AddAttribute(eventIndex + 1, "class", $"badge {GetMonthViewEventBadgeClass(evt)} text-start text-truncate");
                         builder.AddAttribute(eventIndex + 2, "onclick", EventCallback.Factory.Create(this, async () => await ShowEventDetail(evt)));
                         builder.AddAttribute(eventIndex + 3, "style", $"cursor: pointer; font-size: 0.7rem; border-left: 3px solid {evt.Color};");
                         builder.OpenElement(eventIndex + 4, "i");
@@ -855,6 +1117,9 @@
     {
         // Load entity and show modal for all event types
         selectedEvent = calendarEvent;
+        
+        // Load notes for custom events
+        eventNotes = calendarEvent.Notes ?? string.Empty;
 
         if (!calendarEvent.SourceEntityId.HasValue)
         {
@@ -874,7 +1139,17 @@
                     break;
 
                 case CalendarEventTypes.Inspection:
-                    await ShowInspectionDetailById(calendarEvent.SourceEntityId.Value, orgId);
+                    // Check if this is a property-based routine inspection or an actual inspection record
+                    if (calendarEvent.SourceEntityType == "Property")
+                    {
+                        // This is a scheduled routine inspection - no Inspection record exists yet
+                        // Just show the basic calendar event info (selectedEvent is already set)
+                    }
+                    else
+                    {
+                        // This is linked to an actual Inspection record
+                        await ShowInspectionDetailById(calendarEvent.SourceEntityId.Value, orgId);
+                    }
                     break;
 
                 case CalendarEventTypes.Maintenance:
@@ -941,7 +1216,24 @@
 
     private void NavigateToEventDetail()
     {
-        if (selectedEvent != null && CalendarEventRouter.IsRoutable(selectedEvent))
+        if (selectedEvent == null) return;
+
+        // For tours, navigate to checklist if available
+        if (selectedEvent.SourceEntityType == nameof(Tour) && selectedTour != null)
+        {
+            if (selectedTour.ChecklistId.HasValue)
+            {
+                Navigation.NavigateTo($"/PropertyManagement/Checklists/View/{selectedTour.ChecklistId.Value}");
+            }
+            else
+            {
+                ToastService.ShowWarning("No checklist found for this tour");
+            }
+            return;
+        }
+
+        // For other event types, use the router
+        if (CalendarEventRouter.IsRoutable(selectedEvent))
         {
             var route = CalendarEventRouter.GetRouteForEvent(selectedEvent);
             if (!string.IsNullOrEmpty(route))
@@ -1124,6 +1416,89 @@
         }
     }
 
+    private async Task UpdateCustomEventStatus(int eventId, string newStatus)
+    {
+        try
+        {
+            var orgId = await UserContext.GetOrganizationIdAsync();
+            var userId = await UserContext.GetUserIdAsync();
+            
+            if (string.IsNullOrEmpty(orgId) || string.IsNullOrEmpty(userId))
+            {
+                ToastService.ShowError("Unable to identify user or organization");
+                return;
+            }
+
+            var calendarEvent = await CalendarEventService.GetEventByIdAsync(eventId, orgId);
+            if (calendarEvent != null && calendarEvent.IsCustomEvent)
+            {
+                calendarEvent.Status = newStatus;
+                calendarEvent.LastModifiedBy = userId;
+                calendarEvent.LastModifiedOn = DateTime.UtcNow;
+                
+                await CalendarEventService.UpdateCustomEventAsync(calendarEvent);
+                
+                // Update the selected event to reflect the change
+                if (selectedEvent != null && selectedEvent.Id == eventId)
+                {
+                    selectedEvent.Status = newStatus;
+                }
+                
+                ToastService.ShowSuccess($"Event status updated to {newStatus}");
+                await LoadEvents();
+            }
+            else
+            {
+                ToastService.ShowError("Event not found or is not a custom event");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error updating event status: {ex.Message}");
+        }
+    }
+
+    private async Task SaveEventNotes()
+    {
+        try
+        {
+            if (selectedEvent == null || !selectedEvent.IsCustomEvent)
+            {
+                ToastService.ShowError("Can only save notes for custom events");
+                return;
+            }
+
+            var orgId = await UserContext.GetOrganizationIdAsync();
+            var userId = await UserContext.GetUserIdAsync();
+            
+            if (string.IsNullOrEmpty(orgId) || string.IsNullOrEmpty(userId))
+            {
+                ToastService.ShowError("Unable to identify user or organization");
+                return;
+            }
+
+            var calendarEvent = await CalendarEventService.GetEventByIdAsync(selectedEvent.Id, orgId);
+            if (calendarEvent != null)
+            {
+                calendarEvent.Notes = eventNotes;
+                calendarEvent.LastModifiedBy = userId;
+                calendarEvent.LastModifiedOn = DateTime.UtcNow;
+                
+                await CalendarEventService.UpdateCustomEventAsync(calendarEvent);
+                
+                // Update the selected event to reflect the change
+                selectedEvent.Notes = eventNotes;
+                
+                ToastService.ShowSuccess("Notes saved successfully");
+                await LoadEvents();
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error saving notes: {ex.Message}");
+        }
+    }
+
     private void NavigateToProspects()
     {
         Navigation.NavigateTo("/PropertyManagement/ProspectiveTenants");
@@ -1131,7 +1506,13 @@
 
     private void NavigateToListView()
     {
-        Navigation.NavigateTo("/PropertyManagement/Tours");
+        Navigation.NavigateTo("/PropertyManagement/Calendar/ListView");
+    }
+
+    private void CompleteRoutineInspection(int propertyId)
+    {
+        // Navigate to create new inspection form with the property pre-selected
+        Navigation.NavigateTo($"/PropertyManagement/Inspections/Create?propertyId={propertyId}");
     }
 
     private string GetStatusBadgeClass(string status) => status switch
@@ -1184,6 +1565,14 @@
         var s when s == ApplicationConstants.TourStatuses.Completed => "bg-success",
         var s when s == ApplicationConstants.TourStatuses.Cancelled => "bg-danger",
         var s when s == ApplicationConstants.TourStatuses.NoShow => "bg-warning text-dark",
+        var s when s == ApplicationConstants.MaintenanceRequestStatuses.Completed => "bg-success",
+        var s when s == ApplicationConstants.MaintenanceRequestStatuses.InProgress => "bg-warning text-dark",
+        var s when s == ApplicationConstants.MaintenanceRequestStatuses.Submitted => "bg-info",
+        var s when s == ApplicationConstants.MaintenanceRequestStatuses.Cancelled => "bg-danger",
+        "Good" => "bg-success",
+        "Excellent" => "bg-success",
+        "Fair" => "bg-warning text-dark",
+        "Poor" => "bg-danger",
         _ => "bg-secondary"
     };
 
@@ -1194,4 +1583,50 @@
         "Low" => "bg-info",
         _ => "bg-secondary"
     };
+
+    private string GetInspectionStatusBadgeClass(string status) => status switch
+    {
+        "Good" => "bg-success",
+        "Fair" => "bg-warning text-dark",
+        "Poor" => "bg-danger",
+        "Completed" => "bg-success",
+        _ => "bg-secondary"
+    };
+
+    private string GetMonthViewEventBadgeClass(CalendarEvent evt)
+    {
+        // Prioritize status-based coloring
+        if (!string.IsNullOrEmpty(evt.Status))
+        {
+            // Tour statuses
+            if (evt.Status == ApplicationConstants.TourStatuses.Completed)
+                return "bg-success";
+            if (evt.Status == ApplicationConstants.TourStatuses.Scheduled)
+                return "bg-info";
+            if (evt.Status == ApplicationConstants.TourStatuses.Cancelled)
+                return "bg-danger";
+            if (evt.Status == ApplicationConstants.TourStatuses.NoShow)
+                return "bg-warning text-dark";
+            
+            // Maintenance request statuses
+            if (evt.Status == ApplicationConstants.MaintenanceRequestStatuses.Completed)
+                return "bg-success";
+            if (evt.Status == ApplicationConstants.MaintenanceRequestStatuses.InProgress)
+                return "bg-warning text-dark";
+            if (evt.Status == ApplicationConstants.MaintenanceRequestStatuses.Submitted)
+                return "bg-info";
+            if (evt.Status == ApplicationConstants.MaintenanceRequestStatuses.Cancelled)
+                return "bg-danger";
+            
+            // Inspection overall conditions
+            if (evt.Status == "Good")
+                return "bg-success";
+            if (evt.Status == "Fair")
+                return "bg-warning text-dark";
+            if (evt.Status == "Poor")
+                return "bg-danger";
+        }
+        
+        return "bg-secondary";
+    }
 }

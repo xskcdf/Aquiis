@@ -159,7 +159,7 @@ namespace Aquiis.SimpleStart.Services
             var existing = await _context.CalendarEvents
                 .FirstOrDefaultAsync(e => e.Id == calendarEvent.Id 
                     && e.OrganizationId == calendarEvent.OrganizationId 
-                    && e.IsCustomEvent
+                    && e.SourceEntityType == null
                     && !e.IsDeleted);
 
             if (existing == null) return null;
@@ -169,9 +169,12 @@ namespace Aquiis.SimpleStart.Services
             existing.EndOn = calendarEvent.EndOn;
             existing.DurationMinutes = calendarEvent.DurationMinutes;
             existing.Description = calendarEvent.Description;
+            existing.Notes = calendarEvent.Notes;
             existing.PropertyId = calendarEvent.PropertyId;
             existing.Location = calendarEvent.Location;
             existing.Status = calendarEvent.Status;
+            existing.LastModifiedBy = calendarEvent.LastModifiedBy;
+            existing.LastModifiedOn = calendarEvent.LastModifiedOn;
 
             await _context.SaveChangesAsync();
 
