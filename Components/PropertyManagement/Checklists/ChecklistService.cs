@@ -316,6 +316,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
                     ItemText = templateItem.ItemText,
                     ItemOrder = templateItem.ItemOrder,
                     CategorySection = templateItem.CategorySection,
+                    SectionOrder = templateItem.SectionOrder,
                     RequiresValue = templateItem.RequiresValue,
                     IsChecked = false,
                     OrganizationId = organizationId
@@ -548,6 +549,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Checklists
                     ItemText = item.ItemText,
                     ItemOrder = item.ItemOrder,
                     CategorySection = item.CategorySection,
+                    SectionOrder = item.SectionOrder,
                     IsRequired = false, // User can customize this later
                     RequiresValue = item.RequiresValue,
                     AllowsNotes = true,

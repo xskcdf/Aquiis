@@ -202,7 +202,10 @@ else
             <!-- Checklist Items Grouped by Section -->
             @if (checklist.Items != null && checklist.Items.Any())
             {
-                var groupedItems = checklist.Items.OrderBy(i => i.ItemOrder).GroupBy(i => i.CategorySection ?? "General");
+                var groupedItems = checklist.Items
+                    .OrderBy(i => i.SectionOrder)
+                    .ThenBy(i => i.ItemOrder)
+                    .GroupBy(i => i.CategorySection ?? "General");
                 
                 @foreach (var group in groupedItems)
                 {

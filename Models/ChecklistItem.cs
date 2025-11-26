@@ -22,6 +22,9 @@ namespace Aquiis.SimpleStart.Models
         [Display(Name = "Category Section")]
         public string? CategorySection { get; set; }
 
+        [Display(Name = "Section Order")]
+        public int SectionOrder { get; set; } = 0;
+
         [Display(Name = "Requires Value")]
         public bool RequiresValue { get; set; } = false;
 

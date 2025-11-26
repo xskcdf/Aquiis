@@ -117,13 +117,16 @@
                             </div>
                             <div class="card-body">
                                 @{
-                                    var sections = checklistItems.GroupBy(i => i.CategorySection ?? "General").OrderBy(g => g.Key);
+                                    var sections = checklistItems
+                                        .OrderBy(i => i.SectionOrder)
+                                        .ThenBy(i => i.ItemOrder)
+                                        .GroupBy(i => i.CategorySection ?? "General");
                                 }
 
                                 @foreach (var itemSection in sections)
                                 {
                                     <h6 class="text-primary mt-3 mb-2">@itemSection.Key</h6>
-                                    @foreach (var item in itemSection.OrderBy(i => i.ItemOrder))
+                                    @foreach (var item in itemSection)
                                     {
                                         <div class="card mb-2">
                                             <div class="card-body py-2">
@@ -287,6 +290,7 @@
                 ItemText = ti.ItemText,
                 ItemOrder = ti.ItemOrder,
                 CategorySection = ti.CategorySection,
+                SectionOrder = ti.SectionOrder,
                 RequiresValue = ti.RequiresValue,
                 OrganizationId = checklist.OrganizationId
             }).ToList();
@@ -296,11 +300,13 @@
     private void AddCustomItem()
     {
         var maxOrder = checklistItems.Any() ? checklistItems.Max(i => i.ItemOrder) : 0;
+        var maxSectionOrder = checklistItems.Any() ? checklistItems.Max(i => i.SectionOrder) : 0;
         checklistItems.Add(new ChecklistItem
         {
             ItemText = "",
             ItemOrder = maxOrder + 1,
             CategorySection = "Custom",
+            SectionOrder = maxSectionOrder,
             OrganizationId = checklist.OrganizationId
         });
     }

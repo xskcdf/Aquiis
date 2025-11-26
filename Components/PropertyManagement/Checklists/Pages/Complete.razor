@@ -1,4 +1,5 @@
 @page "/propertymanagement/checklists/complete/{ChecklistId:int}"
+@page "/propertymanagement/checklists/complete/new"
 
 @using Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 @using Aquiis.SimpleStart.Components.PropertyManagement
@@ -143,7 +144,10 @@ else
                     <!-- Checklist Items Grouped by Section -->
                     @if (checklist.Items != null && checklist.Items.Any())
                 {
-                    var groupedItems = checklist.Items.OrderBy(i => i.ItemOrder).GroupBy(i => i.CategorySection ?? "General");
+                    var groupedItems = checklist.Items
+                        .OrderBy(i => i.SectionOrder)
+                        .ThenBy(i => i.ItemOrder)
+                        .GroupBy(i => i.CategorySection ?? "General");
                     
                     @foreach (var group in groupedItems)
                     {
@@ -329,9 +333,15 @@ else
     [Parameter]
     public int ChecklistId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "templateId")]
+    public int? TemplateId { get; set; }
+
     private Checklist? checklist;
+    private ChecklistTemplate? template;
+    private bool isNewChecklist = false;
     private List<Property> properties = new();
     private List<Lease> leases = new();
+    private List<ChecklistItem> checklistItems = new();
     private int selectedPropertyId = 0;
     private int selectedLeaseId = 0;
     private bool requiresLease = false;
@@ -342,8 +352,70 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadChecklist();
         await LoadProperties();
+        
+        if (TemplateId.HasValue && TemplateId.Value > 0)
+        {
+            // New checklist from template
+            await LoadTemplateForNewChecklist();
+        }
+        else if (ChecklistId > 0)
+        {
+            // Existing checklist
+            await LoadChecklist();
+        }
+    }
+
+    private async Task LoadTemplateForNewChecklist()
+    {
+        try
+        {
+            template = await ChecklistService.GetChecklistTemplateByIdAsync(TemplateId!.Value);
+            
+            if (template == null)
+            {
+                errorMessage = "Template not found.";
+                return;
+            }
+
+            isNewChecklist = true;
+            var organizationId = await UserContext.GetOrganizationIdAsync();
+            var userId = await UserContext.GetUserIdAsync();
+
+            // Create a temporary checklist object (not saved to DB yet)
+            checklist = new Checklist
+            {
+                Name = template.Name,
+                ChecklistType = template.Category,
+                ChecklistTemplateId = template.Id,
+                Status = ApplicationConstants.ChecklistStatuses.Draft,
+                OrganizationId = organizationId!,
+                CreatedBy = userId!,
+                CreatedOn = DateTime.UtcNow
+            };
+
+            // Copy template items to working list
+            checklistItems = template.Items.Select(ti => new ChecklistItem
+            {
+                ItemText = ti.ItemText,
+                ItemOrder = ti.ItemOrder,
+                CategorySection = ti.CategorySection,
+                SectionOrder = ti.SectionOrder,
+                RequiresValue = ti.RequiresValue,
+                IsChecked = false,
+                OrganizationId = organizationId!
+            }).ToList();
+
+            // Set Items collection for display
+            checklist.Items = checklistItems;
+
+            requiresLease = checklist.ChecklistType == ApplicationConstants.ChecklistTypes.MoveIn ||
+                           checklist.ChecklistType == ApplicationConstants.ChecklistTypes.MoveOut;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading template: {ex.Message}";
+        }
     }
 
     private async Task LoadProperties()
@@ -510,21 +582,46 @@ else
 
         try
         {
-            // Update checklist status if it's still draft
-            if (checklist.Status == ApplicationConstants.ChecklistStatuses.Draft)
+            // If this is a new checklist, create it first
+            if (isNewChecklist)
             {
-                checklist.Status = ApplicationConstants.ChecklistStatuses.InProgress;
-                await ChecklistService.UpdateChecklistAsync(checklist);
-            }
+                // Create the checklist
+                var savedChecklist = await ChecklistService.AddChecklistAsync(checklist);
+                
+                // Add the items
+                foreach (var item in checklistItems)
+                {
+                    item.ChecklistId = savedChecklist.Id;
+                    await ChecklistService.AddChecklistItemAsync(item);
+                }
 
-            // Save all modified items
-            foreach (var item in modifiedItems.Values)
+                // Update local reference and flag
+                ChecklistId = savedChecklist.Id;
+                isNewChecklist = false;
+                
+                // Reload to get full entity with navigation properties
+                await LoadChecklist();
+                
+                successMessage = "Checklist created and saved successfully.";
+            }
+            else
             {
-                await ChecklistService.UpdateChecklistItemAsync(item);
-            }
+                // Update checklist status if it's still draft
+                if (checklist.Status == ApplicationConstants.ChecklistStatuses.Draft)
+                {
+                    checklist.Status = ApplicationConstants.ChecklistStatuses.InProgress;
+                    await ChecklistService.UpdateChecklistAsync(checklist);
+                }
 
-            modifiedItems.Clear();
-            successMessage = "Progress saved successfully.";
+                // Save all modified items
+                foreach (var item in modifiedItems.Values)
+                {
+                    await ChecklistService.UpdateChecklistItemAsync(item);
+                }
+
+                modifiedItems.Clear();
+                successMessage = "Progress saved successfully.";
+            }
         }
         catch (Exception ex)
         {
@@ -546,12 +643,31 @@ else
 
         try
         {
-            // Save any pending changes first
-            foreach (var item in modifiedItems.Values)
+            // If this is a new checklist, create it first
+            if (isNewChecklist)
             {
-                await ChecklistService.UpdateChecklistItemAsync(item);
+                // Create the checklist
+                var savedChecklist = await ChecklistService.AddChecklistAsync(checklist);
+                
+                // Add the items
+                foreach (var item in checklistItems)
+                {
+                    item.ChecklistId = savedChecklist.Id;
+                    await ChecklistService.AddChecklistItemAsync(item);
+                }
+
+                ChecklistId = savedChecklist.Id;
+                isNewChecklist = false;
             }
-            modifiedItems.Clear();
+            else
+            {
+                // Save any pending changes first
+                foreach (var item in modifiedItems.Values)
+                {
+                    await ChecklistService.UpdateChecklistItemAsync(item);
+                }
+                modifiedItems.Clear();
+            }
 
             // Complete the checklist
             await ChecklistService.CompleteChecklistAsync(ChecklistId);

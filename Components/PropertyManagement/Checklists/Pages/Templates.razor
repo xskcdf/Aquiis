@@ -1,11 +1,13 @@
 @page "/propertymanagement/checklists/templates"
 @using Aquiis.SimpleStart.Components.PropertyManagement.Checklists
 @using Aquiis.SimpleStart.Models
+@using Aquiis.SimpleStart.Services
 @using Aquiis.SimpleStart.Components.Administration.Application
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components
 @inject ChecklistService ChecklistService
 @inject NavigationManager NavigationManager
+@inject UserContextService UserContext
 @attribute [Authorize (Roles = "PropertyManager,Administrator")]
 
 @rendermode InteractiveServer
@@ -152,6 +154,18 @@
                                             @onclick="@(() => NavigateToEditTemplate(template.Id))">
                                         <i class="bi bi-pencil"></i> Edit
                                     </button>
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            @onclick="@(() => CopyTemplate(template))"
+                                            disabled="@isCopying">
+                                        @if (isCopying)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-1"></span>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-copy"></i> <text>Copy</text>
+                                        }
+                                    </button>
                                     <button class="btn btn-sm btn-danger" 
                                             @onclick="@(() => ShowDeleteConfirmation(template))">
                                         <i class="bi bi-trash"></i>
@@ -159,14 +173,24 @@
                                 }
                                 else
                                 {
-                                    <button class="btn btn-sm btn-primary flex-fill" 
+                                    @if (isAdmin)
+                                    {
+                                        <button class="btn btn-sm btn-primary flex-fill" 
+                                                @onclick="@(() => NavigateToEditTemplate(template.Id))">
+                                            <i class="bi bi-pencil"></i> Edit
+                                        </button>
+                                    }
+                                    <button class="btn btn-sm btn-outline-primary" 
                                             @onclick="@(() => CopyTemplate(template))"
                                             disabled="@isCopying">
                                         @if (isCopying)
                                         {
                                             <span class="spinner-border spinner-border-sm me-1"></span>
                                         }
-                                        <i class="bi bi-copy"></i> Copy
+                                        else
+                                        {
+                                            <i class="bi bi-copy"></i> <text>Copy</text>
+                                        }
                                     </button>
                                     <button class="btn btn-sm btn-outline-secondary" 
                                             @onclick="@(() => NavigateToCreateWithTemplate(template.Id))">
@@ -189,10 +213,12 @@
     private bool showDeleteConfirmation = false;
     private bool isDeleting = false;
     private bool isCopying = false;
+    private bool isAdmin = false;
     private ChecklistTemplate? templateToDelete = null;
 
     protected override async Task OnInitializedAsync()
     {
+        isAdmin = await UserContext.IsInRoleAsync(ApplicationConstants.DefaultAdminRole);
         await LoadTemplates();
     }
 
@@ -252,6 +278,7 @@
                         ItemText = sourceItem.ItemText,
                         ItemOrder = sourceItem.ItemOrder,
                         CategorySection = sourceItem.CategorySection,
+                        SectionOrder = sourceItem.SectionOrder,
                         IsRequired = sourceItem.IsRequired,
                         RequiresValue = sourceItem.RequiresValue,
                         AllowsNotes = sourceItem.AllowsNotes

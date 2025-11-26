@@ -20,6 +20,11 @@
             <p class="text-muted">Manage and track property tour appointments</p>
         </div>
         <div class="col-auto">
+            <div class="btn-group me-2">
+                <button class="btn btn-outline-secondary" @onclick="NavigateToCalendar">
+                    <i class="bi bi-calendar3"></i> Calendar View
+                </button>
+            </div>
             <button class="btn btn-primary" @onclick="NavigateToProspects">
                 <i class="bi bi-plus-circle"></i> Schedule New Tour
             </button>
@@ -288,6 +293,11 @@
     private void NavigateToProspects()
     {
         Navigation.NavigateTo("/PropertyManagement/ProspectiveTenants");
+    }
+
+    private void NavigateToCalendar()
+    {
+        Navigation.NavigateTo("/PropertyManagement/Tours/Calendar");
     }
 
     private async Task MarkCompleted(int tourId)
