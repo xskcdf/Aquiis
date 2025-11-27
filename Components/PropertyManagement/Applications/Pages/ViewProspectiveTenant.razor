@@ -2,6 +2,7 @@
 @using Aquiis.SimpleStart.Models
 @using Aquiis.SimpleStart.Services
 @using Aquiis.SimpleStart.Components.Administration.Application
+@using Aquiis.SimpleStart.Utilities
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "SuperAdministrator,Administrator,PropertyManager")]
@@ -93,6 +94,27 @@
                                 </div>
 
                                 <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Date of Birth</label>
+                                        <InputDate class="form-control" @bind-Value="editModel.DateOfBirth" />
+                                    </div>
+                                    <div class="col-md-5 mb-3">
+                                        <label class="form-label">Identification Number</label>
+                                        <InputText class="form-control" @bind-Value="editModel.IdentificationNumber" placeholder="Driver's License, State ID, etc." />
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">State</label>
+                                        <InputSelect class="form-select" @bind-Value="editModel.IdentificationState">
+                                            <option value="">Select...</option>
+                                            @foreach (var state in States.StatesArray())
+                                            {
+                                                <option value="@state.Abbreviation">@state.Name</option>
+                                            }
+                                        </InputSelect>
+                                    </div>
+                                </div>
+
+                                <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Source</label>
                                         <InputSelect class="form-select" @bind-Value="editModel.Source">
@@ -158,6 +180,18 @@
                                                 <i class="bi bi-telephone"></i> @prospect.Phone
                                             </a>
                                         </dd>
+
+                                        @if (prospect.DateOfBirth.HasValue)
+                                        {
+                                            <dt class="col-sm-4">Date of Birth:</dt>
+                                            <dd class="col-sm-8">@prospect.DateOfBirth.Value.ToString("MMM dd, yyyy")</dd>
+                                        }
+
+                                        @if (!string.IsNullOrEmpty(prospect.IdentificationNumber))
+                                        {
+                                            <dt class="col-sm-4">ID Number:</dt>
+                                            <dd class="col-sm-8">@prospect.IdentificationNumber @(!string.IsNullOrEmpty(prospect.IdentificationState) ? $"({prospect.IdentificationState})" : "")</dd>
+                                        }
                                     </dl>
                                 </div>
                                 <div class="col-md-6">
@@ -548,6 +582,9 @@
                 LastName = prospect.LastName,
                 Email = prospect.Email,
                 Phone = prospect.Phone,
+                DateOfBirth = prospect.DateOfBirth,
+                IdentificationNumber = prospect.IdentificationNumber,
+                IdentificationState = prospect.IdentificationState,
                 Source = prospect.Source,
                 Notes = prospect.Notes,
                 InterestedPropertyId = prospect.InterestedPropertyId?.ToString(),
@@ -576,6 +613,9 @@
             prospect.LastName = editModel.LastName;
             prospect.Email = editModel.Email;
             prospect.Phone = editModel.Phone;
+            prospect.DateOfBirth = editModel.DateOfBirth;
+            prospect.IdentificationNumber = editModel.IdentificationNumber;
+            prospect.IdentificationState = editModel.IdentificationState;
             prospect.Source = editModel.Source;
             prospect.Notes = editModel.Notes;
             prospect.InterestedPropertyId = int.TryParse(editModel.InterestedPropertyId, out var propId) && propId > 0 ? propId : null;
@@ -696,6 +736,14 @@
         [Phone(ErrorMessage = "Invalid phone number")]
         [StringLength(20)]
         public string Phone { get; set; } = string.Empty;
+
+        public DateTime? DateOfBirth { get; set; }
+
+        [StringLength(100)]
+        public string? IdentificationNumber { get; set; }
+
+        [StringLength(2)]
+        public string? IdentificationState { get; set; }
 
         [StringLength(100)]
         public string? Source { get; set; }

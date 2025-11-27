@@ -28,6 +28,18 @@ namespace Aquiis.SimpleStart.Models
         [Display(Name = "Phone")]
         public string Phone { get; set; } = string.Empty;
 
+        [DataType(DataType.Date)]
+        [Display(Name = "Date of Birth")]
+        public DateTime? DateOfBirth { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "Identification Number")]
+        public string? IdentificationNumber { get; set; }
+
+        [StringLength(2)]
+        [Display(Name = "Identification State")]
+        public string? IdentificationState { get; set; }
+
         [Required]
         [StringLength(50)]
         [Display(Name = "Status")]

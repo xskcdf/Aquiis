@@ -2,6 +2,7 @@
 @using Aquiis.SimpleStart.Models
 @using Aquiis.SimpleStart.Services
 @using Aquiis.SimpleStart.Components.Administration.Application
+@using Aquiis.SimpleStart.Utilities
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "SuperAdministrator,Administrator,PropertyManager")]
@@ -58,6 +59,27 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Phone *</label>
                             <InputText class="form-control" type="tel" @bind-Value="newProspect.Phone" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Date of Birth</label>
+                            <InputDate class="form-control" @bind-Value="newProspect.DateOfBirth" />
+                        </div>
+                        <div class="col-md-5 mb-3">
+                            <label class="form-label">Identification Number</label>
+                            <InputText class="form-control" @bind-Value="newProspect.IdentificationNumber" placeholder="e.g., Driver's License #" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">ID State</label>
+                            <InputSelect class="form-select" @bind-Value="newProspect.IdentificationState">
+                                <option value="">Select...</option>
+                                @foreach (var state in States.StatesArray())
+                                {
+                                    <option value="@state.Abbreviation">@state.Abbreviation</option>
+                                }
+                            </InputSelect>
                         </div>
                     </div>
 
@@ -305,6 +327,9 @@
                 LastName = newProspect.LastName,
                 Email = newProspect.Email,
                 Phone = newProspect.Phone,
+                DateOfBirth = newProspect.DateOfBirth,
+                IdentificationNumber = newProspect.IdentificationNumber,
+                IdentificationState = newProspect.IdentificationState,
                 Source = newProspect.Source,
                 Notes = newProspect.Notes,
                 InterestedPropertyId = newProspect.InterestedPropertyId,
@@ -398,6 +423,14 @@
         [Phone(ErrorMessage = "Invalid phone number")]
         [StringLength(20)]
         public string Phone { get; set; } = string.Empty;
+
+        public DateTime? DateOfBirth { get; set; }
+
+        [StringLength(100)]
+        public string? IdentificationNumber { get; set; }
+
+        [StringLength(2)]
+        public string? IdentificationState { get; set; }
 
         [StringLength(100)]
         public string? Source { get; set; }

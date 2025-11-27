@@ -43,7 +43,7 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Tenants {
 
         [Phone]
         [StringLength(20)]
-        public string EmergencyContactPhone { get; set; } = string.Empty;
+        public string? EmergencyContactPhone { get; set; }
 
         [StringLength(500)]
         public string Notes { get; set; } = string.Empty;

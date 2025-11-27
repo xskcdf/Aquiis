@@ -38,6 +38,19 @@
                     </div>
 
                     <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Unit Number</label>
+                            <InputText @bind-Value="propertyModel.UnitNumber" class="form-control" placeholder="e.g., Apt 2B, Unit 101" />
+                            <ValidationMessage For="() => propertyModel.UnitNumber" class="text-danger" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label" for="@propertyModel.ZipCode">Postal Code</label>
+                            <InputText @bind-Value="propertyModel.ZipCode" class="form-control" placeholder="#####-####" />
+                            <ValidationMessage For="() => propertyModel.ZipCode" class="text-danger" />
+                        </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">City</label>
                             <InputText @bind-Value="propertyModel.City" class="form-control" placeholder="City" />
@@ -159,6 +172,7 @@
         {
             UserId = userId,
             Address = propertyModel.Address,
+            UnitNumber = propertyModel.UnitNumber,
             City = propertyModel.City,
             State = propertyModel.State,
             ZipCode = propertyModel.ZipCode,
@@ -192,6 +206,9 @@
         [Required(ErrorMessage = "Address is required")]
         [StringLength(200, ErrorMessage = "Address cannot exceed 200 characters")]
         public string Address { get; set; } = string.Empty;
+
+        [StringLength(50, ErrorMessage = "Unit number cannot exceed 50 characters")]
+        public string? UnitNumber { get; set; }
 
         [StringLength(100, ErrorMessage = "City cannot exceed 100 characters")]
         public string City { get; set; } = string.Empty;

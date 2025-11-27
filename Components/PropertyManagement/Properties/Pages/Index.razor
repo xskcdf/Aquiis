@@ -118,7 +118,7 @@ else
                     <div class="card h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h5 class="card-title">@property.Address</h5>
+                                <h5 class="card-title">@property.Address @(!string.IsNullOrWhiteSpace(property.UnitNumber) ? $", {property.UnitNumber}" : "")</h5>
                                 <span class="badge @GetStatusBadgeClass(property.Status)">
                                     @property.Status
                                 </span>
@@ -223,7 +223,7 @@ else
                             {
                                 <tr id="property-@property.Id">
                                     <td>
-                                        <strong>@property.Address</strong>
+                                        <strong>@property.Address @(!string.IsNullOrWhiteSpace(property.UnitNumber) ? $", {property.UnitNumber}" : "")</strong>
                                         <br />
                                         <small class="text-muted">@property.State @property.ZipCode</small>
                                     </td>

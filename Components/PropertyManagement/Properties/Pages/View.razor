@@ -61,7 +61,7 @@ else
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <strong>Address:</strong>
-                            <p class="mb-1">@property.Address</p>
+                            <p class="mb-1">@property.Address @(!string.IsNullOrWhiteSpace(property.UnitNumber) ? $", {property.UnitNumber}" : "")</p>
                             <small class="text-muted">@property.City, @property.State @property.ZipCode</small>
                         </div>
                     </div>

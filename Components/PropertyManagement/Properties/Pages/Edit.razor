@@ -66,6 +66,19 @@ else
                         </div>
 
                         <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label">Unit Number</label>
+                                <InputText @bind-Value="propertyModel.UnitNumber" class="form-control" placeholder="e.g., Apt 2B, Unit 101" />
+                                <ValidationMessage For="() => propertyModel.UnitNumber" class="text-danger" />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Zip Code</label>
+                                <InputText @bind-Value="propertyModel.ZipCode" class="form-control" placeholder="Zip Code" />
+                                <ValidationMessage For="() => propertyModel.ZipCode" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">City</label>
                                 <InputText @bind-Value="propertyModel.City" class="form-control" placeholder="City" />
@@ -74,18 +87,13 @@ else
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">State</label>
                                 <InputSelect @bind-Value="propertyModel.State" class="form-select">
-                                <option value="">Select State</option>
-                                @foreach (var state in States.StatesArray())
-                                {
-                                    <option value="@state.Abbreviation">@state.Name</option>
-                                }
-                            </InputSelect>
+                                    <option value="">Select State</option>
+                                    @foreach (var state in States.StatesArray())
+                                    {
+                                        <option value="@state.Abbreviation">@state.Name</option>
+                                    }
+                                </InputSelect>
                                 <ValidationMessage For="() => propertyModel.State" class="text-danger" />
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Zip Code</label>
-                                <InputText @bind-Value="propertyModel.ZipCode" class="form-control" placeholder="Zip Code" />
-                                <ValidationMessage For="() => propertyModel.ZipCode" class="text-danger" />
                             </div>
                         </div>
 
@@ -245,6 +253,7 @@ else
         propertyModel = new PropertyModel
         {
             Address = property.Address,
+            UnitNumber = property.UnitNumber,
             City = property.City,
             State = property.State,
             ZipCode = property.ZipCode,
@@ -324,6 +333,7 @@ else
 
             // Update property with form data
             property!.Address = propertyModel.Address;
+            property.UnitNumber = propertyModel.UnitNumber;
             property.City = propertyModel.City;
             property.State = propertyModel.State;
             property.ZipCode = propertyModel.ZipCode;
@@ -363,6 +373,9 @@ else
         [Required(ErrorMessage = "Address is required")]
         [StringLength(200, ErrorMessage = "Address cannot exceed 200 characters")]
         public string Address { get; set; } = string.Empty;
+
+        [StringLength(50, ErrorMessage = "Unit number cannot exceed 50 characters")]
+        public string? UnitNumber { get; set; }
 
         [StringLength(100, ErrorMessage = "City cannot exceed 100 characters")]
         public string City { get; set; } = string.Empty;

@@ -25,6 +25,13 @@ namespace Aquiis.SimpleStart.Components.PropertyManagement.Properties
             Prompt = "e.g., 123 Main St", ShortName = "Address")]
         public string Address { get; set; } = string.Empty;
 
+        [StringLength(50)]
+        [JsonInclude]
+        [DataType(DataType.Text)]
+        [Display(Name = "Unit Number", Description = "Optional unit or apartment number",
+            Prompt = "e.g., Apt 2B, Unit 101", ShortName = "Unit")]
+        public string? UnitNumber { get; set; }
+
         [StringLength(100)]
         [JsonInclude]
         [DataType(DataType.Text)]

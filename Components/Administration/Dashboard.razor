@@ -87,9 +87,11 @@
     }
 
     <div>
-    <button class="btn btn-primary" @onclick="ManageSettings">Manage Settings</button>
-    <button class="btn btn-secondary" @onclick="ViewDailyReport">View System Status</button>
-    <button class="btn btn-info" @onclick="ManageDatabase">Manage Database</button>
+    <button class="btn btn-primary" @onclick="GoToServiceSettings">Service Settings</button>
+    <button class="btn btn-secondary" @onclick="GoToLateFeeSettings">Late Fee Settings</button>
+    <button class="btn btn-info" @onclick="GoToDatabaseSettings">Manage Database</button>
+    <button class="btn btn-success" @onclick="GoToCalendarSettings">Calendar Settings</button>
+    <button class="btn btn-warning" @onclick="GoToUserManagement">User Management</button>
 </div>
 
 @code {
@@ -129,20 +131,32 @@
 
     }
 
-    private void ViewDailyReport()
+    private void GoToLateFeeSettings()
     {
         // Logic to view the daily system status report
-        NavigationManager.NavigateTo("/administration/application/dailyreport");
+        NavigationManager.NavigateTo("/administration/settings/latefees");
     }
 
-    private void ManageSettings()
+    private void GoToServiceSettings()
     {
         // Logic to navigate to the application settings page
         NavigationManager.NavigateTo("/administration/settings/services");
     }
-    private void ManageDatabase()
+    private void GoToDatabaseSettings()
     {
         // Logic to navigate to the database management page
         NavigationManager.NavigateTo("/administration/application/database");
+    }
+
+    private void GoToCalendarSettings()
+    {
+        // Logic to navigate to the calendar settings page
+        NavigationManager.NavigateTo("/administration/settings/calendar");
+    }
+
+    private void GoToUserManagement()
+    {
+        // Logic to navigate to the user management page
+        NavigationManager.NavigateTo("/administration/users/manage");
     }
 }

@@ -2,22 +2,25 @@ window.sessionTimeoutManager = {
   dotNetRef: null,
   activityEvents: ["mousedown", "mousemove", "keydown", "scroll", "touchstart"],
   isTracking: false,
+  activityHandler: null,
 
   initialize: function (dotNetReference) {
     this.dotNetRef = dotNetReference;
+
+    // Create the activity handler once and store it
+    this.activityHandler = () => {
+      this.recordActivity();
+    };
+
     this.startTracking();
     console.log("Session timeout tracking initialized");
   },
 
   startTracking: function () {
-    if (this.isTracking) return;
-
-    const activityHandler = () => {
-      this.recordActivity();
-    };
+    if (this.isTracking || !this.activityHandler) return;
 
     this.activityEvents.forEach((event) => {
-      document.addEventListener(event, activityHandler, { passive: true });
+      document.addEventListener(event, this.activityHandler, { passive: true });
     });
 
     this.isTracking = true;
@@ -25,14 +28,10 @@ window.sessionTimeoutManager = {
   },
 
   stopTracking: function () {
-    if (!this.isTracking) return;
-
-    const activityHandler = () => {
-      this.recordActivity();
-    };
+    if (!this.isTracking || !this.activityHandler) return;
 
     this.activityEvents.forEach((event) => {
-      document.removeEventListener(event, activityHandler);
+      document.removeEventListener(event, this.activityHandler);
     });
 
     this.isTracking = false;
@@ -52,6 +51,7 @@ window.sessionTimeoutManager = {
   dispose: function () {
     this.stopTracking();
     this.dotNetRef = null;
+    this.activityHandler = null;
     console.log("Session timeout manager disposed");
   },
 };
