@@ -57,9 +57,9 @@ var connectionString = HybridSupport.IsElectronActive
     : builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString, b => b.MigrationsAssembly("Aquiis.SimpleStart")));
+    options.UseSqlite(connectionString, b => b.MigrationsAssembly("Aquiis.SimpleStart").MigrationsHistoryTable("__EFMigrationsHistory")));
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString, b => b.MigrationsAssembly("Aquiis.SimpleStart")), ServiceLifetime.Scoped);
+    options.UseSqlite(connectionString, b => b.MigrationsAssembly("Aquiis.SimpleStart").MigrationsHistoryTable("__EFMigrationsHistory")), ServiceLifetime.Scoped);
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options => {

@@ -8,11 +8,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Aquiis.SimpleStart.Data.Migrations
+namespace Aquiis.SimpleStart.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251127145734_AddPropertyUnitAndProspectTenantFields")]
-    partial class AddPropertyUnitAndProspectTenantFields
+    [Migration("20251128175458_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
