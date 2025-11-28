@@ -1,11 +1,13 @@
-/* Ignore file for Aquiis.SimpleStart project */
+/* Ignore file for Aquiis projects */
 
-/bin/**
-/obj/**
+# Build outputs
+**/bin/
+**/obj/
 
-obj/**
-bin/**
+# Node modules
+node_modules/
 
+# Database files
 *.db
 
 Data/*.db
