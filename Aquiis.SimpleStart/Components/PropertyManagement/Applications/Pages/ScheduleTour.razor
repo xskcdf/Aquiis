@@ -1,8 +1,10 @@
 @page "/PropertyManagement/Tours/Schedule/{ProspectId:int}"
-@using Aquiis.SimpleStart.Models
-@using Aquiis.SimpleStart.Services
-@using Aquiis.SimpleStart.Components.PropertyManagement.Checklists
-@using Aquiis.SimpleStart.Components.Administration.Application
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.SimpleStart.Application.Services.PdfGenerators
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Constants
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "SuperAdministrator,Administrator,PropertyManager")]
@@ -183,7 +185,7 @@
     public int ProspectId { get; set; }
 
     private ProspectiveTenant? prospect;
-    private List<Aquiis.SimpleStart.Components.PropertyManagement.Properties.Property> availableProperties = new();
+    private List<Aquiis.SimpleStart.Core.Entities.Property> availableProperties = new();
     private List<Tour> upcomingTours = new();
     private List<ChecklistTemplate> tourTemplates = new();
     private TourViewModel newTour = new();

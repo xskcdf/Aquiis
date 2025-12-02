@@ -1,6 +1,8 @@
 @page "/reports/property-performance"
-@using Aquiis.SimpleStart.Components.PropertyManagement.Reports
-@using Aquiis.SimpleStart.Services
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.SimpleStart.Application.Services.PdfGenerators
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject FinancialReportService FinancialReportService

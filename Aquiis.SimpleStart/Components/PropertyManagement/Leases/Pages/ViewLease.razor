@@ -1,20 +1,19 @@
 @page "/propertymanagement/leases/view/{Id:int}"
 
-@using Aquiis.SimpleStart.Components.PropertyManagement.Properties
-@using Aquiis.SimpleStart.Components.PropertyManagement.Documents
+@using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
-@using Aquiis.SimpleStart.Components.PropertyManagement.Invoices
-@using Aquiis.SimpleStart.Components.PropertyManagement.Leases
 @using Aquiis.SimpleStart.Components.PropertyManagement
 @using System.ComponentModel.DataAnnotations
-@using Aquiis.SimpleStart.Services
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.SimpleStart.Application.Services.PdfGenerators
 
 @inject NavigationManager Navigation
 @inject PropertyManagementService PropertyManagementService
-@inject Services.LeaseRenewalPdfGenerator RenewalPdfGenerator
+@inject LeaseRenewalPdfGenerator RenewalPdfGenerator
 @inject ToastService ToastService
 @inject IJSRuntime JSRuntime
 @attribute [Authorize(Roles = "Administrator, PropertyManager")]
@@ -779,7 +778,7 @@ else
             }
 
             // Generate the PDF
-            byte[] pdfBytes = Documents.LeasePdfGenerator.GenerateLeasePdf(lease!);
+            byte[] pdfBytes = await LeasePdfGenerator.GenerateLeasePdf(lease!);
 
             // Create the document entity
             var document = new Document

@@ -1,12 +1,14 @@
 @page "/propertymanagement/leases/{LeaseId:int}/accept"
 
-@using Aquiis.SimpleStart.Components.PropertyManagement.Leases
-@using Aquiis.SimpleStart.Components.PropertyManagement.Properties
-@using Aquiis.SimpleStart.Components.PropertyManagement.Tenants
-@using Aquiis.SimpleStart.Components.PropertyManagement.SecurityDeposits
-@using Aquiis.SimpleStart.Models
-@using Aquiis.SimpleStart.Services
-@using Aquiis.SimpleStart.Components.Administration.Application
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.SimpleStart.Application.Services.PdfGenerators
+@using Aquiis.SimpleStart.Core.Constants
 @using Microsoft.AspNetCore.Authorization
 @using System.Net
 @using System.ComponentModel.DataAnnotations
@@ -442,21 +444,18 @@
                 ToastService.ShowError(errorMessage);
                 return;
             }
-            } else {
-                // Add deposit to investment pool (will start earning dividends)
-                try
-                {
-                    await SecurityDepositService.AddToInvestmentPoolAsync(securityDeposit.Id, userId);
-                }
-                catch (Exception poolEx)
-                {
-                    // Non-critical: deposit collected but not added to pool yet
-                    // Can be added manually later from Security Deposits page
-                    var message = poolEx.Message + (poolEx.InnerException != null ? $" - {poolEx.InnerException}" : string.Empty);
-                    ToastService.ShowWarning($"Security deposit collected but not added to investment pool: {message}");
-                    //return;
-                    Console.WriteLine($"Warning: Security deposit collected but not added to investment pool: {message}");
-                }
+
+            // Add deposit to investment pool (will start earning dividends)
+            try
+            {
+                await SecurityDepositService.AddToInvestmentPoolAsync(securityDeposit.Id, userId);
+            }
+            catch (Exception poolEx)
+            {
+                // Non-critical: deposit collected but not added to pool yet
+                // Can be added manually later from Security Deposits page
+                var message = poolEx.Message + (poolEx.InnerException != null ? $" - {poolEx.InnerException}" : string.Empty);
+                ToastService.ShowWarning($"Security deposit collected but not added to investment pool: {message}");
             }
             // Update lease with tenant ID and signed status
             lease.TenantId = tenant.Id;

@@ -1,7 +1,7 @@
 @page "/propertymanagement/payments/view/{PaymentId:int}"
 @using Aquiis.SimpleStart.Components.PropertyManagement
-@using Aquiis.SimpleStart.Components.PropertyManagement.Documents
-@using Aquiis.SimpleStart.Components.PropertyManagement.Payments
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager Navigation
@@ -379,7 +379,7 @@ else
             }
 
             // Generate the PDF receipt
-            byte[] pdfBytes = Aquiis.SimpleStart.Components.PropertyManagement.Documents.PaymentPdfGenerator.GeneratePaymentReceipt(payment!);
+            byte[] pdfBytes = Aquiis.SimpleStart.Application.Services.PdfGenerators.PaymentPdfGenerator.GeneratePaymentReceipt(payment!);
 
             // Create the document entity
             var document = new Document

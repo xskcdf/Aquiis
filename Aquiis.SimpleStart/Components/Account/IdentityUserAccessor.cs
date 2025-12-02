@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Identity;
-using Aquiis.SimpleStart.Data;
+using Aquiis.SimpleStart.Infrastructure.Data;
 
 namespace Aquiis.SimpleStart.Components.Account;
 

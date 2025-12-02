@@ -1,8 +1,10 @@
 @page "/property-management/security-deposits/investment-pools"
-@using Aquiis.SimpleStart.Models
-@using Aquiis.SimpleStart.Services
-@using Aquiis.SimpleStart.Components.PropertyManagement.SecurityDeposits
-@using Aquiis.SimpleStart.Components.Administration.Application
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.SimpleStart.Application.Services.PdfGenerators
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Constants
 @using Microsoft.AspNetCore.Authorization
 @inject SecurityDepositService SecurityDepositService
 @inject NavigationManager NavigationManager

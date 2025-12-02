@@ -1,8 +1,11 @@
 @page "/administration/settings/organization"
 
-@using Aquiis.SimpleStart.Models
+@using Aquiis.SimpleStart.Core.Entities
+@using OrganizationSettingsEntity = Aquiis.SimpleStart.Core.Entities.OrganizationSettings
 @using Aquiis.SimpleStart.Components.PropertyManagement
-@using Aquiis.SimpleStart.Services
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.SimpleStart.Application.Services.PdfGenerators
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
 
@@ -334,7 +337,7 @@
 </div>
 
 @code {
-    private Models.OrganizationSettings? settings;
+    private OrganizationSettingsEntity? settings;
     private OrganizationSettingsModel settingsModel = new();
     private bool isLoading = true;
     private bool isSubmitting = false;
@@ -391,7 +394,7 @@
 
         try
         {
-            settings = new Models.OrganizationSettings
+            settings = new OrganizationSettingsEntity
             {
                 OrganizationId = Guid.Parse(organizationId),
                 Name = "My Organization",

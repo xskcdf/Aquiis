@@ -1,6 +1,9 @@
 @page "/administration/settings/calendar"
-@using Aquiis.SimpleStart.Models
-@using Aquiis.SimpleStart.Services
+@using Aquiis.SimpleStart.Core.Entities
+@using CalendarSettingsEntity = Aquiis.SimpleStart.Core.Entities.CalendarSettings
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.SimpleStart.Application.Services.PdfGenerators
 @using Aquiis.SimpleStart.Utilities
 @using Microsoft.AspNetCore.Authorization
 
@@ -243,8 +246,8 @@ else
 }
 
 @code {
-    private List<Models.CalendarSettings> settings = new();
-    private Models.CalendarSettings? selectedSetting;
+    private List<CalendarSettingsEntity> settings = new();
+    private CalendarSettingsEntity? selectedSetting;
     private bool loading = true;
     private bool saving = false;
 
@@ -279,12 +282,12 @@ else
         Navigation.NavigateTo("/administration/dashboard");
     }
 
-    private void ToggleAutoCreate(Models.CalendarSettings setting, bool enabled)
+    private void ToggleAutoCreate(CalendarSettingsEntity setting, bool enabled)
     {
         setting.AutoCreateEvents = enabled;
     }
 
-    private void ToggleShowOnCalendar(Models.CalendarSettings setting, bool show)
+    private void ToggleShowOnCalendar(CalendarSettingsEntity setting, bool show)
     {
         setting.ShowOnCalendar = show;
     }
@@ -307,7 +310,7 @@ else
         }
     }
 
-    private void ShowColorPicker(Models.CalendarSettings setting)
+    private void ShowColorPicker(CalendarSettingsEntity setting)
     {
         selectedSetting = setting;
     }

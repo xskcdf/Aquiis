@@ -1,10 +1,12 @@
 @page "/propertymanagement/applications/{ApplicationId:int}/generate-lease-offer"
 
-@using Aquiis.SimpleStart.Components.PropertyManagement.Leases
-@using Aquiis.SimpleStart.Components.PropertyManagement.Properties
-@using Aquiis.SimpleStart.Models
-@using Aquiis.SimpleStart.Services
-@using Aquiis.SimpleStart.Components.Administration.Application
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.SimpleStart.Application.Services.PdfGenerators
+@using Aquiis.SimpleStart.Core.Constants
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
 

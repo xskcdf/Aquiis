@@ -1,5 +1,5 @@
 using System.Reflection;
-using Aquiis.SimpleStart.Models;
+using Aquiis.SimpleStart.Core.Entities;
 
 namespace Aquiis.SimpleStart.Utilities;
 

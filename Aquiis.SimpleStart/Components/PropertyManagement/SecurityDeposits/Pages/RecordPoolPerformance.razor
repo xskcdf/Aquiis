@@ -1,8 +1,10 @@
 @page "/property-management/security-deposits/record-performance"
 @page "/property-management/security-deposits/record-performance/{Year:int}"
-@using Aquiis.SimpleStart.Models
-@using Aquiis.SimpleStart.Services
-@using Aquiis.SimpleStart.Components.PropertyManagement.SecurityDeposits
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.SimpleStart.Application.Services.PdfGenerators
+@using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @inject SecurityDepositService SecurityDepositService
 @inject PropertyManagementService PropertyManagementService

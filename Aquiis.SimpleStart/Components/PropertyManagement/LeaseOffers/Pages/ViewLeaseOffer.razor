@@ -1,12 +1,14 @@
 @page "/propertymanagement/leaseoffers/view/{Id:int}"
 
-@using Aquiis.SimpleStart.Models
-@using Aquiis.SimpleStart.Services
-@using Aquiis.SimpleStart.Data
-@using Aquiis.SimpleStart.Components.Administration.Application
-@using Aquiis.SimpleStart.Components.PropertyManagement.Tenants
-@using Aquiis.SimpleStart.Components.PropertyManagement.Leases
-@using Aquiis.SimpleStart.Components.PropertyManagement.SecurityDeposits
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.SimpleStart.Application.Services.PdfGenerators
+@using Aquiis.SimpleStart.Infrastructure.Data
+@using Aquiis.SimpleStart.Core.Constants
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore

@@ -1,7 +1,9 @@
 @page "/PropertyManagement/ProspectiveTenants/{ProspectId:int}"
-@using Aquiis.SimpleStart.Models
-@using Aquiis.SimpleStart.Services
-@using Aquiis.SimpleStart.Components.Administration.Application
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.SimpleStart.Application.Services.PdfGenerators
+@using Aquiis.SimpleStart.Core.Constants
 @using Aquiis.SimpleStart.Utilities
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authorization
@@ -569,7 +571,7 @@
     private ProspectiveTenant? prospect;
     private List<Tour> tours = new();
     private RentalApplication? application;
-    private List<Aquiis.SimpleStart.Components.PropertyManagement.Properties.Property> availableProperties = new();
+    private List<Aquiis.SimpleStart.Core.Entities.Property> availableProperties = new();
     private bool loading = true;
     private bool isEditing = false;
     private ProspectEditViewModel editModel = new();

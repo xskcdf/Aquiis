@@ -1,11 +1,13 @@
 @page "/propertymanagement/checklists/view/{ChecklistId:int}"
 
-@using Aquiis.SimpleStart.Components.PropertyManagement.Checklists
+@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Components.PropertyManagement
-@using Aquiis.SimpleStart.Components.Administration.Application
-@using Aquiis.SimpleStart.Models
-@using Aquiis.SimpleStart.Services
-@using Aquiis.SimpleStart.Components.PropertyManagement.Documents
+@using Aquiis.SimpleStart.Core.Constants
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.SimpleStart.Application.Services.PdfGenerators
+@using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
