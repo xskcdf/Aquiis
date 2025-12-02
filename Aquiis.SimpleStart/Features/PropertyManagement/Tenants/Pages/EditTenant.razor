@@ -1,0 +1,341 @@
+@page "/propertymanagement/tenants/edit/{Id:int}"
+@using Aquiis.SimpleStart.Core.Entities
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+
+@attribute [Authorize(Roles = "PropertyManager")]
+@inject NavigationManager NavigationManager
+@inject PropertyManagementService PropertyManagementService
+@rendermode InteractiveServer
+
+@if (tenant == null)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else if (!isAuthorized)
+{
+    <div class="alert alert-danger">
+        <h4>Access Denied</h4>
+        <p>You don't have permission to edit this tenant.</p>
+        <a href="/tenants" class="btn btn-primary">Back to Tenants</a>
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Edit Tenant</h3>
+                </div>
+                <div class="card-body">
+                    <EditForm Model="tenantModel" OnValidSubmit="UpdateTenant" FormName="edit-tenant">
+                        <DataAnnotationsValidator />
+                        
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger" role="alert">
+                                @errorMessage
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(successMessage))
+                        {
+                            <div class="alert alert-success" role="alert">
+                                @successMessage
+                            </div>
+                        }
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">First Name *</label>
+                                <InputText @bind-Value="tenantModel.FirstName" class="form-control" placeholder="First name" />
+                                <ValidationMessage For="() => tenantModel.FirstName" class="text-danger" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Last Name *</label>
+                                <InputText @bind-Value="tenantModel.LastName" class="form-control" placeholder="Last name" />
+                                <ValidationMessage For="() => tenantModel.LastName" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email *</label>
+                                <InputText @bind-Value="tenantModel.Email" class="form-control" type="email" placeholder="email@example.com" />
+                                <ValidationMessage For="() => tenantModel.Email" class="text-danger" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phone Number</label>
+                                <InputText @bind-Value="tenantModel.PhoneNumber" class="form-control" placeholder="(555) 123-4567" />
+                                <ValidationMessage For="() => tenantModel.PhoneNumber" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Date of Birth</label>
+                                <InputDate @bind-Value="tenantModel.DateOfBirth" class="form-control" />
+                                <ValidationMessage For="() => tenantModel.DateOfBirth" class="text-danger" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Identification Number</label>
+                                <InputText @bind-Value="tenantModel.IdentificationNumber" class="form-control" placeholder="Identification number" />
+                                <ValidationMessage For="() => tenantModel.IdentificationNumber" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Emergency Contact Name</label>
+                                <InputText @bind-Value="tenantModel.EmergencyContactName" class="form-control" placeholder="Emergency contact name" />
+                                <ValidationMessage For="() => tenantModel.EmergencyContactName" class="text-danger" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Emergency Contact Phone</label>
+                                <InputText @bind-Value="tenantModel.EmergencyContactPhone" class="form-control" placeholder="(555) 123-4567" />
+                                <ValidationMessage For="() => tenantModel.EmergencyContactPhone" class="text-danger" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Status: </label>
+                                <InputCheckbox @bind-Value="tenantModel.IsActive" class="form-check-input" /> Active
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Notes</label>
+                                <InputTextArea @bind-Value="tenantModel.Notes" class="form-control" rows="3" placeholder="Additional notes about the tenant" />
+                                <ValidationMessage For="() => tenantModel.Notes" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                @if (isSubmitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                Update Tenant
+                            </button>
+                            <button type="button" class="btn btn-secondary" @onclick="ViewTenant">View Tenant</button>
+                            <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">Cancel</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Tenant Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" @onclick="ViewTenant">
+                            <i class="bi bi-eye"></i> View Tenant
+                        </button>
+                        <button class="btn btn-outline-success" @onclick="CreateLease">
+                            <i class="bi bi-file-plus"></i> Create Lease
+                        </button>
+                        <button class="btn btn-outline-danger" @onclick="DeleteTenant">
+                            <i class="bi bi-trash"></i> Delete Tenant
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Tenant Information</h5>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <strong>Added:</strong> @tenant.CreatedOn.ToString("MMMM dd, yyyy")
+                        <br />
+                        @if (tenant.LastModifiedOn.HasValue)
+                        {
+                            <strong>Last Modified:</strong> @tenant.LastModifiedOn.Value.ToString("MMMM dd, yyyy")
+                        }
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    
+    private Tenant? tenant;
+    private TenantModel tenantModel = new();
+    private bool isSubmitting = false;
+    private bool isAuthorized = true;
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTenant();
+    }
+
+    private async Task LoadTenant()
+    {
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            isAuthorized = false;
+            return;
+        }
+
+        tenant = await PropertyManagementService.GetTenantByIdAsync(Id);
+
+        if (tenant == null)
+        {
+            isAuthorized = false;
+            return;
+        }
+
+        // Map tenant to model
+        tenantModel = new TenantModel
+        {
+            FirstName = tenant.FirstName,
+            LastName = tenant.LastName,
+            Email = tenant.Email,
+            PhoneNumber = tenant.PhoneNumber,
+            DateOfBirth = tenant.DateOfBirth,
+            IdentificationNumber = tenant.IdentificationNumber,
+            IsActive = tenant.IsActive,
+            EmergencyContactName = tenant.EmergencyContactName,
+            EmergencyContactPhone = tenant.EmergencyContactPhone,
+            Notes = tenant.Notes
+        };
+    }
+
+    private async Task UpdateTenant()
+    {
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            isAuthorized = false;
+            return;
+        }
+
+        try
+        {
+            isSubmitting = true;
+            errorMessage = string.Empty;
+            successMessage = string.Empty;
+
+            // Update tenant with form data
+            tenant!.FirstName = tenantModel.FirstName;
+            tenant.LastName = tenantModel.LastName;
+            tenant.Email = tenantModel.Email;
+            tenant.PhoneNumber = tenantModel.PhoneNumber;
+            tenant.DateOfBirth = tenantModel.DateOfBirth;
+            tenant.IdentificationNumber = tenantModel.IdentificationNumber;
+            tenant.IsActive = tenantModel.IsActive;
+            tenant.EmergencyContactName = tenantModel.EmergencyContactName;
+            tenant.EmergencyContactPhone = tenantModel.EmergencyContactPhone;
+            tenant.Notes = tenantModel.Notes;
+            tenant.LastModifiedOn = DateTime.UtcNow;
+            tenant.LastModifiedBy = userId;
+
+            await PropertyManagementService.UpdateTenantAsync(tenant);
+            successMessage = "Tenant updated successfully!";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error updating tenant: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void ViewTenant()
+    {
+        NavigationManager.NavigateTo($"/propertymanagement/tenants/view/{Id}");
+    }
+
+    private void CreateLease()
+    {
+        NavigationManager.NavigateTo($"/propertymanagement/leases/create?tenantId={Id}");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/tenants");
+    }
+
+    private async Task DeleteTenant()
+    {
+        if (tenant != null)
+        {
+            try
+            {
+                await PropertyManagementService.DeleteTenantAsync(tenant);
+                NavigationManager.NavigateTo("/propertymanagement/tenants");
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error deleting tenant: {ex.Message}";
+            }
+        }
+    }
+
+    public class TenantModel
+    {
+        [Required(ErrorMessage = "First name is required")]
+        [StringLength(100, ErrorMessage = "First name cannot exceed 100 characters")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Last name is required")]
+        [StringLength(100, ErrorMessage = "Last name cannot exceed 100 characters")]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address")]
+        [StringLength(255, ErrorMessage = "Email cannot exceed 255 characters")]
+        public string Email { get; set; } = string.Empty;
+
+        [Phone(ErrorMessage = "Please enter a valid phone number")]
+        [StringLength(20, ErrorMessage = "Phone number cannot exceed 20 characters")]
+        public string PhoneNumber { get; set; } = string.Empty;
+
+        public DateTime? DateOfBirth { get; set; }
+
+        [Required(ErrorMessage = "Identification number is required")]
+        [StringLength(100, ErrorMessage = "Identification number cannot exceed 100 characters")]
+        public string IdentificationNumber { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; }
+
+        [StringLength(200, ErrorMessage = "Emergency contact name cannot exceed 200 characters")]
+        public string EmergencyContactName { get; set; } = string.Empty;
+
+        [Phone(ErrorMessage = "Please enter a valid phone number")]
+        [StringLength(20, ErrorMessage = "Emergency contact phone cannot exceed 20 characters")]
+        public string EmergencyContactPhone { get; set; } = string.Empty;
+
+        [StringLength(500, ErrorMessage = "Notes cannot exceed 500 characters")]
+        public string Notes { get; set; } = string.Empty;
+    }
+}

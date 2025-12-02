@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Aquiis.SimpleStart.Components;
-using Aquiis.SimpleStart.Components.Account;
-using Aquiis.SimpleStart.Data;
-using Aquiis.SimpleStart.Components.PropertyManagement;
-using Aquiis.SimpleStart.Components.Administration.Application;
-using Aquiis.SimpleStart.Services;
+using Aquiis.SimpleStart.Shared.Components.Account;
+using Aquiis.SimpleStart.Infrastructure.Data;
+using Aquiis.SimpleStart.Features.PropertyManagement;
+using Aquiis.SimpleStart.Core.Constants;
+using Aquiis.SimpleStart.Application.Services;
+using Aquiis.SimpleStart.Application.Services.PdfGenerators;
+using Aquiis.SimpleStart.Shared.Services;
 using ElectronNET.API;
 using Microsoft.Extensions.Options;
 
@@ -132,8 +134,8 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddScoped<PropertyManagementService>();
-builder.Services.AddScoped<Aquiis.SimpleStart.Components.PropertyManagement.Checklists.ChecklistService>();
-builder.Services.AddScoped<Aquiis.SimpleStart.Components.Administration.Application.ApplicationService>();
+builder.Services.AddScoped<ChecklistService>();
+builder.Services.AddScoped<ApplicationService>();
 builder.Services.AddScoped<CalendarSettingsService>();
 builder.Services.AddScoped<CalendarEventService>();
 builder.Services.AddScoped<TenantConversionService>();

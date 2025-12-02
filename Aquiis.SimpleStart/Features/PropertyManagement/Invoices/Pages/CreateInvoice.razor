@@ -1,0 +1,326 @@
+@page "/propertymanagement/invoices/create"
+@using Aquiis.SimpleStart.Features.PropertyManagement
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Entities
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+@inject NavigationManager NavigationManager
+@inject PropertyManagementService PropertyManagementService
+
+@attribute [Authorize(Roles = "PropertyManager")]
+@rendermode InteractiveServer
+
+<PageTitle>Create Invoice - Property Management</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-receipt"></i> Create Invoice</h1>
+    <button class="btn btn-outline-secondary" @onclick="Cancel">
+        <i class="bi bi-x-lg"></i> Cancel
+    </button>
+</div>
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
+
+@if (successMessage != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @successMessage
+        <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Invoice Information</h5>
+            </div>
+            <div class="card-body">
+                <EditForm Model="invoiceModel" OnValidSubmit="HandleCreateInvoice">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="mb-3">
+                        <label class="form-label">Invoice Number</label>
+                        <InputText @bind-Value="invoiceModel.InvoiceNumber" class="form-control" readonly />
+                        <ValidationMessage For="() => invoiceModel.InvoiceNumber" class="text-danger" />
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Invoice Date <span class="text-danger">*</span></label>
+                            <InputDate @bind-Value="invoiceModel.InvoicedOn" class="form-control" />
+                            <ValidationMessage For="() => invoiceModel.InvoicedOn" class="text-danger" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Due Date <span class="text-danger">*</span></label>
+                            <InputDate @bind-Value="invoiceModel.DueOn" class="form-control" />
+                            <ValidationMessage For="() => invoiceModel.DueOn" class="text-danger" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Lease <span class="text-danger">*</span></label>
+                        <InputSelect @bind-Value="invoiceModel.LeaseId" @bind-Value:after="OnLeaseSelected" class="form-select">
+                            <option value="0">-- Select Lease --</option>
+                            @if (leases != null)
+                            {
+                                @foreach (var lease in leases)
+                                {
+                                    <option value="@lease.Id">
+                                        @lease.Property?.Address - @lease.Tenant?.FullName (@lease.MonthlyRent.ToString("C")/month)
+                                    </option>
+                                }
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => invoiceModel.LeaseId" class="text-danger" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description <span class="text-danger">*</span></label>
+                        <InputText @bind-Value="invoiceModel.Description" class="form-control" placeholder="e.g., Monthly Rent - January 2025" />
+                        <ValidationMessage For="() => invoiceModel.Description" class="text-danger" />
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Amount <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <InputNumber @bind-Value="invoiceModel.Amount" class="form-control" step="0.01" />
+                            </div>
+                            <ValidationMessage For="() => invoiceModel.Amount" class="text-danger" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+                            <InputSelect @bind-Value="invoiceModel.Status" class="form-select">
+                                <option value="Pending">Pending</option>
+                                <option value="Paid">Paid</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </InputSelect>
+                            <ValidationMessage For="() => invoiceModel.Status" class="text-danger" />
+                        </div>
+                    </div>
+
+                    @if (invoiceModel.Status == "Paid")
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Paid Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <InputNumber @bind-Value="invoiceModel.AmountPaid" class="form-control" step="0.01" />
+                                </div>
+                                <ValidationMessage For="() => invoiceModel.AmountPaid" class="text-danger" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Paid On</label>
+                                <InputDate @bind-Value="invoiceModel.PaidOn" class="form-control" />
+                                <ValidationMessage For="() => invoiceModel.PaidOn" class="text-danger" />
+                            </div>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <InputTextArea @bind-Value="invoiceModel.Notes" class="form-control" rows="3" placeholder="Additional notes or comments..." />
+                        <ValidationMessage For="() => invoiceModel.Notes" class="text-danger" />
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                            @if (isSubmitting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            }
+                            <i class="bi bi-check-lg"></i> Create Invoice
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">Cancel</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Tips</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        Invoice numbers are automatically generated
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        Select an active lease to create an invoice
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        The amount defaults to the lease's monthly rent
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        Use clear descriptions to identify the invoice purpose
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private InvoiceModel invoiceModel = new InvoiceModel();
+    private List<Lease>? leases;
+    private string? errorMessage;
+    private string? successMessage;
+    private bool isSubmitting = false;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? LeaseId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLeases();
+        invoiceModel.InvoiceNumber = await PropertyManagementService.GenerateInvoiceNumberAsync();
+        invoiceModel.InvoicedOn = DateTime.Now;
+        invoiceModel.DueOn = DateTime.Now.AddDays(30);
+        if (LeaseId.HasValue)
+        {
+            invoiceModel.LeaseId = LeaseId.Value;
+            OnLeaseSelected();
+        }
+    }
+
+    private async Task LoadLeases()
+    {
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (!string.IsNullOrEmpty(userId))
+        {
+            var allLeases = await PropertyManagementService.GetLeasesAsync();
+            leases = allLeases.Where(l => l.Status == "Active").ToList();
+        }
+    }
+
+    private void OnLeaseSelected()
+    {
+        if (invoiceModel.LeaseId > 0)
+        {
+            var selectedLease = leases?.FirstOrDefault(l => l.Id == invoiceModel.LeaseId);
+            if (selectedLease != null)
+            {
+                invoiceModel.Amount = selectedLease.MonthlyRent;
+                
+                // Generate description based on current month/year
+                var currentMonth = DateTime.Now.ToString("MMMM yyyy");
+                invoiceModel.Description = $"Monthly Rent - {currentMonth}";
+            }
+        }
+    }
+
+    private async Task HandleCreateInvoice()
+    {
+        try
+        {
+            isSubmitting = true;
+            errorMessage = null;
+            successMessage = null;
+
+            var authState = await AuthenticationStateTask;
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                errorMessage = "User not authenticated.";
+                return;
+            }
+
+            var invoice = new Invoice
+            {
+                UserId = userId,
+                LeaseId = invoiceModel.LeaseId,
+                InvoiceNumber = invoiceModel.InvoiceNumber,
+                InvoicedOn = invoiceModel.InvoicedOn,
+                DueOn = invoiceModel.DueOn,
+                Amount = invoiceModel.Amount,
+                Description = invoiceModel.Description,
+                Status = invoiceModel.Status,
+                AmountPaid = invoiceModel.Status == "Paid" ? invoiceModel.AmountPaid : 0,
+                PaidOn = invoiceModel.Status == "Paid" ? invoiceModel.PaidOn : null,
+                Notes = invoiceModel.Notes ?? string.Empty,
+                CreatedOn = DateTime.UtcNow,
+                CreatedBy = userId
+            };
+
+            await PropertyManagementService.AddInvoiceAsync(invoice);
+
+            NavigationManager.NavigateTo("/propertymanagement/invoices");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error creating invoice: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/invoices");
+    }
+
+    public class InvoiceModel
+    {
+        [Required(ErrorMessage = "Lease is required")]
+        [Range(1, int.MaxValue, ErrorMessage = "Please select a lease")]
+        public int LeaseId { get; set; }
+
+        [Required(ErrorMessage = "Invoice number is required")]
+        [StringLength(50, ErrorMessage = "Invoice number cannot exceed 50 characters")]
+        public string InvoiceNumber { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Invoice date is required")]
+        public DateTime InvoicedOn { get; set; } = DateTime.Now;
+
+        [Required(ErrorMessage = "Due date is required")]
+        public DateTime DueOn { get; set; } = DateTime.Now.AddDays(30);
+
+        [Required(ErrorMessage = "Amount is required")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than 0")]
+        public decimal Amount { get; set; }
+
+        [Required(ErrorMessage = "Description is required")]
+        [StringLength(100, ErrorMessage = "Description cannot exceed 100 characters")]
+        public string Description { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(50)]
+        public string Status { get; set; } = "Pending";
+
+        [Range(0, double.MaxValue, ErrorMessage = "Amount paid cannot be negative")]
+        public decimal AmountPaid { get; set; }
+
+        public DateTime? PaidOn { get; set; }
+
+        [StringLength(500, ErrorMessage = "Notes cannot exceed 500 characters")]
+        public string? Notes { get; set; }
+    }
+}

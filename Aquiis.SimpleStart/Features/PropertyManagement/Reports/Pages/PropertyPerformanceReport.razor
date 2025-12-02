@@ -1,0 +1,254 @@
+@page "/reports/property-performance"
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.SimpleStart.Application.Services.PdfGenerators
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject FinancialReportService FinancialReportService
+@inject FinancialReportPdfGenerator PdfGenerator
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@inject UserContextService UserContextService
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Property Performance - Aquiis</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h3>Property Performance Report</h3>
+            <p class="text-muted">Compare income, expenses, and ROI across all properties</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <label for="startDate" class="form-label">Start Date</label>
+            <input type="date" class="form-control" id="startDate" @bind="startDate" />
+        </div>
+        <div class="col-md-3">
+            <label for="endDate" class="form-label">End Date</label>
+            <input type="date" class="form-control" id="endDate" @bind="endDate" />
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button class="btn btn-primary w-100" @onclick="GenerateReport">
+                <i class="bi bi-file-earmark-bar-graph"></i> Generate
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Generating report...</p>
+        </div>
+    }
+    else if (performanceItems.Any())
+    {
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Property Performance: @startDate.ToString("MMM dd, yyyy") - @endDate.ToString("MMM dd, yyyy")</h5>
+                <button class="btn btn-light btn-sm" @onclick="ExportToPdf">
+                    <i class="bi bi-file-pdf"></i> Export PDF
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Property</th>
+                                <th>Address</th>
+                                <th class="text-end">Total Income</th>
+                                <th class="text-end">Total Expenses</th>
+                                <th class="text-end">Net Income</th>
+                                <th class="text-end">ROI %</th>
+                                <th class="text-end">Occupancy Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in performanceItems)
+                            {
+                                <tr>
+                                    <td><strong>@item.PropertyName</strong></td>
+                                    <td>@item.PropertyAddress</td>
+                                    <td class="text-end">@item.TotalIncome.ToString("C")</td>
+                                    <td class="text-end">@item.TotalExpenses.ToString("C")</td>
+                                    <td class="text-end">
+                                        <strong class="@(item.NetIncome >= 0 ? "text-success" : "text-danger")">
+                                            @item.NetIncome.ToString("C")
+                                        </strong>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="@GetROIClass(item.ROI)">
+                                            @item.ROI.ToString("F2")%
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-flex align-items-center justify-content-end">
+                                            <div class="progress flex-grow-1 me-2" style="height: 20px; max-width: 100px;">
+                                                <div class="progress-bar @GetOccupancyClass(item.OccupancyRate)" 
+                                                     role="progressbar" 
+                                                     style="width: @item.OccupancyRate%"
+                                                     aria-valuenow="@item.OccupancyRate" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                            <span>@item.OccupancyRate.ToString("F1")%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="2">TOTALS</th>
+                                <th class="text-end">@performanceItems?.Sum(p => p.TotalIncome).ToString("C")</th>
+                                <th class="text-end">@performanceItems?.Sum(p => p.TotalExpenses).ToString("C")</th>
+                                <th class="text-end">
+                                    <strong class="@(performanceItems?.Sum(p => p.NetIncome) >= 0 ? "text-success" : "text-danger")">
+                                        @performanceItems?.Sum(p => p.NetIncome).ToString("C")
+                                    </strong>
+                                </th>
+                                <th class="text-end">
+                                    @{
+                                        var avgROI = performanceItems?.Any() == true ? performanceItems.Average(p => p.ROI) : 0;
+                                    }
+                                    @avgROI.ToString("F2")%
+                                </th>
+                                <th class="text-end">
+                                    @{
+                                        var avgOccupancy = performanceItems?.Any() == true ? performanceItems.Average(p => p.OccupancyRate) : 0;
+                                    }
+                                    @avgOccupancy.ToString("F1")%
+                                </th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">Top Performing Properties (by Net Income)</h6>
+                    </div>
+                    <div class="card-body">
+                        <ol class="mb-0">
+                            @if (performanceItems != null)
+                            {
+                                @foreach (var property in performanceItems.OrderByDescending(p => p.NetIncome).Take(5))
+                                {
+                                    <li class="mb-2">
+                                        <strong>@property.PropertyName</strong> - 
+                                        <span class="text-success">@property.NetIncome.ToString("C")</span>
+                                        <small class="text-muted">(@property.ROI.ToString("F2")% ROI)</small>
+                                    </li>
+                                }
+                            }
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">Highest Occupancy</h6>
+                    </div>
+                    <div class="card-body">
+                        <ol class="mb-0">
+                            @if (performanceItems != null)
+                            {
+                                @foreach (var property in performanceItems.OrderByDescending(p => p.OccupancyRate).Take(5))
+                                {
+                                    <li class="mb-2">
+                                        <strong>@property.PropertyName</strong> - 
+                                        <span class="text-info">@property.OccupancyRate.ToString("F1")%</span>
+                                        <small class="text-muted">(@property.OccupancyDays of @property.TotalDays days)</small>
+                                    </li>
+                                }
+                            }
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private DateTime startDate = new DateTime(DateTime.Now.Year, 1, 1);
+    private DateTime endDate = DateTime.Now;
+    private List<PropertyPerformance> performanceItems = new();
+    private bool isLoading = false;
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private async Task GenerateReport()
+    {
+        if (AuthenticationStateTask == null) return;
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var authState = await AuthenticationStateTask;
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var organizationId = await UserContextService.GetOrganizationIdAsync();
+
+            if (!string.IsNullOrEmpty(organizationId))
+            {
+                performanceItems = await FinancialReportService.GeneratePropertyPerformanceAsync(
+                    organizationId, startDate, endDate);
+            }
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetROIClass(decimal roi)
+    {
+        if (roi >= 10) return "text-success fw-bold";
+        if (roi >= 5) return "text-success";
+        if (roi >= 0) return "text-warning";
+        return "text-danger";
+    }
+
+    private string GetOccupancyClass(decimal rate)
+    {
+        if (rate >= 90) return "bg-success";
+        if (rate >= 70) return "bg-info";
+        if (rate >= 50) return "bg-warning";
+        return "bg-danger";
+    }
+
+    private async Task ExportToPdf()
+    {
+        if (!performanceItems.Any()) return;
+
+        try
+        {
+            var pdfBytes = PdfGenerator.GeneratePropertyPerformancePdf(performanceItems, startDate, endDate);
+            var fileName = $"PropertyPerformance_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}.pdf";
+            
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(pdfBytes), "application/pdf");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error generating PDF: {ex.Message}");
+        }
+    }
+}

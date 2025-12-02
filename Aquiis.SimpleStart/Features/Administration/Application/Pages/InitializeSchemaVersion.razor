@@ -1,0 +1,64 @@
+@page "/administration/application/initialize-schema"
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.SimpleStart.Application.Services.PdfGenerators
+@using Aquiis.SimpleStart.Core.Constants
+@using Microsoft.Extensions.Options
+@inject SchemaValidationService SchemaService
+@inject IOptions<ApplicationSettings> AppSettings
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<h3>Initialize Schema Version</h3>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h3>Initialize Schema Version</h3>
+            <p>This page will manually insert the initial schema version record into the database.</p>
+            
+            @if (!string.IsNullOrEmpty(message))
+            {
+                <div class="alert @(isSuccess ? "alert-success" : "alert-danger")">
+                    @message
+                </div>
+            }
+            
+            <div class="card">
+                <div class="card-body">
+                    <p><strong>Application Schema Version:</strong> @AppSettings.Value.SchemaVersion</p>
+                    <button class="btn btn-primary" @onclick="InitializeSchema">
+                        Initialize Schema Version
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string message = "";
+    private bool isSuccess = false;
+
+    private async Task InitializeSchema()
+    {
+        try
+        {
+            await SchemaService.UpdateSchemaVersionAsync(
+                AppSettings.Value.SchemaVersion, 
+                "Manual initialization via admin page");
+            
+            message = $"Schema version {AppSettings.Value.SchemaVersion} has been initialized successfully!";
+            isSuccess = true;
+            
+            // Reload page after 2 seconds
+            await Task.Delay(2000);
+            Navigation.NavigateTo("/", true);
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+            isSuccess = false;
+        }
+    }
+}

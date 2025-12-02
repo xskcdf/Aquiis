@@ -1,6 +1,6 @@
-using Aquiis.SimpleStart.Models;
-using Aquiis.SimpleStart.Components.PropertyManagement.Inspections;
-using Aquiis.SimpleStart.Components.PropertyManagement.MaintenanceRequests;
+using Aquiis.SimpleStart.Core.Entities;
+using Aquiis.SimpleStart.Core.Entities;
+using Aquiis.SimpleStart.Core.Entities;
 
 namespace Aquiis.SimpleStart.Utilities
 {

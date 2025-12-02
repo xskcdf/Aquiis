@@ -1,0 +1,294 @@
+@page "/propertymanagement/payments/create"
+@using Aquiis.SimpleStart.Features.PropertyManagement
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Http.HttpResults
+@inject NavigationManager Navigation
+@inject PropertyManagementService PropertyManagementService
+
+@attribute [Authorize(Roles = "PropertyManager")]
+@rendermode InteractiveServer
+
+<PageTitle>Record Payment - Property Management</PageTitle>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><span class="bi bi-cash-coin" aria-hidden="true"></span> Record Payment</h1>
+            <button class="btn btn-outline-secondary" @onclick="Cancel">
+                <i class="bi bi-x-lg"></i> Cancel
+            </button>
+        </div>
+
+        @if (invoices == null || !invoices.Any())
+        {
+            <div class="alert alert-warning">
+                <h4>No Unpaid Invoices</h4>
+                <p>There are no outstanding invoices to record payments for.</p>
+                <a href="/propertymanagement/invoices" class="btn btn-primary">Go to Invoices</a>
+            </div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-body">
+                    <EditForm Model="paymentModel" OnValidSubmit="HandleCreatePayment" FormName="CreatePayment">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+
+                        <div class="mb-3">
+                            <label for="invoice" class="form-label">Invoice *</label>
+                            <InputSelect id="invoice" class="form-select" @bind-Value="paymentModel.InvoiceId" @bind-Value:after="OnInvoiceSelected">
+                                <option value="0">-- Select Invoice --</option>
+                                @foreach (var invoice in invoices)
+                                {
+                                    var displayText = $"{invoice.InvoiceNumber} - {invoice.Lease?.Property?.Address} - {invoice.Lease?.Tenant?.FullName} - Balance: {invoice.BalanceDue:C}";
+                                    <option value="@invoice.Id">@displayText</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="() => paymentModel.InvoiceId" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="paymentDate" class="form-label">Payment Date *</label>
+                            <InputDate id="paymentDate" class="form-control" @bind-Value="paymentModel.PaidOn" />
+                            <ValidationMessage For="() => paymentModel.PaidOn" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Amount *</label>
+                            <InputNumber id="amount" class="form-control" @bind-Value="paymentModel.Amount" />
+                            <ValidationMessage For="() => paymentModel.Amount" />
+                            @if (selectedInvoice != null)
+                            {
+                                <small class="text-muted">Invoice balance due: @selectedInvoice.BalanceDue.ToString("C")</small>
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="paymentMethod" class="form-label">Payment Method *</label>
+                            <InputSelect id="paymentMethod" class="form-select" @bind-Value="paymentModel.PaymentMethod">
+                                <option value="">-- Select Payment Method --</option>
+                                <option value="Cash">Cash</option>
+                                <option value="Check">Check</option>
+                                <option value="Credit Card">Credit Card</option>
+                                <option value="Debit Card">Debit Card</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Online Payment">Online Payment</option>
+                                <option value="Other">Other</option>
+                            </InputSelect>
+                            <ValidationMessage For="() => paymentModel.PaymentMethod" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <InputTextArea id="notes" class="form-control" rows="3" @bind-Value="paymentModel.Notes" />
+                            <ValidationMessage For="() => paymentModel.Notes" />
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">Cancel</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Record Payment
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-4">
+        @if (selectedInvoice != null)
+        {
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Invoice Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="text-muted small">Invoice Number</label>
+                        <p class="fw-bold">@selectedInvoice.InvoiceNumber</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Property</label>
+                        <p>@selectedInvoice.Lease?.Property?.Address</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Tenant</label>
+                        <p>@selectedInvoice.Lease?.Tenant?.FullName</p>
+                    </div>
+                    <hr />
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Invoice Amount:</span>
+                            <span class="fw-bold">@selectedInvoice.Amount.ToString("C")</span>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Already Paid:</span>
+                            <span class="text-success">@selectedInvoice.AmountPaid.ToString("C")</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Balance Due:</span>
+                            <span class="fw-bold text-danger">@selectedInvoice.BalanceDue.ToString("C")</span>
+                        </div>
+                    </div>
+                    @if (paymentModel.Amount > 0)
+                    {
+                        <hr />
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">This Payment:</span>
+                                <span class="fw-bold text-success">@paymentModel.Amount.ToString("C")</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Remaining Balance:</span>
+                                <span class="fw-bold @(remainingBalance <= 0 ? "text-success" : "text-warning")">
+                                    @remainingBalance.ToString("C")
+                                </span>
+                            </div>
+                        </div>
+                        @if (remainingBalance < 0)
+                        {
+                            <div class="alert alert-warning mt-2 mb-0">
+                                <small>Warning: Payment amount exceeds balance due.</small>
+                            </div>
+                        }
+                        else if (remainingBalance == 0)
+                        {
+                            <div class="alert alert-success mt-2 mb-0">
+                                <small>This payment will mark the invoice as Paid.</small>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info mt-2 mb-0">
+                                <small>This will be a partial payment.</small>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-body text-center text-muted">
+                    <i class="bi bi-info-circle fs-1"></i>
+                    <p class="mt-2">Select an invoice to see details</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Invoice>? invoices;
+    private Invoice? selectedInvoice;
+    private PaymentModel paymentModel = new();
+    private decimal remainingBalance => selectedInvoice != null ? selectedInvoice.BalanceDue - paymentModel.Amount : 0;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? InvoiceId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        
+            // Get all invoices and filter to those with outstanding balance
+            List<Invoice>? allInvoices = await PropertyManagementService.GetInvoicesAsync();
+            invoices = allInvoices
+                .Where(i => i.BalanceDue > 0 && i.Status != "Cancelled")
+                .OrderByDescending(i => i.DueOn)
+                .ToList();
+            
+            paymentModel.PaidOn = DateTime.Now;
+            if (InvoiceId.HasValue)
+            {
+                paymentModel.InvoiceId = InvoiceId.Value;
+                await OnInvoiceSelected();
+            }
+    }
+
+    private async Task OnInvoiceSelected()
+    {
+        if (paymentModel.InvoiceId > 0)
+        {
+            selectedInvoice = invoices?.FirstOrDefault(i => i.Id == paymentModel.InvoiceId);
+            if (selectedInvoice != null)
+            {
+                // Default payment amount to the balance due
+                paymentModel.Amount = selectedInvoice.BalanceDue;
+            }
+        }
+        else
+        {
+            selectedInvoice = null;
+            paymentModel.Amount = 0;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleCreatePayment()
+    {
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (!string.IsNullOrEmpty(userId))
+        {
+            Payment payment = new Payment
+            {
+                UserId = userId,
+                InvoiceId = paymentModel.InvoiceId,
+                PaidOn = paymentModel.PaidOn,
+                Amount = paymentModel.Amount,
+                PaymentMethod = paymentModel.PaymentMethod,
+                Notes = paymentModel.Notes!,
+                CreatedBy = userId,
+                CreatedOn = DateTime.UtcNow
+            };
+            await PropertyManagementService.AddPaymentAsync(payment);
+            Navigation.NavigateTo("/propertymanagement/payments");
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/propertymanagement/payments");
+    }
+
+    public class PaymentModel
+    {
+        [Required(ErrorMessage = "Please select an invoice.")]
+        [Range(1, int.MaxValue, ErrorMessage = "Please select an invoice.")]
+        public int InvoiceId { get; set; }
+
+        [Required(ErrorMessage = "Payment date is required.")]
+        public DateTime PaidOn { get; set; } = DateTime.Now;
+
+        [Required(ErrorMessage = "Amount is required.")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than zero.")]
+        public decimal Amount { get; set; }
+
+        [Required(ErrorMessage = "Payment method is required.")]
+        public string PaymentMethod { get; set; } = string.Empty;
+
+        [MaxLength(1000)]
+        public string? Notes { get; set; } = string.Empty;
+    }
+}

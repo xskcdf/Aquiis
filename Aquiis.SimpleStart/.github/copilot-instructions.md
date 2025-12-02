@@ -236,7 +236,7 @@ public async Task<List<Entity>> GetEntitiesAsync()
    - Generate SQL script: `dotnet ef migrations script --output schema.sql`
 2. **SQL Scripts**: Reference scripts in `Data/Scripts/` (not executed, for documentation)
 3. Update `ApplicationDbContext.cs` with DbSet and entity configuration
-4. Connection string in `appsettings.json`: `"DefaultConnection": "Data Source=./Data/app.db"`
+4. Connection string in `appsettings.json`: `"DefaultConnection": "DataSource=Infrastructure/Data/app.db;Cache=Shared"`
 5. **Database**: SQLite (not SQL Server) - scripts will be SQLite syntax
 
 ### Development Workflows

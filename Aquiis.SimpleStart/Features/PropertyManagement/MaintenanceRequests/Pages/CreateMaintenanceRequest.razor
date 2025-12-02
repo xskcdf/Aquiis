@@ -1,0 +1,349 @@
+@page "/propertymanagement/maintenance/create/{PropertyId:int?}"
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.SimpleStart.Application.Services.PdfGenerators
+@using Microsoft.Extensions.Configuration.UserSecrets
+@using System.ComponentModel.DataAnnotations
+@inject PropertyManagementService PropertyManagementService
+@inject NavigationManager NavigationManager
+
+@attribute [Authorize(Roles = "PropertyManager, Administrator")]
+@rendermode InteractiveServer
+
+<PageTitle>Create Maintenance Request</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-tools"></i> Create Maintenance Request</h1>
+        <button class="btn btn-outline-secondary" @onclick="Cancel">
+            <i class="bi bi-x-circle"></i> Cancel
+        </button>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <EditForm Model="maintenanceRequest" OnValidSubmit="HandleValidSubmit">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger" />
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Property *</label>
+                                    <InputSelect class="form-select" @bind-Value="maintenanceRequest.PropertyId" @bind-Value:after="OnPropertyChangedAsync">
+                                        <option value="0">-- Select Property --</option>
+                                        @foreach (var property in properties)
+                                        {
+                                            <option value="@property.Id">@property.Address</option>
+                                        }
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => maintenanceRequest.PropertyId)" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Lease (Optional)</label>
+                                    <InputSelect class="form-select" @bind-Value="maintenanceRequest.LeaseId">
+                                        <option value="">-- No Lease --</option>
+                                        @foreach (var lease in availableLeases)
+                                        {
+                                            <option value="@lease.Id">Lease #@lease.Id - @lease.Tenant?.FullName</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Title *</label>
+                                <InputText class="form-control" @bind-Value="maintenanceRequest.Title" placeholder="Brief description of the issue" />
+                                <ValidationMessage For="@(() => maintenanceRequest.Title)" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Description *</label>
+                                <InputTextArea class="form-control" @bind-Value="maintenanceRequest.Description" rows="4" placeholder="Detailed description of the maintenance issue" />
+                                <ValidationMessage For="@(() => maintenanceRequest.Description)" />
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Request Type *</label>
+                                    <InputSelect class="form-select" @bind-Value="maintenanceRequest.RequestType">
+                                        <option value="">-- Select Type --</option>
+                                        @foreach (var type in ApplicationConstants.MaintenanceRequestTypes.AllMaintenanceRequestTypes)
+                                        {
+                                            <option value="@type">@type</option>
+                                        }
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => maintenanceRequest.RequestType)" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Priority *</label>
+                                    <InputSelect class="form-select" @bind-Value="maintenanceRequest.Priority">
+                                        @foreach (var priority in ApplicationConstants.MaintenanceRequestPriorities.AllMaintenanceRequestPriorities)
+                                        {
+                                            <option value="@priority">@priority</option>
+                                        }
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => maintenanceRequest.Priority)" />
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Requested By</label>
+                                <InputText class="form-control" @bind-Value="maintenanceRequest.RequestedBy" placeholder="Name of person requesting" />
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Email</label>
+                                    <InputText type="email" class="form-control" @bind-Value="maintenanceRequest.RequestedByEmail" placeholder="email@example.com" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Phone</label>
+                                    <InputText class="form-control" @bind-Value="maintenanceRequest.RequestedByPhone" placeholder="(555) 123-4567" />
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Requested Date *</label>
+                                    <InputDate class="form-control" @bind-Value="maintenanceRequest.RequestedOn" />
+                                    <ValidationMessage For="@(() => maintenanceRequest.RequestedOn)" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Scheduled Date</label>
+                                    <InputDate class="form-control" @bind-Value="maintenanceRequest.ScheduledOn" />
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Estimated Cost</label>
+                                    <InputNumber class="form-control" @bind-Value="maintenanceRequest.EstimatedCost" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Assigned To</label>
+                                    <InputText class="form-control" @bind-Value="maintenanceRequest.AssignedTo" placeholder="Contractor or maintenance person" />
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">Cancel</button>
+                                <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                                    @if (isSaving)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        <span>Creating...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-check-circle me-2"></i>
+                                        <span>Create Request</span>
+                                    }
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Priority Levels</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <span class="badge bg-danger">Urgent</span> - Immediate attention required
+                            </li>
+                            <li class="mb-2">
+                                <span class="badge bg-warning">High</span> - Should be addressed soon
+                            </li>
+                            <li class="mb-2">
+                                <span class="badge bg-info">Medium</span> - Normal priority
+                            </li>
+                            <li class="mb-2">
+                                <span class="badge bg-secondary">Low</span> - Can wait
+                            </li>
+                        </ul>
+
+                        <hr />
+
+                        <h6>Request Types</h6>
+                        <ul class="small">
+                            <li>Plumbing</li>
+                            <li>Electrical</li>
+                            <li>Heating/Cooling</li>
+                            <li>Appliance</li>
+                            <li>Structural</li>
+                            <li>Landscaping</li>
+                            <li>Pest Control</li>
+                            <li>Other</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? PropertyId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? LeaseId { get; set; }
+
+    private MaintenanceRequestModel maintenanceRequest = new();
+    private List<Property> properties = new();
+    private List<Lease> availableLeases = new();
+    private bool isLoading = true;
+    private bool isSaving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (PropertyId.HasValue && PropertyId.Value > 0 && maintenanceRequest.PropertyId != PropertyId.Value)
+        {
+            maintenanceRequest.PropertyId = PropertyId.Value;
+            if (properties.Any())
+            {
+                await LoadLeasesForProperty(PropertyId.Value);
+            }
+        }
+        if (LeaseId.HasValue && LeaseId.Value > 0 && maintenanceRequest.LeaseId != LeaseId.Value)
+        {
+            maintenanceRequest.LeaseId = LeaseId.Value;
+        }
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            properties = await PropertyManagementService.GetPropertiesAsync();
+            
+            if (PropertyId.HasValue && PropertyId.Value > 0)
+            {
+                maintenanceRequest.PropertyId = PropertyId.Value;
+                await LoadLeasesForProperty(PropertyId.Value);
+            }
+            if (LeaseId.HasValue && LeaseId.Value > 0)
+            {
+                maintenanceRequest.LeaseId = LeaseId.Value;
+            }
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task OnPropertyChangedAsync()
+    {
+        if (maintenanceRequest.PropertyId > 0)
+        {
+            await LoadLeasesForProperty(maintenanceRequest.PropertyId);
+        }
+        else
+        {
+            availableLeases.Clear();
+        }
+    }
+
+    private async Task LoadLeasesForProperty(int propertyId)
+    {
+        var allLeases = await PropertyManagementService.GetLeasesByPropertyIdAsync(propertyId);
+        availableLeases = allLeases.Where(l => l.Status == "Active" || l.Status == "Pending").ToList();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        isSaving = true;
+        try
+        {
+            var request = new MaintenanceRequest
+            {
+                PropertyId = maintenanceRequest.PropertyId,
+                LeaseId = maintenanceRequest.LeaseId,
+                Title = maintenanceRequest.Title,
+                Description = maintenanceRequest.Description,
+                RequestType = maintenanceRequest.RequestType,
+                Priority = maintenanceRequest.Priority,
+                RequestedBy = maintenanceRequest.RequestedBy,
+                RequestedByEmail = maintenanceRequest.RequestedByEmail,
+                RequestedByPhone = maintenanceRequest.RequestedByPhone,
+                RequestedOn = maintenanceRequest.RequestedOn,
+                ScheduledOn = maintenanceRequest.ScheduledOn,
+                EstimatedCost = maintenanceRequest.EstimatedCost,
+                AssignedTo = maintenanceRequest.AssignedTo
+            };
+
+            await PropertyManagementService.AddMaintenanceRequestAsync(request);
+            NavigationManager.NavigateTo("/propertymanagement/maintenance");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/maintenance");
+    }
+
+    public class MaintenanceRequestModel
+    {
+        [Required(ErrorMessage = "Property is required")]
+        [Range(1, int.MaxValue, ErrorMessage = "Please select a property")]
+        public int PropertyId { get; set; }
+
+        public int? LeaseId { get; set; }
+
+        [Required(ErrorMessage = "Title is required")]
+        [StringLength(100, ErrorMessage = "Title cannot exceed 100 characters")]
+        public string Title { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Description is required")]
+        [StringLength(2000, ErrorMessage = "Description cannot exceed 2000 characters")]
+        public string Description { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Request type is required")]
+        public string RequestType { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Priority is required")]
+        public string Priority { get; set; } = "Medium";
+
+        public string RequestedBy { get; set; } = string.Empty;
+        public string RequestedByEmail { get; set; } = string.Empty;
+        public string RequestedByPhone { get; set; } = string.Empty;
+
+        [Required]
+        public DateTime RequestedOn { get; set; } = DateTime.Today;
+
+        public DateTime? ScheduledOn { get; set; }
+
+        public decimal EstimatedCost { get; set; }
+        public string AssignedTo { get; set; } = string.Empty;
+    }
+}

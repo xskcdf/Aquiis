@@ -80,11 +80,11 @@ Aquiis is designed to simplify property management operations through a centrali
 
 ### Backend
 
-- **Framework**: ASP.NET Core 9.0
+- **Backend**: ASP.NET Core 9.0
 - **UI Framework**: Blazor Server
 - **Database**: SQLite with Entity Framework Core 9.0
 - **Authentication**: ASP.NET Core Identity
-- **Architecture**: Clean Architecture with separated concerns
+- **Architecture**: Clean Architecture with vertical slice organization
 
 ### Frontend
 
@@ -165,16 +165,15 @@ The project includes pre-configured VS Code settings:
 
 ### Database Management
 
-#### Manual Database Creation
+#### Manual Database Scripts
 
-If EF migrations fail, use the provided SQL scripts:
+SQL scripts for manual database operations are located in:
 
 ```bash
-cd Aquiis.SimpleStart/Data/Scripts
-# Review and execute scripts in order:
-# 01_CreateTables.sql
-# 02_CreateIndexes.sql
-# 03_SeedData.sql
+cd Infrastructure/Data/Scripts
+# Available scripts:
+# 00_InitialSchema.sql - Initial database schema
+# updateTenant.sql - Tenant table updates
 ```
 
 #### Entity Framework Commands
@@ -192,33 +191,130 @@ dotnet ef migrations remove
 
 ## 📁 Project Structure
 
+The application follows Clean Architecture principles with clear separation of concerns:
+
 ```
-Aquiis/
-├── Aquiis.sln                          # Solution file
-├── Aquiis.code-workspace                # VS Code workspace
-├── README.md                            # This file
-├── REVISIONS.md                         # Change history
-└── Aquiis.SimpleStart/                        # Main web application
-    ├── Components/                      # Blazor components
-    │   ├── Account/                     # Authentication components
-    │   ├── Administration/              # Admin-only features
-    │   ├── Layout/                      # Layout components
-    │   ├── Pages/                       # Public pages
-    │   ├── PropertyManagement/          # Core property management
-    │   │   ├── Properties/              # Property components
-    │   │   ├── Tenants/                 # Tenant components
-    │   │   ├── Leases/                  # Lease components
-    │   │   ├── Payments/                # Payment components
-    │   │   ├── Invoices/                # Invoice components
-    │   │   └── Documents/               # Document components
-    │   └── TenantPortal/                # Tenant self-service
-    ├── Data/                            # Database context and migrations
-    │   ├── Migrations/                  # EF Core migrations
-    │   └── Scripts/                     # Manual SQL scripts
-    ├── Properties/                      # Launch settings
-    ├── wwwroot/                         # Static files
-    └── Program.cs                       # Application entry point
+Aquiis.SimpleStart/
+├── Core/                                # Domain Layer (no dependencies)
+│   ├── Entities/                        # Domain models & business entities
+│   │   ├── BaseModel.cs                # Base entity with common properties
+│   │   ├── Property.cs                 # Property entity
+│   │   ├── Tenant.cs                   # Tenant entity
+│   │   ├── Lease.cs                    # Lease entity
+│   │   ├── SecurityDeposit.cs          # Security deposit entity
+│   │   └── ...                         # Other domain entities
+│   └── Constants/                       # Application constants
+│       ├── ApplicationConstants.cs
+│       └── ApplicationSettings.cs
+│
+├── Infrastructure/                      # Infrastructure Layer
+│   ├── Data/                           # Database & persistence
+│   │   ├── ApplicationDbContext.cs    # EF Core DbContext
+│   │   ├── Migrations/                # EF Core migrations (44 files)
+│   │   ├── Scripts/                   # SQL scripts for manual operations
+│   │   └── Backups/                   # Database backups
+│   └── Services/                       # External service implementations
+│
+├── Application/                         # Application Layer (business logic)
+│   └── Services/                       # Domain services
+│       ├── PropertyManagementService.cs
+│       ├── SecurityDepositService.cs
+│       ├── TenantConversionService.cs
+│       ├── FinancialReportService.cs
+│       ├── ChecklistService.cs
+│       ├── CalendarEventService.cs
+│       ├── NoteService.cs
+│       └── PdfGenerators/             # PDF generation services
+│           ├── LeasePdfGenerator.cs
+│           ├── InvoicePdfGenerator.cs
+│           ├── PaymentPdfGenerator.cs
+│           └── ...
+│
+├── Features/                            # Presentation Layer (Vertical Slices)
+│   ├── PropertyManagement/             # Property management features
+│   │   ├── Properties/                 # Property CRUD & management
+│   │   ├── Tenants/                   # Tenant management
+│   │   ├── Leases/                    # Lease management
+│   │   ├── SecurityDeposits/          # Security deposit tracking
+│   │   ├── Payments/                  # Payment processing
+│   │   ├── Invoices/                  # Invoice management
+│   │   ├── Documents/                 # Document management
+│   │   ├── Inspections/               # Property inspections
+│   │   ├── MaintenanceRequests/       # Maintenance tracking
+│   │   ├── Applications/              # Rental applications
+│   │   ├── Checklists/                # Checklists & templates
+│   │   ├── Reports/                   # Financial & operational reports
+│   │   └── Calendar.razor             # Calendar view
+│   └── Administration/                 # Admin features
+│       ├── Application/               # Application screening
+│       ├── PropertyManagement/        # Property admin
+│       ├── Settings/                  # System settings
+│       ├── Users/                     # User management
+│       └── Dashboard.razor
+│
+├── Shared/                              # Shared UI Layer
+│   ├── Layout/                         # Layout components
+│   │   ├── MainLayout.razor
+│   │   └── NavMenu.razor
+│   ├── Components/                     # Reusable UI components
+│   │   ├── Account/                   # Authentication components
+│   │   ├── Pages/                     # Shared pages (Home, About, Error)
+│   │   ├── NotesTimeline.razor
+│   │   ├── SessionTimeoutModal.razor
+│   │   └── ToastContainer.razor
+│   └── Services/                       # UI-specific services
+│       ├── ToastService.cs
+│       ├── ThemeService.cs
+│       ├── SessionTimeoutService.cs
+│       ├── UserContextService.cs
+│       └── DocumentService.cs
+│
+├── Components/                          # Root Blazor components
+│   ├── App.razor                       # App root component
+│   ├── Routes.razor                    # Routing configuration
+│   └── _Imports.razor                  # Global using directives
+│
+├── Utilities/                           # Helper utilities
+│   ├── CalendarEventRouter.cs
+│   └── SchedulableEntityRegistry.cs
+│
+├── wwwroot/                             # Static files
+│   ├── assets/                         # Images & static assets
+│   ├── js/                             # JavaScript files
+│   └── lib/                            # Client libraries
+│
+├── Program.cs                           # Application entry point
+├── appsettings.json                    # Configuration
+└── appsettings.Development.json        # Development config
 ```
+
+### Architecture Principles
+
+**Clean Architecture Layers:**
+
+```
+Features → Application → Core
+    ↓
+Infrastructure → Core
+    ↓
+Shared → Core
+```
+
+**Dependency Rules:**
+
+- ✅ **Core** has NO dependencies (pure domain logic)
+- ✅ **Infrastructure** depends only on Core (data access)
+- ✅ **Application** depends only on Core (business logic)
+- ✅ **Features** depends on Application + Core (UI features)
+- ✅ **Shared** depends on Core (cross-cutting UI)
+
+**Benefits:**
+
+- **Separation of Concerns**: Domain, business logic, data access, and UI clearly separated
+- **Testability**: Each layer can be tested independently
+- **Maintainability**: Easy to locate and modify specific functionality
+- **Scalability**: Simple to add new features as vertical slices
+- **Reusability**: Domain and application layers can be shared across projects
 
 ## 🔑 Default User Roles
 
@@ -251,13 +347,14 @@ The system includes three primary user roles:
 
 ### Property Management Service
 
-Central service handling all property-related operations:
+Core business logic service in the Application layer:
 
 - Property CRUD operations
-- Tenant management
-- Lease tracking
-- Document handling
-- Relationship management
+- Tenant management workflows
+- Lease tracking and renewals
+- Document handling and storage
+- Financial calculations
+- Entity relationship management
 
 ### Authentication & Authorization
 
