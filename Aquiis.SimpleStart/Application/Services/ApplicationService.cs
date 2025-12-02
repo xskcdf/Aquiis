@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Options;
-using Aquiis.SimpleStart.Components.PropertyManagement;
 using Aquiis.SimpleStart.Core.Entities;
 using Aquiis.SimpleStart.Core.Constants;
 

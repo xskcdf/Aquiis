@@ -1,4 +1,3 @@
-using Aquiis.SimpleStart.Components.PropertyManagement;
 using Aquiis.SimpleStart.Core.Constants;
 using Aquiis.SimpleStart.Infrastructure.Data;
 using Aquiis.SimpleStart.Core.Entities;

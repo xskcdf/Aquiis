@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Aquiis.SimpleStart.Components;
 using Aquiis.SimpleStart.Components.Account;
 using Aquiis.SimpleStart.Infrastructure.Data;
-using Aquiis.SimpleStart.Components.PropertyManagement;
+using Aquiis.SimpleStart.Features.PropertyManagement;
 using Aquiis.SimpleStart.Core.Constants;
 using Aquiis.SimpleStart.Application.Services;
 using Aquiis.SimpleStart.Application.Services.PdfGenerators;

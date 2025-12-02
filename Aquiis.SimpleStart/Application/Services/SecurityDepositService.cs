@@ -1,8 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Aquiis.SimpleStart.Infrastructure.Data;
-using Aquiis.SimpleStart.Components.PropertyManagement.SecurityDeposits;
-using Aquiis.SimpleStart.Components.PropertyManagement.Leases;
-using Aquiis.SimpleStart.Components.PropertyManagement.Tenants;
 using Aquiis.SimpleStart.Core.Entities;
 using Aquiis.SimpleStart.Core.Constants;
 using Aquiis.SimpleStart.Shared.Services;

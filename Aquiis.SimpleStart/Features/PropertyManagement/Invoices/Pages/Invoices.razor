@@ -1,0 +1,592 @@
+@page "/propertymanagement/invoices"
+@using Aquiis.SimpleStart.Features.PropertyManagement
+@using Aquiis.SimpleStart.Core.Entities
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Forms
+@inject NavigationManager Navigation
+@inject PropertyManagementService PropertyManagementService
+@inject IJSRuntime JSRuntime
+
+@attribute [Authorize(Roles = "PropertyManager")]
+@rendermode InteractiveServer
+
+<PageTitle>Invoices - Property Management</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><span class="bi bi-receipt" aria-hidden="true"></span> Invoices</h1>
+    <button class="btn btn-primary" @onclick="CreateInvoice">
+        <i class="bi bi-plus-lg"></i> Create Invoice
+    </button>
+</div>
+
+@if (invoices == null)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else if (!invoices.Any())
+{
+    <div class="alert alert-info">
+        <h4>No Invoices Found</h4>
+        <p>Get started by creating your first invoice.</p>
+        <button class="btn btn-primary" @onclick="CreateInvoice">Create First Invoice</button>
+    </div>
+}
+else
+{
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" placeholder="Search invoices..." @bind="searchTerm" @onkeyup="FilterInvoices" />
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="selectedStatus" @bind:after="FilterInvoices">
+                <option value="">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Paid">Paid</option>
+                <option value="Overdue">Overdue</option>
+                <option value="Cancelled">Cancelled</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <div class="form-check form-switch pt-2">
+                <input class="form-check-input" type="checkbox" id="groupByProperty" @bind="groupByProperty" @bind:after="FilterInvoices">
+                <label class="form-check-label" for="groupByProperty">
+                    Group by Property
+                </label>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-outline-secondary" @onclick="ClearFilters">
+                <i class="bi bi-x-circle"></i> Clear Filters
+            </button>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h6>Pending</h6>
+                    <h4>@pendingCount</h4>
+                    <small>@pendingAmount.ToString("C")</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h6>Paid</h6>
+                    <h4>@paidCount</h4>
+                    <small>@paidAmount.ToString("C")</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h6>Overdue</h6>
+                    <h4>@overdueCount</h4>
+                    <small>@overdueAmount.ToString("C")</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h6>Total</h6>
+                    <h4>@filteredInvoices.Count</h4>
+                    <small>@totalAmount.ToString("C")</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (groupByProperty)
+            {
+                @foreach (var propertyGroup in groupedInvoices)
+                {
+                    var property = propertyGroup.First().Lease?.Property;
+                    var propertyInvoiceCount = propertyGroup.Count();
+                    var propertyTotal = propertyGroup.Sum(i => i.Amount);
+                    var propertyBalance = propertyGroup.Sum(i => i.BalanceDue);
+                    var isExpanded = expandedProperties.Contains(propertyGroup.Key);
+                    
+                    <div class="card mb-3">
+                        <div class="card-header" style="cursor: pointer;" @onclick="() => TogglePropertyGroup(propertyGroup.Key)">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="bi @(isExpanded ? "bi-chevron-down" : "bi-chevron-right")"></i>
+                                    <strong>@property?.Address</strong>
+                                    <span class="ms-3 text-muted">@property?.City, @property?.State @property?.ZipCode</span>
+                                </div>
+                                <div>
+                                    <span class="badge bg-secondary me-2">@propertyInvoiceCount invoice(s)</span>
+                                    <span class="me-2">Total: <strong>@propertyTotal.ToString("C")</strong></span>
+                                    <span>Balance: <strong class="@(propertyBalance > 0 ? "text-danger" : "text-success")">@propertyBalance.ToString("C")</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                        @if (isExpanded)
+                        {
+                            <div class="card-body p-0">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Invoice #</th>
+                                            <th>Tenant</th>
+                                            <th>Invoice Date</th>
+                                            <th>Due Date</th>
+                                            <th>Amount</th>
+                                            <th>Balance Due</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var invoice in propertyGroup)
+                                        {
+                                            <tr @onclick="() => ViewInvoice(invoice.Id)" style="cursor: pointer;">
+                                                <td>
+                                                    <strong>@invoice.InvoiceNumber</strong>
+                                                    <br />
+                                                    <small class="text-muted">@invoice.Description</small>
+                                                </td>
+                                                <td>@invoice.Lease?.Tenant?.FullName</td>
+                                                <td>@invoice.InvoicedOn.ToString("MMM dd, yyyy")</td>
+                                                <td>
+                                                    @invoice.DueOn.ToString("MMM dd, yyyy")
+                                                    @if (invoice.IsOverdue)
+                                                    {
+                                                        <br />
+                                                        <small class="text-danger">@invoice.DaysOverdue days overdue</small>
+                                                    }
+                                                </td>
+                                                <td>@invoice.Amount.ToString("C")</td>
+                                                <td>
+                                                    <strong class="@(invoice.BalanceDue > 0 ? "text-danger" : "text-success")">
+                                                        @invoice.BalanceDue.ToString("C")
+                                                    </strong>
+                                                </td>
+                                                <td>
+                                                    <span class="badge @GetStatusBadgeClass(invoice.Status)">
+                                                        @invoice.Status
+                                                    </span>
+                                                </td>
+                                                <td @onclick:stopPropagation="true">
+                                                    <div class="btn-group" role="group">
+                                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewInvoice(invoice.Id)" title="View">
+                                                            <i class="bi bi-eye"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => EditInvoice(invoice.Id)" title="Edit">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteInvoice(invoice)" title="Delete">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover"><thead><tr>
+                            <th>
+                                <button class="btn btn-link p-0 text-decoration-none text-dark fw-bold" @onclick="() => SortBy(nameof(Invoice.InvoiceNumber))">
+                                    Invoice #
+                                    @if (sortColumn == nameof(Invoice.InvoiceNumber))
+                                    {
+                                        <i class="bi @(sortAscending ? "bi-caret-up" : "bi-caret-down")"></i>
+                                    }
+                                </button>
+                            </th>
+                            <th>
+                                <button class="btn btn-link p-0 text-decoration-none text-dark fw-bold" @onclick='() => SortBy("Property")'>
+                                    Property
+                                    @if (sortColumn == "Property")
+                                    {
+                                        <i class="bi @(sortAscending ? "bi-caret-up" : "bi-caret-down")"></i>
+                                    }
+                                </button>
+                            </th>
+                            <th>
+                                <button class="btn btn-link p-0 text-decoration-none text-dark fw-bold" @onclick='() => SortBy("Tenant")'>
+                                    Tenant
+                                    @if (sortColumn == "Tenant")
+                                    {
+                                        <i class="bi @(sortAscending ? "bi-caret-up" : "bi-caret-down")"></i>
+                                    }
+                                </button>
+                            </th>
+                            <th>
+                                <button class="btn btn-link p-0 text-decoration-none text-dark fw-bold" @onclick="() => SortBy(nameof(Invoice.InvoicedOn))">
+                                    Invoice Date
+                                    @if (sortColumn == nameof(Invoice.InvoicedOn))
+                                    {
+                                        <i class="bi @(sortAscending ? "bi-caret-up" : "bi-caret-down")"></i>
+                                    }
+                                </button>
+                            </th>
+                            <th>
+                                <button class="btn btn-link p-0 text-decoration-none text-dark fw-bold" @onclick="() => SortBy(nameof(Invoice.DueOn))">
+                                    Due Date
+                                    @if (sortColumn == nameof(Invoice.DueOn))
+                                    {
+                                        <i class="bi @(sortAscending ? "bi-caret-up" : "bi-caret-down")"></i>
+                                    }
+                                </button>
+                            </th>
+                            <th>
+                                <button class="btn btn-link p-0 text-decoration-none text-dark fw-bold" @onclick="() => SortBy(nameof(Invoice.Amount))">
+                                    Amount
+                                    @if (sortColumn == nameof(Invoice.Amount))
+                                    {
+                                        <i class="bi @(sortAscending ? "bi-caret-up" : "bi-caret-down")"></i>
+                                    }
+                                </button>
+                            </th>
+                            <th>Balance Due</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var invoice in pagedInvoices)
+                        {
+                            <tr @onclick="() => ViewInvoice(invoice.Id)" style="cursor: pointer;">
+                                <td>
+                                    <strong>@invoice.InvoiceNumber</strong>
+                                    <br />
+                                    <small class="text-muted">@invoice.Description</small>
+                                </td>
+                                <td>@invoice.Lease?.Property?.Address</td>
+                                <td>@invoice.Lease?.Tenant?.FullName</td>
+                                <td>@invoice.InvoicedOn.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    @invoice.DueOn.ToString("MMM dd, yyyy")
+                                    @if (invoice.IsOverdue)
+                                    {
+                                        <br />
+                                        <small class="text-danger">@invoice.DaysOverdue days overdue</small>
+                                    }
+                                </td>
+                                <td>@invoice.Amount.ToString("C")</td>
+                                <td>
+                                    <strong class="@(invoice.BalanceDue > 0 ? "text-danger" : "text-success")">
+                                        @invoice.BalanceDue.ToString("C")
+                                    </strong>
+                                </td>
+                                <td>
+                                    <span class="badge @GetStatusBadgeClass(invoice.Status)">
+                                        @invoice.Status
+                                    </span>
+                                </td>
+                                <td @onclick:stopPropagation="true">
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewInvoice(invoice.Id)" title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => EditInvoice(invoice.Id)" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteInvoice(invoice)" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            }
+
+            @if (totalPages > 1 && !groupByProperty)
+            {
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <select class="form-select form-select-sm" @bind="pageSize" @bind:after="UpdatePagination">
+                            <option value="10">10 per page</option>
+                            <option value="20">20 per page</option>
+                            <option value="50">50 per page</option>
+                            <option value="100">100 per page</option>
+                        </select>
+                    </div>
+                    <div class="text-muted">
+                        Showing @((currentPage - 1) * pageSize + 1) to @Math.Min(currentPage * pageSize, totalRecords) of @totalRecords invoices
+                    </div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                <button class="page-link" @onclick="FirstPage" disabled="@(currentPage == 1)">
+                                    <i class="bi bi-chevron-double-left"></i>
+                                </button>
+                            </li>
+                            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                <button class="page-link" @onclick="PreviousPage" disabled="@(currentPage == 1)">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                            </li>
+                            @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                            {
+                                var pageNum = i;
+                                <li class="page-item @(currentPage == pageNum ? "active" : "")">
+                                    <button class="page-link" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+                                </li>
+                            }
+                            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                <button class="page-link" @onclick="NextPage" disabled="@(currentPage == totalPages)">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </li>
+                            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                <button class="page-link" @onclick="LastPage" disabled="@(currentPage == totalPages)">
+                                    <i class="bi bi-chevron-double-right"></i>
+                                </button>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private List<Invoice>? invoices;
+    private List<Invoice> filteredInvoices = new();
+    private List<Invoice> pagedInvoices = new();
+    private IEnumerable<IGrouping<int, Invoice>> groupedInvoices = Enumerable.Empty<IGrouping<int, Invoice>>();
+    private HashSet<int> expandedProperties = new();
+    private string searchTerm = string.Empty;
+    private string selectedStatus = string.Empty;
+    private string sortColumn = nameof(Invoice.DueOn);
+    private bool sortAscending = false;
+    private bool groupByProperty = true;
+    
+    private int pendingCount = 0;
+    private int paidCount = 0;
+    private int overdueCount = 0;
+    private decimal pendingAmount = 0;
+    private decimal paidAmount = 0;
+    private decimal overdueAmount = 0;
+    private decimal totalAmount = 0;
+    
+    private int currentPage = 1;
+    private int pageSize = 20;
+    private int totalPages = 1;
+    private int totalRecords = 0;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? LeaseId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInvoices();
+    }
+
+    private async Task LoadInvoices()
+    {
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (!string.IsNullOrEmpty(userId))
+        {
+            invoices = await PropertyManagementService.GetInvoicesAsync();
+            if (LeaseId.HasValue)
+            {
+                invoices = invoices.Where(i => i.LeaseId == LeaseId.Value).ToList();
+            }
+            FilterInvoices();
+            UpdateStatistics();
+        }
+    }
+
+    private void FilterInvoices()
+    {
+        if (invoices == null) return;
+
+        filteredInvoices = invoices.Where(i =>
+        {
+            bool matchesSearch = string.IsNullOrWhiteSpace(searchTerm) ||
+                i.InvoiceNumber.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (i.Lease?.Property?.Address?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (i.Lease?.Tenant?.FullName?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                i.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
+
+            bool matchesStatus = string.IsNullOrWhiteSpace(selectedStatus) ||
+                i.Status.Equals(selectedStatus, StringComparison.OrdinalIgnoreCase);
+
+            return matchesSearch && matchesStatus;
+        }).ToList();
+
+        SortInvoices();
+        
+        if (groupByProperty)
+        {
+            groupedInvoices = filteredInvoices
+                .Where(i => i.Lease?.PropertyId != null && i.Lease.PropertyId > 0)
+                .GroupBy(i => i.Lease!.PropertyId)
+                .OrderBy(g => g.First().Lease?.Property?.Address)
+                .ToList();
+        }
+        else
+        {
+            UpdatePagination();
+        }
+    }
+    
+    private void TogglePropertyGroup(int propertyId)
+    {
+        if (expandedProperties.Contains(propertyId))
+        {
+            expandedProperties.Remove(propertyId);
+        }
+        else
+        {
+            expandedProperties.Add(propertyId);
+        }
+    }
+
+    private void SortBy(string column)
+    {
+        if (sortColumn == column)
+        {
+            sortAscending = !sortAscending;
+        }
+        else
+        {
+            sortColumn = column;
+            sortAscending = true;
+        }
+        SortInvoices();
+        UpdatePagination();
+    }
+
+    private void SortInvoices()
+    {
+        filteredInvoices = sortColumn switch
+        {
+            nameof(Invoice.InvoiceNumber) => sortAscending
+                ? filteredInvoices.OrderBy(i => i.InvoiceNumber).ToList()
+                : filteredInvoices.OrderByDescending(i => i.InvoiceNumber).ToList(),
+            "Property" => sortAscending
+                ? filteredInvoices.OrderBy(i => i.Lease?.Property?.Address).ToList()
+                : filteredInvoices.OrderByDescending(i => i.Lease?.Property?.Address).ToList(),
+            "Tenant" => sortAscending
+                ? filteredInvoices.OrderBy(i => i.Lease?.Tenant?.FullName).ToList()
+                : filteredInvoices.OrderByDescending(i => i.Lease?.Tenant?.FullName).ToList(),
+            nameof(Invoice.InvoicedOn) => sortAscending
+                ? filteredInvoices.OrderBy(i => i.InvoicedOn).ToList()
+                : filteredInvoices.OrderByDescending(i => i.InvoicedOn).ToList(),
+            nameof(Invoice.DueOn) => sortAscending
+                ? filteredInvoices.OrderBy(i => i.DueOn).ToList()
+                : filteredInvoices.OrderByDescending(i => i.DueOn).ToList(),
+            nameof(Invoice.Amount) => sortAscending
+                ? filteredInvoices.OrderBy(i => i.Amount).ToList()
+                : filteredInvoices.OrderByDescending(i => i.Amount).ToList(),
+            _ => filteredInvoices.OrderByDescending(i => i.DueOn).ToList()
+        };
+    }
+
+    private void UpdateStatistics()
+    {
+        if (invoices == null) return;
+
+        pendingCount = invoices.Count(i => i.Status == "Pending");
+        paidCount = invoices.Count(i => i.Status == "Paid");
+        overdueCount = invoices.Count(i => i.IsOverdue && i.Status != "Paid");
+        
+        pendingAmount = invoices.Where(i => i.Status == "Pending").Sum(i => i.BalanceDue);
+        paidAmount = invoices.Where(i => i.Status == "Paid").Sum(i => i.Amount);
+        overdueAmount = invoices.Where(i => i.IsOverdue && i.Status != "Paid").Sum(i => i.BalanceDue);
+        totalAmount = invoices.Sum(i => i.Amount);
+    }
+
+    private void UpdatePagination()
+    {
+        totalRecords = filteredInvoices.Count;
+        totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
+        currentPage = Math.Min(currentPage, Math.Max(1, totalPages));
+        
+        pagedInvoices = filteredInvoices
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void ClearFilters()
+    {
+        searchTerm = string.Empty;
+        selectedStatus = string.Empty;
+        groupByProperty = false;
+        FilterInvoices();
+    }
+
+    private void FirstPage() => GoToPage(1);
+    private void LastPage() => GoToPage(totalPages);
+    private void NextPage() => GoToPage(currentPage + 1);
+    private void PreviousPage() => GoToPage(currentPage - 1);
+    
+    private void GoToPage(int page)
+    {
+        currentPage = Math.Max(1, Math.Min(page, totalPages));
+        UpdatePagination();
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Paid" => "bg-success",
+            "Pending" => "bg-warning",
+            "Overdue" => "bg-danger",
+            "Cancelled" => "bg-secondary",
+            _ => "bg-info"
+        };
+    }
+
+    private void CreateInvoice()
+    {
+        Navigation.NavigateTo("/propertymanagement/invoices/create");
+    }
+
+    private void ViewInvoice(int id)
+    {
+        Navigation.NavigateTo($"/propertymanagement/invoices/view/{id}");
+    }
+
+    private void EditInvoice(int id)
+    {
+        Navigation.NavigateTo($"/propertymanagement/invoices/edit/{id}");
+    }
+
+    private async Task DeleteInvoice(Invoice invoice)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete invoice {invoice.InvoiceNumber}?"))
+        {
+            await PropertyManagementService.DeleteInvoiceAsync(invoice);
+            await LoadInvoices();
+        }
+    }
+}
