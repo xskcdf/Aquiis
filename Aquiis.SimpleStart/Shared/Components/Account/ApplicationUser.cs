@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace Aquiis.SimpleStart.Components.Account;
+namespace Aquiis.SimpleStart.Shared.Components.Account;
 
 // Add profile data for application users by adding properties to the ApplicationUser class
 public class ApplicationUser : IdentityUser

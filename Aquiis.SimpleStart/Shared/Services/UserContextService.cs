@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Aquiis.SimpleStart.Components.Account;
+using Aquiis.SimpleStart.Shared.Components.Account;
 using System.Security.Claims;
 
 namespace Aquiis.SimpleStart.Shared.Services

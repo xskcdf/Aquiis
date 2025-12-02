@@ -1,5 +1,5 @@
 using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Components.Account;
+using Aquiis.SimpleStart.Shared.Components.Account;
 using Aquiis.SimpleStart.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

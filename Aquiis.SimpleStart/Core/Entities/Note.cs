@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Aquiis.SimpleStart.Components.Account;
+using Aquiis.SimpleStart.Shared.Components.Account;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {

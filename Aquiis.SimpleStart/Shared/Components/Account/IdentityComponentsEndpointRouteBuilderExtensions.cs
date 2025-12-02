@@ -6,9 +6,9 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
-using Aquiis.SimpleStart.Components.Account.Pages;
-using Aquiis.SimpleStart.Components.Account.Pages.Manage;
-using Aquiis.SimpleStart.Components.Account;
+using Aquiis.SimpleStart.Shared.Components.Account.Pages;
+using Aquiis.SimpleStart.Shared.Components.Account.Pages.Manage;
+using Aquiis.SimpleStart.Shared.Components.Account;
 
 namespace Microsoft.AspNetCore.Routing;
 

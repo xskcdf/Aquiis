@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Components;
 
-namespace Aquiis.SimpleStart.Components.Account;
+namespace Aquiis.SimpleStart.Shared.Components.Account;
 
 internal sealed class IdentityRedirectManager(NavigationManager navigationManager)
 {

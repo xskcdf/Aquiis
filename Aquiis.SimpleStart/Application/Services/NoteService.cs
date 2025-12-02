@@ -1,6 +1,6 @@
 using Aquiis.SimpleStart.Infrastructure.Data;
 using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Components.Account;
+using Aquiis.SimpleStart.Shared.Components.Account;
 using Aquiis.SimpleStart.Shared.Services;
 using Microsoft.EntityFrameworkCore;
 

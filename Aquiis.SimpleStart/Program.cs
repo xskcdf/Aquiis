@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Aquiis.SimpleStart.Components;
-using Aquiis.SimpleStart.Components.Account;
+using Aquiis.SimpleStart.Shared.Components.Account;
 using Aquiis.SimpleStart.Infrastructure.Data;
 using Aquiis.SimpleStart.Features.PropertyManagement;
 using Aquiis.SimpleStart.Core.Constants;

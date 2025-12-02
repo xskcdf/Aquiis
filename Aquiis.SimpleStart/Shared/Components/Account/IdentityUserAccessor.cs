@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Aquiis.SimpleStart.Infrastructure.Data;
 
-namespace Aquiis.SimpleStart.Components.Account;
+namespace Aquiis.SimpleStart.Shared.Components.Account;
 
 internal sealed class IdentityUserAccessor(UserManager<ApplicationUser> userManager, IdentityRedirectManager redirectManager)
 {

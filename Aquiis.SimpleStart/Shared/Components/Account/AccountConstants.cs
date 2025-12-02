@@ -1,4 +1,4 @@
-namespace Aquiis.SimpleStart.Components.Account
+namespace Aquiis.SimpleStart.Shared.Components.Account
 {
     public static class AccountConstants
     {
