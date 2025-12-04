@@ -21,9 +21,8 @@ public class CalendarSettingsService
     {
         await EnsureDefaultsAsync(organizationId);
 
-        var orgId = Guid.Parse(organizationId);
         return await _context.CalendarSettings
-            .Where(s => s.OrganizationId == orgId && !s.IsDeleted)
+            .Where(s => s.OrganizationId == organizationId && !s.IsDeleted)
             .OrderBy(s => s.DisplayOrder)
             .ThenBy(s => s.EntityType)
             .ToListAsync();
@@ -31,9 +30,8 @@ public class CalendarSettingsService
 
     public async Task<CalendarSettings?> GetSettingAsync(string organizationId, string entityType)
     {
-        var orgId = Guid.Parse(organizationId);
         var setting = await _context.CalendarSettings
-            .FirstOrDefaultAsync(s => s.OrganizationId == orgId 
+            .FirstOrDefaultAsync(s => s.OrganizationId == organizationId 
                                    && s.EntityType == entityType 
                                    && !s.IsDeleted);
 
@@ -52,7 +50,7 @@ public class CalendarSettingsService
     {
         var userId = await _userContext.GetUserIdAsync();
         setting.LastModifiedOn = DateTime.UtcNow;
-        setting.LastModifiedBy = userId;
+        setting.LastModifiedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty;
 
         _context.CalendarSettings.Update(setting);
         await _context.SaveChangesAsync();
@@ -62,9 +60,8 @@ public class CalendarSettingsService
 
     public async Task<bool> IsAutoCreateEnabledAsync(string organizationId, string entityType)
     {
-        var orgId = Guid.Parse(organizationId);
         var setting = await _context.CalendarSettings
-            .FirstOrDefaultAsync(s => s.OrganizationId == orgId 
+            .FirstOrDefaultAsync(s => s.OrganizationId == organizationId 
                                    && s.EntityType == entityType 
                                    && !s.IsDeleted);
 
@@ -75,10 +72,9 @@ public class CalendarSettingsService
     public async Task EnsureDefaultsAsync(string organizationId)
     {
         var userId = await _userContext.GetUserIdAsync();
-        var orgId = Guid.Parse(organizationId);
         var entityTypes = SchedulableEntityRegistry.GetEntityTypeNames();
         var existingSettings = await _context.CalendarSettings
-            .Where(s => s.OrganizationId == orgId && !s.IsDeleted)
+            .Where(s => s.OrganizationId == organizationId && !s.IsDeleted)
             .Select(s => s.EntityType)
             .ToListAsync();
 
@@ -90,8 +86,8 @@ public class CalendarSettingsService
             {
                 var setting = CreateDefaultSetting(organizationId, entityType);
                 setting.DisplayOrder = existingSettings.Count + index;
-                setting.CreatedBy = userId ?? string.Empty;
-                setting.LastModifiedBy = userId;
+                setting.CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty;
+                setting.LastModifiedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty;
                 return setting;
             }).ToList();
 
@@ -107,9 +103,10 @@ public class CalendarSettingsService
             ? CalendarEventTypes.Config[entityType]
             : null;
 
+        var userId = _userContext.GetUserIdAsync().Result;
         return new CalendarSettings
         {
-            OrganizationId = Guid.Parse(organizationId),
+            OrganizationId = organizationId,
             EntityType = entityType,
             AutoCreateEvents = true,
             ShowOnCalendar = true,

@@ -1,6 +1,6 @@
 @page "/propertymanagement/invoices/edit/{Id:int}"
+
 @using Aquiis.SimpleStart.Features.PropertyManagement
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
@@ -9,7 +9,7 @@
 @inject NavigationManager NavigationManager
 @inject PropertyManagementService PropertyManagementService
 
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Edit Invoice - Property Management</PageTitle>

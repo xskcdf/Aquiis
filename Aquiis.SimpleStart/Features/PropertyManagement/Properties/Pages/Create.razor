@@ -7,10 +7,11 @@
 @using System.ComponentModel.DataAnnotations
 @inject NavigationManager Navigation
 @inject PropertyManagementService PropertyManagementService
+@inject UserContextService UserContextService
 
 @rendermode InteractiveServer
 
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 
 <div class="row">
     <div class="col-md-8">
@@ -174,18 +175,20 @@
 
     private async Task SaveProperty()
     {
-        var authState = await AuthenticationStateTask;
-            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        isSubmitting = true;
+        errorMessage = string.Empty;
 
-            if (string.IsNullOrEmpty(userId))
-            {
-                errorMessage = "User not authenticated.";
-                return;
-            }
+        var userId = await UserContextService.GetUserIdAsync();
+        var organizationId = await UserContextService.GetOrganizationIdAsync();
+
+        if(string.IsNullOrEmpty(organizationId) || string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User is not authorized to perform this action.");
+        }
 
         var property = new Property
         {
-            UserId = userId,
+            OrganizationId = organizationId,
             Address = propertyModel.Address,
             UnitNumber = propertyModel.UnitNumber,
             City = propertyModel.City,
@@ -199,14 +202,12 @@
             Description = propertyModel.Description,
             Status = propertyModel.Status,
             IsAvailable = propertyModel.IsAvailable,
-            CreatedBy = userId,
-            CreatedOn = DateTime.UtcNow,
-            LastModifiedOn = DateTime.UtcNow
         };
 
         // Save the property using a service or API call
         await PropertyManagementService.AddPropertyAsync(property);
 
+        isSubmitting = false;
         // Redirect to the properties list page after successful addition
         Navigation.NavigateTo("/propertymanagement/properties");
     }

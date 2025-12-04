@@ -7,7 +7,7 @@
 @inject NavigationManager Navigation
 @inject PropertyManagementService PropertyManagementService
 
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Edit Payment - Property Management</PageTitle>

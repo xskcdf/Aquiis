@@ -41,15 +41,15 @@ namespace Aquiis.SimpleStart.Application.Services
         #region Properties
         public async Task<List<Property>> GetPropertiesAsync()
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
             
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             
             return await _dbContext.Properties
                 .Include(p => p.Leases)
@@ -60,15 +60,15 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<Property?> GetPropertyByIdAsync(int propertyId)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
             
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.Properties
             .Include(p => p.Leases)
@@ -78,14 +78,15 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<List<Property>> SearchPropertiesByAddressAsync(string searchTerm)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
+                // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
             
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             
             if (string.IsNullOrWhiteSpace(searchTerm))
             {
@@ -108,36 +109,17 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<List<Property>> GetPropertiesByOrganizationIdAsync(string organizationId)
-        {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (_userId == null)
-            {
-                // Handle the case when the user is not authenticated
-                throw new UnauthorizedAccessException("User is not authenticated.");
-            }
-            
-            // In a real application, this would call a database or API
-            List<Property> properties = await _dbContext.Properties
-                .Include(p => p.Leases)
-                .Include(p => p.Documents)
-                .Where(p => p.OrganizationId == organizationId && !p.IsDeleted)
-                .ToListAsync();
-            return properties;
-        }
-
         public async Task AddPropertyAsync(Property property)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             property.OrganizationId = organizationId!;
 
@@ -155,13 +137,13 @@ namespace Aquiis.SimpleStart.Application.Services
         {
             var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             if (property.OrganizationId != organizationId)
             {
@@ -176,13 +158,13 @@ namespace Aquiis.SimpleStart.Application.Services
         {
             var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             
             if (_applicationSettings.SoftDeleteEnabled)
@@ -206,15 +188,15 @@ namespace Aquiis.SimpleStart.Application.Services
 
         private async Task SoftDeletePropertyAsync(int propertyId)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             var property = await _dbContext.Properties
                 .FirstOrDefaultAsync(p => p.Id == propertyId && p.OrganizationId == organizationId);
@@ -260,15 +242,15 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<List<Tenant>> GetTenantsAsync()
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
             
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             
             return await _dbContext.Tenants
                 .Include(t => t.Leases)
@@ -278,19 +260,19 @@ namespace Aquiis.SimpleStart.Application.Services
         
         public async Task<List<Tenant>> GetTenantsByLeaseIdAsync(int leaseId)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             var leases = await _dbContext.Leases
                 .Include(l => l.Tenant)
-                .Where(l => l.Id == leaseId && l.Tenant.OrganizationId == organizationId && !l.IsDeleted && !l.Tenant.IsDeleted)
+                .Where(l => l.Id == leaseId && l.Tenant!.OrganizationId == organizationId && !l.IsDeleted && !l.Tenant.IsDeleted)
                 .ToListAsync();
 
             var tenantIds = leases.Select(l => l.TenantId).Distinct().ToList();
@@ -301,19 +283,19 @@ namespace Aquiis.SimpleStart.Application.Services
         }
         public async Task<List<Tenant>> GetTenantsByPropertyIdAsync(int propertyId)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             var leases = await _dbContext.Leases
                 .Include(l => l.Tenant)
-                .Where(l => l.PropertyId == propertyId && l.Tenant.OrganizationId == organizationId && !l.IsDeleted && !l.Tenant.IsDeleted)
+                .Where(l => l.PropertyId == propertyId && l.Tenant!.OrganizationId == organizationId && !l.IsDeleted && !l.Tenant.IsDeleted)
                 .ToListAsync();
 
             var tenantIds = leases.Select(l => l.TenantId).Distinct().ToList();
@@ -325,15 +307,15 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<Tenant?> GetTenantByIdAsync(int tenantId)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.Tenants
                 .Include(t => t.Leases)
@@ -342,48 +324,32 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<Tenant?> GetTenantByIdentificationNumberAsync(string identificationNumber)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.Tenants
                 .Include(t => t.Leases)
                 .FirstOrDefaultAsync(t => t.IdentificationNumber == identificationNumber && t.OrganizationId == organizationId && !t.IsDeleted);
         }
 
-        public async Task<List<Tenant>> GetTenantsByOrganizationIdAsync(string organizationId)
-        {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (_userId == null)
-            {
-                // Handle the case when the user is not authenticated
-                throw new UnauthorizedAccessException("User is not authenticated.");
-            }
-
-            return await _dbContext.Tenants
-                .Include(t => t.Leases)
-                .Where(t => t.OrganizationId == organizationId && !t.IsDeleted)
-                .ToListAsync();
-        }
-
         public async Task<Tenant> AddTenantAsync(Tenant tenant)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             tenant.OrganizationId = organizationId!;
             await _dbContext.Tenants.AddAsync(tenant);
@@ -396,12 +362,12 @@ namespace Aquiis.SimpleStart.Application.Services
         {
             var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             if (tenant.OrganizationId != organizationId)
             {
@@ -417,16 +383,16 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task DeleteTenantAsync(Tenant tenant)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = await _userContext.GetUserIdAsync();
 
-            if (userId == null)
+            if (string.IsNullOrEmpty(userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
             if (_applicationSettings.SoftDeleteEnabled)
             {
-                await SoftDeleteTenantAsync(tenant, userId);
+                await SoftDeleteTenantAsync(tenant);
                 return;
             }
             else
@@ -439,8 +405,10 @@ namespace Aquiis.SimpleStart.Application.Services
             }
         }
 
-        private async Task SoftDeleteTenantAsync(Tenant tenant, string userId)
+        private async Task SoftDeleteTenantAsync(Tenant tenant)
         {
+            var userId = await _userContext.GetUserIdAsync();
+
             if (tenant != null && !tenant.IsDeleted && !string.IsNullOrEmpty(userId))
             {
                 tenant.IsDeleted = true;
@@ -457,33 +425,33 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<List<Lease>> GetLeasesAsync()
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.Leases
                 .Include(l => l.Property)
                 .Include(l => l.Tenant)
-                .Where(l => !l.IsDeleted && !l.Tenant.IsDeleted && !l.Property.IsDeleted && l.Property.OrganizationId == organizationId)
+                .Where(l => !l.IsDeleted && !l.Tenant!.IsDeleted && !l.Property.IsDeleted && l.Property.OrganizationId == organizationId)
                 .ToListAsync();
         }
         public async Task<Lease?> GetLeaseByIdAsync(int leaseId)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
             
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.Leases
                 .Include(l => l.Property)
@@ -493,15 +461,15 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<List<Lease>> GetLeasesByPropertyIdAsync(int propertyId)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
             
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             var leases = await _dbContext.Leases
             .Include(l => l.Property)
@@ -516,20 +484,20 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<List<Lease>> GetActiveLeasesByPropertyIdAsync(int propertyId)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
             
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             var leases = await _dbContext.Leases
             .Include(l => l.Property)
             .Include(l => l.Tenant)
-            .Where(l => l.PropertyId == propertyId && !l.IsDeleted && !l.Tenant.IsDeleted && !l.Property.IsDeleted && l.Property.OrganizationId == organizationId)
+            .Where(l => l.PropertyId == propertyId && !l.IsDeleted && !l.Tenant!.IsDeleted && !l.Property.IsDeleted && l.Property.OrganizationId == organizationId)
             .ToListAsync();
             
             return leases
@@ -537,54 +505,37 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToList();
         }
 
-        public async Task<List<Lease>> GetLeasesByOrganizationIdAsync(string organizationId)
-        {
-
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (_userId == null)
-            {
-                // Handle the case when the user is not authenticated
-                throw new UnauthorizedAccessException("User is not authenticated.");
-            }
-            
-            return await _dbContext.Leases
-                .Include(l => l.Property)
-                .Include(l => l.Tenant)
-                .Where(l => !l.IsDeleted && !l.Tenant.IsDeleted && !l.Property.IsDeleted && l.Property.OrganizationId == organizationId)
-                .ToListAsync();
-        }
-
+        
         public async Task<List<Lease>> GetLeasesByTenantIdAsync(int tenantId)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.Leases
                 .Include(l => l.Property)
                 .Include(l => l.Tenant)
-                .Where(l => l.TenantId == tenantId && !l.Tenant.IsDeleted && !l.IsDeleted && l.Property.OrganizationId == organizationId)
+                .Where(l => l.TenantId == tenantId && !l.Tenant!.IsDeleted && !l.IsDeleted && l.Property.OrganizationId == organizationId)
                 .ToListAsync();
         }
 
         public async Task<Lease?> AddLeaseAsync(Lease lease)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             var property = await GetPropertyByIdAsync(lease.PropertyId);
             if(property is null || property.OrganizationId != organizationId)
@@ -605,15 +556,15 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task UpdateLeaseAsync(Lease lease)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
             
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
             
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             
             if (lease.Property.OrganizationId != organizationId)
             {
@@ -629,15 +580,15 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task DeleteLeaseAsync(int leaseId)
         {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (string.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(_userId))
             {
                 // Handle the case when the user is not authenticated
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             if( !await _dbContext.Leases.AnyAsync(l => l.Id == leaseId && l.Property.OrganizationId == organizationId))
             {
@@ -646,7 +597,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
             if (_applicationSettings.SoftDeleteEnabled)
             {
-                await SoftDeleteLeaseAsync(leaseId, userId);
+                await SoftDeleteLeaseAsync(leaseId);
                 return;
             }
             else
@@ -660,9 +611,19 @@ namespace Aquiis.SimpleStart.Application.Services
             }
         }
 
-        private async Task SoftDeleteLeaseAsync(int leaseId, string userId)
+        private async Task SoftDeleteLeaseAsync(int leaseId)
         {
-            var lease = await _dbContext.Leases.FirstOrDefaultAsync(l => l.Id == leaseId);
+            var userId = await _userContext.GetUserIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                // Handle the case when the user is not authenticated
+                throw new UnauthorizedAccessException("User is not authenticated.");
+            }
+
+       
+            var lease = await _dbContext.Leases.FirstOrDefaultAsync(l => l.Id == leaseId && l.Property.OrganizationId == organizationId);
             if (lease != null && !lease.IsDeleted && !string.IsNullOrEmpty(userId))
             {
                 lease.IsDeleted = true;
@@ -679,21 +640,8 @@ namespace Aquiis.SimpleStart.Application.Services
         
         public async Task<List<Invoice>> GetInvoicesAsync()
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             
-            return await _dbContext.Invoices
-                .Include(i => i.Lease)
-                    .ThenInclude(l => l.Property)
-                .Include(i => i.Lease)
-                    .ThenInclude(l => l.Tenant)
-                .Include(i => i.Payments)
-                .Where(i => !i.IsDeleted && i.Lease.Property.OrganizationId == organizationId)
-                .OrderByDescending(i => i.DueOn)
-                .ToListAsync();
-        }
-
-        public async Task<List<Invoice>> GetInvoicesByOrganizationIdAsync(string organizationId)
-        {
             return await _dbContext.Invoices
                 .Include(i => i.Lease)
                     .ThenInclude(l => l.Property)
@@ -707,7 +655,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<Invoice?> GetInvoiceByIdAsync(int invoiceId)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
 
             return await _dbContext.Invoices
@@ -723,7 +671,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<List<Invoice>> GetInvoicesByLeaseIdAsync(int leaseId)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.Invoices
                 .Include(i => i.Lease)
@@ -740,7 +688,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task AddInvoiceAsync(Invoice invoice)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             var lease = await _dbContext.Leases
                 .Include(l => l.Property)
@@ -757,13 +705,13 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task UpdateInvoiceAsync(Invoice invoice)
         {
-            var cuserId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (cuserId == null)
+            var userId = await _userContext.GetUserIdAsync();
+            if (userId == null)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var lease = await _dbContext.Leases
                 .Include(l => l.Property)
                 .FirstOrDefaultAsync(l => l.Id == invoice.LeaseId && !l.IsDeleted);
@@ -774,7 +722,7 @@ namespace Aquiis.SimpleStart.Application.Services
             }
 
             invoice.LastModifiedOn = DateTime.UtcNow;
-            invoice.LastModifiedBy = cuserId;
+            invoice.LastModifiedBy = userId;
 
             _dbContext.Invoices.Update(invoice);
             await _dbContext.SaveChangesAsync();
@@ -782,8 +730,8 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task DeleteInvoiceAsync(Invoice invoice)
         {
-            var cuserId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (cuserId == null)
+            var userId = await _userContext.GetUserIdAsync();
+            if (string.IsNullOrEmpty(userId))
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
@@ -792,7 +740,7 @@ namespace Aquiis.SimpleStart.Application.Services
             {
                 invoice.IsDeleted = true;
                 invoice.LastModifiedOn = DateTime.UtcNow;
-                invoice.LastModifiedBy = cuserId;
+                invoice.LastModifiedBy = userId;
                 _dbContext.Invoices.Update(invoice);
             }
             else
@@ -804,7 +752,8 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<string> GenerateInvoiceNumberAsync()
         {
-            var lastInvoice = await _dbContext.Invoices
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();    
+            var lastInvoice = await _dbContext.Invoices.Where(i => i.OrganizationId == organizationId)
                 .OrderByDescending(i => i.Id)
                 .FirstOrDefaultAsync();
             
@@ -818,7 +767,7 @@ namespace Aquiis.SimpleStart.Application.Services
         
         public async Task<List<Payment>> GetPaymentsAsync()
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             
             return await _dbContext.Payments
                 .Include(p => p.Invoice)
@@ -832,22 +781,10 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<List<Payment>> GetPaymentsByUserIdAsync(string userId)
-        {
-            return await _dbContext.Payments
-                .Include(p => p.Invoice)
-                    .ThenInclude(i => i!.Lease)
-                        .ThenInclude(l => l!.Property)
-                .Include(p => p.Invoice)
-                    .ThenInclude(i => i!.Lease)
-                        .ThenInclude(l => l!.Tenant)
-                .Where(p => p.UserId == userId && !p.IsDeleted)
-                .OrderByDescending(p => p.PaidOn)
-                .ToListAsync();
-        }
 
         public async Task<Payment?> GetPaymentByIdAsync(int paymentId)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.Payments
                 .Include(p => p.Invoice)
                     .ThenInclude(i => i!.Lease)
@@ -855,20 +792,23 @@ namespace Aquiis.SimpleStart.Application.Services
                 .Include(p => p.Invoice)
                     .ThenInclude(i => i!.Lease)
                         .ThenInclude(l => l!.Tenant)
-                .FirstOrDefaultAsync(p => p.Id == paymentId && !p.IsDeleted);
+                .FirstOrDefaultAsync(p => p.Id == paymentId && !p.IsDeleted && p.Invoice.Lease.Property.OrganizationId == organizationId);
         }
 
         public async Task<List<Payment>> GetPaymentsByInvoiceIdAsync(int invoiceId)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.Payments
                 .Include(p => p.Invoice)
-                .Where(p => p.InvoiceId == invoiceId && !p.IsDeleted)
+                .Where(p => p.InvoiceId == invoiceId && !p.IsDeleted && p.Invoice.Lease.Property.OrganizationId == organizationId)
                 .OrderByDescending(p => p.PaidOn)
                 .ToListAsync();
         }
 
         public async Task AddPaymentAsync(Payment payment)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            payment.OrganizationId = organizationId!;
             await _dbContext.Payments.AddAsync(payment);
             await _dbContext.SaveChangesAsync();
             
@@ -878,6 +818,8 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task UpdatePaymentAsync(Payment payment)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            payment.OrganizationId = organizationId!;
             payment.LastModifiedOn = DateTime.UtcNow;
             _dbContext.Payments.Update(payment);
             await _dbContext.SaveChangesAsync();
@@ -888,8 +830,10 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task DeletePaymentAsync(Payment payment)
         {
-            var cuserId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (cuserId == null)
+            var userId = await _userContext.GetUserIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+
+            if (string.IsNullOrEmpty(userId) || payment.OrganizationId != organizationId)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
@@ -900,7 +844,7 @@ namespace Aquiis.SimpleStart.Application.Services
             {
                 payment.IsDeleted = true;
                 payment.LastModifiedOn = DateTime.UtcNow;
-                payment.LastModifiedBy = cuserId;
+                payment.LastModifiedBy = userId;
                 _dbContext.Payments.Update(payment);
             }
             else
@@ -915,11 +859,12 @@ namespace Aquiis.SimpleStart.Application.Services
 
         private async Task UpdateInvoicePaidAmountAsync(int invoiceId)
         {
-            var invoice = await _dbContext.Invoices.FindAsync(invoiceId);
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            var invoice = await _dbContext.Invoices.Where(i => i.Id == invoiceId && i.OrganizationId == organizationId).FirstOrDefaultAsync();
             if (invoice != null)
             {
                 var totalPaid = await _dbContext.Payments
-                    .Where(p => p.InvoiceId == invoiceId && !p.IsDeleted)
+                    .Where(p => p.InvoiceId == invoiceId && !p.IsDeleted && p.OrganizationId == organizationId)
                     .SumAsync(p => p.Amount);
                 
                 invoice.AmountPaid = totalPaid;
@@ -945,7 +890,7 @@ namespace Aquiis.SimpleStart.Application.Services
         
         public async Task<List<Document>> GetDocumentsAsync()
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             
             return await _dbContext.Documents
                 .Include(d => d.Property)
@@ -963,7 +908,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<Document?> GetDocumentByIdAsync(int documentId)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
 
             return await _dbContext.Documents
@@ -980,7 +925,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<List<Document>> GetDocumentsByLeaseIdAsync(int leaseId)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.Documents
                 .Include(d => d.Lease)
@@ -994,7 +939,7 @@ namespace Aquiis.SimpleStart.Application.Services
         
         public async Task<List<Document>> GetDocumentsByPropertyIdAsync(int propertyId)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.Documents
                 .Include(d => d.Property)
@@ -1007,7 +952,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<List<Document>> GetDocumentsByTenantIdAsync(int tenantId)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.Documents
                 .Include(d => d.Property)
@@ -1020,15 +965,15 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<Document> AddDocumentAsync(Document document)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (_userId == null)
+            var _userId = await _userContext.GetUserIdAsync();
+            if (string.IsNullOrEmpty(_userId))
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            document.CreatedBy = _userId!;
+            document.CreatedBy = _userId;
             document.OrganizationId = organizationId!;
             document.CreatedOn = DateTime.UtcNow;
             _dbContext.Documents.Add(document);
@@ -1038,15 +983,15 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task UpdateDocumentAsync(Document document)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (_userId == null)
+            var _userId = await _userContext.GetUserIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+
+            if (string.IsNullOrEmpty(_userId) || document.OrganizationId != organizationId)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
-
-            document.LastModifiedBy = _userId!;
+            document.LastModifiedBy = _userId;
             document.LastModifiedOn = DateTime.UtcNow;
             _dbContext.Documents.Update(document);
             await _dbContext.SaveChangesAsync();
@@ -1055,8 +1000,10 @@ namespace Aquiis.SimpleStart.Application.Services
         public async Task DeleteDocumentAsync(Document document)
         {
 
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (_userId == null)
+            var _userId = await _userContext.GetUserIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+
+            if (string.IsNullOrEmpty(_userId) || document.OrganizationId != organizationId)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
@@ -1068,7 +1015,7 @@ namespace Aquiis.SimpleStart.Application.Services
             else
             {
                 document.IsDeleted = true;
-                document.LastModifiedBy = _userId!;
+                document.LastModifiedBy = _userId;
                 document.LastModifiedOn = DateTime.UtcNow;
                 _dbContext.Documents.Update(document);
 
@@ -1134,7 +1081,7 @@ namespace Aquiis.SimpleStart.Application.Services
         
         public async Task<List<Inspection>> GetInspectionsAsync()
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             
             return await _dbContext.Inspections
                 .Include(i => i.Property)
@@ -1147,7 +1094,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<List<Inspection>> GetInspectionsByPropertyIdAsync(int propertyId)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             
             return await _dbContext.Inspections
                 .Include(i => i.Property)
@@ -1160,7 +1107,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<Inspection?> GetInspectionByIdAsync(int inspectionId)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             
             return await _dbContext.Inspections
                 .Include(i => i.Property)
@@ -1172,13 +1119,15 @@ namespace Aquiis.SimpleStart.Application.Services
         public async Task AddInspectionAsync(Inspection inspection)
         {
 
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (_userId == null)
+            var _userId = await _userContext.GetUserIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+
+            if (string.IsNullOrEmpty(_userId))
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
-
-            inspection.CreatedBy = _userId!;
+            inspection.OrganizationId = organizationId!;
+            inspection.CreatedBy = _userId;
             inspection.CreatedOn = DateTime.UtcNow;
             await _dbContext.Inspections.AddAsync(inspection);
             await _dbContext.SaveChangesAsync();
@@ -1212,12 +1161,13 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task UpdateInspectionAsync(Inspection inspection)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (_userId == null)
+            var _userId = await _userContext.GetUserIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            if (string.IsNullOrEmpty(_userId) || inspection.OrganizationId != organizationId)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
-            inspection.LastModifiedBy = _userId!;
+            inspection.LastModifiedBy = _userId;
             inspection.LastModifiedOn = DateTime.UtcNow;
             _dbContext.Inspections.Update(inspection);
             await _dbContext.SaveChangesAsync();
@@ -1229,7 +1179,8 @@ namespace Aquiis.SimpleStart.Application.Services
         public async Task DeleteInspectionAsync(int inspectionId)
         {
             var userId = await _userContext.GetUserIdAsync();
-            if (string.IsNullOrEmpty(userId))
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId))
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
@@ -1264,8 +1215,10 @@ namespace Aquiis.SimpleStart.Application.Services
         /// </summary>
         public async Task UpdatePropertyInspectionTrackingAsync(int propertyId, DateTime inspectionDate, int intervalMonths = 12)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+
             var property = await _dbContext.Properties.FindAsync(propertyId);
-            if (property == null || property.IsDeleted)
+            if (property == null || property.IsDeleted || property.OrganizationId != organizationId)
             {
                 throw new InvalidOperationException("Property not found.");
             }
@@ -1276,7 +1229,7 @@ namespace Aquiis.SimpleStart.Application.Services
             property.LastModifiedOn = DateTime.UtcNow;
             
             var userId = await _userContext.GetUserIdAsync();
-            property.LastModifiedBy = userId ?? "System";
+            property.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
 
             _dbContext.Properties.Update(property);
             await _dbContext.SaveChangesAsync();
@@ -1287,7 +1240,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// </summary>
         public async Task<List<Property>> GetPropertiesWithOverdueInspectionsAsync()
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             
             return await _dbContext.Properties
                 .Where(p => p.OrganizationId == organizationId && 
@@ -1303,7 +1256,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// </summary>
         public async Task<List<Property>> GetPropertiesWithInspectionsDueSoonAsync(int daysAhead = 30)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var dueDate = DateTime.Today.AddDays(daysAhead);
             
             return await _dbContext.Properties
@@ -1321,7 +1274,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// </summary>
         public async Task<int> GetOverdueInspectionCountAsync()
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             
             return await _dbContext.Properties
                 .CountAsync(p => p.OrganizationId == organizationId && 
@@ -1336,7 +1289,8 @@ namespace Aquiis.SimpleStart.Application.Services
         public async Task InitializePropertyInspectionTrackingAsync(int propertyId, int intervalMonths = 12)
         {
             var property = await _dbContext.Properties.FindAsync(propertyId);
-            if (property == null || property.IsDeleted)
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            if (property == null || property.IsDeleted || property.OrganizationId != organizationId)
             {
                 throw new InvalidOperationException("Property not found.");
             }
@@ -1348,7 +1302,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 property.LastModifiedOn = DateTime.UtcNow;
                 
                 var userId = await _userContext.GetUserIdAsync();
-                property.LastModifiedBy = userId ?? "System";
+                property.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
 
                 _dbContext.Properties.Update(property);
                 await _dbContext.SaveChangesAsync();
@@ -1360,11 +1314,18 @@ namespace Aquiis.SimpleStart.Application.Services
         /// </summary>
         private async Task CreateRoutineInspectionCalendarEventAsync(Property property)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            if (property == null || property.IsDeleted || property.OrganizationId != organizationId)
+            {
+                throw new InvalidOperationException("Property not found.");
+            }
+
             if (!property.NextRoutineInspectionDueDate.HasValue)
             {
                 return;
             }
 
+    
             var userId = await _userContext.GetUserIdAsync();
 
             var calendarEvent = new CalendarEvent
@@ -1380,7 +1341,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 Color = CalendarEventTypes.GetColor(CalendarEventTypes.Inspection),
                 Icon = CalendarEventTypes.GetIcon(CalendarEventTypes.Inspection),
                 OrganizationId = property.OrganizationId,
-                CreatedBy = userId ?? "System",
+                CreatedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId,
                 CreatedOn = DateTime.UtcNow,
                 SourceEntityType = "Property",
                 SourceEntityId = property.Id
@@ -1396,7 +1357,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<List<MaintenanceRequest>> GetMaintenanceRequestsAsync()
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.MaintenanceRequests
                 .Include(m => m.Property)
@@ -1408,7 +1369,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<List<MaintenanceRequest>> GetMaintenanceRequestsByPropertyAsync(int propertyId)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.MaintenanceRequests
                 .Include(m => m.Property)
@@ -1420,7 +1381,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<List<MaintenanceRequest>> GetMaintenanceRequestsByLeaseAsync(int leaseId)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.MaintenanceRequests
                 .Include(m => m.Property)
@@ -1432,7 +1393,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<List<MaintenanceRequest>> GetMaintenanceRequestsByStatusAsync(string status)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.MaintenanceRequests
                 .Include(m => m.Property)
@@ -1444,7 +1405,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<List<MaintenanceRequest>> GetMaintenanceRequestsByPriorityAsync(string priority)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.MaintenanceRequests
                 .Include(m => m.Property)
@@ -1456,7 +1417,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<List<MaintenanceRequest>> GetOverdueMaintenanceRequestsAsync()
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var today = DateTime.Today;
 
             return await _dbContext.MaintenanceRequests
@@ -1474,7 +1435,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<int> GetOpenMaintenanceRequestCountAsync()
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.MaintenanceRequests
                 .Where(m => m.OrganizationId == organizationId && 
@@ -1486,7 +1447,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<int> GetUrgentMaintenanceRequestCountAsync()
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.MaintenanceRequests
                 .Where(m => m.OrganizationId == organizationId && 
@@ -1499,7 +1460,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<MaintenanceRequest?> GetMaintenanceRequestByIdAsync(int id)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.MaintenanceRequests
                 .Include(m => m.Property)
@@ -1509,14 +1470,14 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task AddMaintenanceRequestAsync(MaintenanceRequest maintenanceRequest)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             maintenanceRequest.OrganizationId = organizationId!;
             maintenanceRequest.CreatedBy = _userId;
             maintenanceRequest.CreatedOn = DateTime.UtcNow;
@@ -1530,14 +1491,14 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task UpdateMaintenanceRequestAsync(MaintenanceRequest maintenanceRequest)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             if (maintenanceRequest.OrganizationId != organizationId)
             {
@@ -1556,14 +1517,14 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task DeleteMaintenanceRequestAsync(int id)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             var maintenanceRequest = await _dbContext.MaintenanceRequests
                 .FirstOrDefaultAsync(m => m.Id == id && m.OrganizationId == organizationId);
@@ -1584,14 +1545,14 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task UpdateMaintenanceRequestStatusAsync(int id, string status)
         {
-            var _userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var _userId = await _userContext.GetUserIdAsync();
 
-            if (_userId == null)
+            if (string.IsNullOrEmpty(_userId))
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             var maintenanceRequest = await _dbContext.MaintenanceRequests
                 .FirstOrDefaultAsync(m => m.Id == id && m.OrganizationId == organizationId && !m.IsDeleted);
@@ -1618,11 +1579,11 @@ namespace Aquiis.SimpleStart.Application.Services
 
         /// <summary>
         /// Gets the organization settings for the current user's organization.
-        /// If no settings exist, creates default settings.
+        /// If no settings exist, creates default settings. 
         /// </summary>
         public async Task<OrganizationSettings?> GetOrganizationSettingsAsync()
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             if (string.IsNullOrEmpty(organizationId))
             {
@@ -1630,7 +1591,7 @@ namespace Aquiis.SimpleStart.Application.Services
             }
 
             var settings = await _dbContext.OrganizationSettings
-                .Where(s => !s.IsDeleted && s.OrganizationId.ToString() == organizationId)
+                .Where(s => !s.IsDeleted && s.OrganizationId == organizationId)
                 .FirstOrDefaultAsync();
 
             // Create default settings if they don't exist
@@ -1639,7 +1600,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 var userId = await _userContext.GetUserIdAsync();
                 settings = new OrganizationSettings
                 {
-                    OrganizationId = Guid.Parse(organizationId),
+                    OrganizationId = organizationId, // This should be set to the actual organization ID
                     LateFeeEnabled = true,
                     LateFeeAutoApply = true,
                     LateFeeGracePeriodDays = 3,
@@ -1648,7 +1609,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     PaymentReminderEnabled = true,
                     PaymentReminderDaysBefore = 3,
                     CreatedOn = DateTime.UtcNow,
-                    CreatedBy = userId ?? "System"
+                    CreatedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId
                 };
                 
                 await _dbContext.OrganizationSettings.AddAsync(settings);
@@ -1658,26 +1619,13 @@ namespace Aquiis.SimpleStart.Application.Services
             return settings;
         }
 
-        /// <summary>
-        /// Gets organization settings by organization ID (used by scheduled tasks).
-        /// </summary>
-        public async Task<OrganizationSettings?> GetOrganizationSettingsByOrgIdAsync(Guid organizationId)
-        {
-            return await _dbContext.OrganizationSettings
-                .Where(s => !s.IsDeleted && s.OrganizationId == organizationId)
-                .FirstOrDefaultAsync();
-        }
-
-        /// <summary>
-        /// Gets organization settings by organization ID string (used by scheduled tasks).
-        /// </summary>
         public async Task<OrganizationSettings?> GetOrganizationSettingsByOrgIdAsync(string organizationId)
         {
-            if (Guid.TryParse(organizationId, out var guid))
-            {
-                return await GetOrganizationSettingsByOrgIdAsync(guid);
-            }
-            return null;
+            var settings = await _dbContext.OrganizationSettings
+                .Where(s => !s.IsDeleted && s.OrganizationId == organizationId)
+                .FirstOrDefaultAsync();
+
+            return settings;
         }
 
         /// <summary>
@@ -1685,11 +1633,19 @@ namespace Aquiis.SimpleStart.Application.Services
         /// </summary>
         public async Task UpdateOrganizationSettingsAsync(OrganizationSettings settings)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            if (string.IsNullOrEmpty(organizationId))
+            {
+                throw new InvalidOperationException("Organization ID not found for current user");
+            }
+            if (settings.OrganizationId != organizationId)
+            {
+                throw new InvalidOperationException("Cannot update settings for a different organization");
+            }
             var userId = await _userContext.GetUserIdAsync();
             
             settings.LastModifiedOn = DateTime.UtcNow;
-            settings.LastModifiedBy = userId ?? "System";
-
+            settings.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
             _dbContext.OrganizationSettings.Update(settings);
             await _dbContext.SaveChangesAsync();
         }
@@ -1700,8 +1656,9 @@ namespace Aquiis.SimpleStart.Application.Services
 
         #region ProspectiveTenant CRUD
 
-        public async Task<List<ProspectiveTenant>> GetAllProspectiveTenantsAsync(string organizationId)
+        public async Task<List<ProspectiveTenant>> GetAllProspectiveTenantsAsync()
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.ProspectiveTenants
                 .Where(pt => pt.OrganizationId == organizationId && !pt.IsDeleted)
                 .Include(pt => pt.InterestedProperty)
@@ -1711,8 +1668,9 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<ProspectiveTenant?> GetProspectiveTenantByIdAsync(int id, string organizationId)
+        public async Task<ProspectiveTenant?> GetProspectiveTenantByIdAsync(int id)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.ProspectiveTenants
                 .Where(pt => pt.Id == id && pt.OrganizationId == organizationId && !pt.IsDeleted)
                 .Include(pt => pt.InterestedProperty)
@@ -1723,6 +1681,11 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<ProspectiveTenant> CreateProspectiveTenantAsync(ProspectiveTenant prospectiveTenant)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            var userId = await _userContext.GetUserIdAsync();
+
+            prospectiveTenant.OrganizationId = organizationId!;
+            prospectiveTenant.CreatedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
             prospectiveTenant.CreatedOn = DateTime.UtcNow;
             prospectiveTenant.Status = ApplicationConstants.ProspectiveStatuses.Lead;
             prospectiveTenant.FirstContactedOn = DateTime.UtcNow;
@@ -1734,30 +1697,45 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<ProspectiveTenant> UpdateProspectiveTenantAsync(ProspectiveTenant prospectiveTenant)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            if (prospectiveTenant.OrganizationId != organizationId)
+            {
+                throw new UnauthorizedAccessException("User is not authorized to update this prospective tenant.");
+            }
             prospectiveTenant.LastModifiedOn = DateTime.UtcNow;
             _dbContext.ProspectiveTenants.Update(prospectiveTenant);
             await _dbContext.SaveChangesAsync();
             return prospectiveTenant;
         }
 
-        public async Task DeleteProspectiveTenantAsync(int id, string organizationId, string deletedBy)
+        public async Task DeleteProspectiveTenantAsync(int id)
         {
-            var prospectiveTenant = await GetProspectiveTenantByIdAsync(id, organizationId);
-            if (prospectiveTenant != null)
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            var userId = await _userContext.GetUserIdAsync();
+            var prospectiveTenant = await GetProspectiveTenantByIdAsync(id);
+            
+            if(prospectiveTenant == null)
             {
+                throw new InvalidOperationException("Prospective tenant not found.");
+            }
+
+            if (prospectiveTenant.OrganizationId != organizationId)
+            {
+                throw new UnauthorizedAccessException("User is not authorized to delete this prospective tenant.");
+            }
                 prospectiveTenant.IsDeleted = true;
                 prospectiveTenant.LastModifiedOn = DateTime.UtcNow;
-                prospectiveTenant.LastModifiedBy = deletedBy;
+                prospectiveTenant.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
                 await _dbContext.SaveChangesAsync();
-            }
         }
 
         #endregion
 
         #region Tour CRUD
 
-        public async Task<List<Tour>> GetAllToursAsync(string organizationId)
+        public async Task<List<Tour>> GetAllToursAsync()
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.Tours
                 .Where(s => s.OrganizationId == organizationId && !s.IsDeleted)
                 .Include(s => s.ProspectiveTenant)
@@ -1767,8 +1745,9 @@ namespace Aquiis.SimpleStart.Application.Services
             .ToListAsync();
         }
 
-        public async Task<List<Tour>> GetToursByProspectiveIdAsync(int prospectiveTenantId, string organizationId)
+        public async Task<List<Tour>> GetToursByProspectiveIdAsync(int prospectiveTenantId)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.Tours
                 .Where(s => s.ProspectiveTenantId == prospectiveTenantId && s.OrganizationId == organizationId && !s.IsDeleted)
                 .Include(s => s.ProspectiveTenant)
@@ -1778,8 +1757,9 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<Tour?> GetTourByIdAsync(int id, string organizationId)
+        public async Task<Tour?> GetTourByIdAsync(int id)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.Tours
                 .Where(s => s.Id == id && s.OrganizationId == organizationId && !s.IsDeleted)
                 .Include(s => s.ProspectiveTenant)
@@ -1790,6 +1770,12 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<Tour> CreateTourAsync(Tour tour, int? templateId = null)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            var userId = await _userContext.GetUserIdAsync();
+
+            tour.OrganizationId = organizationId!;
+            tour.CreatedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
+
             tour.CreatedOn = DateTime.UtcNow;
             tour.Status = ApplicationConstants.TourStatuses.Scheduled;
 
@@ -1855,6 +1841,14 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<Tour> UpdateTourAsync(Tour tour)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            var userId = await _userContext.GetUserIdAsync();
+            if (tour.OrganizationId != organizationId)
+            {
+                throw new UnauthorizedAccessException("User is not authorized to update this tour.");
+            }
+
+            tour.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
             tour.LastModifiedOn = DateTime.UtcNow;
             _dbContext.Tours.Update(tour);
             await _dbContext.SaveChangesAsync();
@@ -1865,30 +1859,58 @@ namespace Aquiis.SimpleStart.Application.Services
             return tour;
         }
 
-        public async Task DeleteTourAsync(int id, string organizationId, string deletedBy)
+        public async Task DeleteTourAsync(int id)
         {
-            var tour = await GetTourByIdAsync(id, organizationId);
-            if (tour != null)
+            var userId = await _userContext.GetUserIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+
+            if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId))
             {
+                throw new UnauthorizedAccessException("User is not authenticated.");
+            }
+            
+
+            var tour = await GetTourByIdAsync(id);
+
+            if(tour == null)
+            {
+                throw new InvalidOperationException("Tour not found.");
+            }
+            
+            if (tour.OrganizationId != organizationId)
+            {
+                throw new UnauthorizedAccessException("User is not authorized to delete this tour.");
+            }
+
                 tour.IsDeleted = true;
                 tour.LastModifiedOn = DateTime.UtcNow;
-                tour.LastModifiedBy = deletedBy;
+                tour.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
                 await _dbContext.SaveChangesAsync();
 
                 // Delete associated calendar event
                 await _calendarEventService.DeleteEventAsync(tour.CalendarEventId);
-            }
         }
 
-        public async Task<bool> CancelTourAsync(int tourId, string organizationId, string cancelledBy)
+        public async Task<bool> CancelTourAsync(int tourId)
         {
-            var tour = await GetTourByIdAsync(tourId, organizationId);
-            if (tour == null) return false;
+            var userId = await _userContext.GetUserIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            var tour = await GetTourByIdAsync(tourId);
+
+            if(tour == null)
+            {
+                throw new InvalidOperationException("Tour not found.");
+            }
+
+            if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId) || tour.OrganizationId != organizationId)
+            {
+                throw new UnauthorizedAccessException("User is not authenticated.");
+            }
 
             // Update tour status to cancelled
             tour.Status = ApplicationConstants.TourStatuses.Cancelled;
             tour.LastModifiedOn = DateTime.UtcNow;
-            tour.LastModifiedBy = cancelledBy;
+            tour.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
             await _dbContext.SaveChangesAsync();
 
             // Update calendar event status
@@ -1909,7 +1931,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 {
                     prospective.Status = ApplicationConstants.ProspectiveStatuses.Lead;
                     prospective.LastModifiedOn = DateTime.UtcNow;
-                    prospective.LastModifiedBy = cancelledBy;
+                    prospective.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
                     await _dbContext.SaveChangesAsync();
                 }
             }
@@ -1917,18 +1939,26 @@ namespace Aquiis.SimpleStart.Application.Services
             return true;
         }
 
-        public async Task<bool> CompleteTourAsync(int tourId, string organizationId, string completedBy, string? feedback = null, string? interestLevel = null)
+        public async Task<bool> CompleteTourAsync(int tourId, string? feedback = null, string? interestLevel = null)
         {
-            var tour = await GetTourByIdAsync(tourId, organizationId);
+            var userId = await _userContext.GetUserIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+
+            var tour = await GetTourByIdAsync(tourId);
             if (tour == null) return false;
+
+            if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId) || tour.OrganizationId != organizationId)
+            {
+                throw new UnauthorizedAccessException("User is not authenticated.");
+            }
 
             // Update tour status and feedback
             tour.Status = ApplicationConstants.TourStatuses.Completed;
             tour.Feedback = feedback;
             tour.InterestLevel = interestLevel;
-            tour.ConductedBy = completedBy;
+            tour.ConductedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
             tour.LastModifiedOn = DateTime.UtcNow;
-            tour.LastModifiedBy = completedBy;
+            tour.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
 
             // Update calendar event status
             if (tour.CalendarEventId.HasValue)
@@ -1938,7 +1968,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 if (calendarEvent != null)
                 {
                     calendarEvent.Status = ApplicationConstants.TourStatuses.Completed;
-                    calendarEvent.LastModifiedBy = completedBy;
+                    calendarEvent.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
                     calendarEvent.LastModifiedOn = DateTime.UtcNow;
                 }
             }
@@ -1948,16 +1978,23 @@ namespace Aquiis.SimpleStart.Application.Services
             return true;
         }
 
-        public async Task<bool> MarkTourAsNoShowAsync(int tourId, string organizationId, string markedBy)
+        public async Task<bool> MarkTourAsNoShowAsync(int tourId)
         {
-            var tour = await GetTourByIdAsync(tourId, organizationId);
+            var userId = await _userContext.GetUserIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            
+            var tour = await GetTourByIdAsync(tourId);
             if (tour == null) return false;
+
+            if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId) || tour.OrganizationId != organizationId)
+            {
+                throw new UnauthorizedAccessException("User is not authenticated.");
+            }
 
             // Update tour status to NoShow
             tour.Status = ApplicationConstants.TourStatuses.NoShow;
             tour.LastModifiedOn = DateTime.UtcNow;
-            tour.LastModifiedBy = markedBy;
-
+            tour.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
             // Update calendar event status
             if (tour.CalendarEventId.HasValue)
             {
@@ -1966,7 +2003,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 if (calendarEvent != null)
                 {
                     calendarEvent.Status = ApplicationConstants.TourStatuses.NoShow;
-                    calendarEvent.LastModifiedBy = markedBy;
+                    calendarEvent.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
                     calendarEvent.LastModifiedOn = DateTime.UtcNow;
                 }
             }
@@ -1979,8 +2016,9 @@ namespace Aquiis.SimpleStart.Application.Services
 
         #region RentalApplication CRUD
 
-        public async Task<List<RentalApplication>> GetAllRentalApplicationsAsync(string organizationId)
+        public async Task<List<RentalApplication>> GetAllRentalApplicationsAsync()
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.RentalApplications
                 .Where(ra => ra.OrganizationId == organizationId && !ra.IsDeleted)
                 .Include(ra => ra.ProspectiveTenant)
@@ -1990,8 +2028,9 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<RentalApplication?> GetRentalApplicationByIdAsync(int id, string organizationId)
+        public async Task<RentalApplication?> GetRentalApplicationByIdAsync(int id)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.RentalApplications
                 .Where(ra => ra.Id == id && ra.OrganizationId == organizationId && !ra.IsDeleted)
                 .Include(ra => ra.ProspectiveTenant)
@@ -2000,8 +2039,9 @@ namespace Aquiis.SimpleStart.Application.Services
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<RentalApplication?> GetApplicationByProspectiveIdAsync(int prospectiveTenantId, string organizationId)
+        public async Task<RentalApplication?> GetApplicationByProspectiveIdAsync(int prospectiveTenantId)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.RentalApplications
                 .Where(ra => ra.ProspectiveTenantId == prospectiveTenantId && ra.OrganizationId == organizationId && !ra.IsDeleted)
                 .Include(ra => ra.Property)
@@ -2011,13 +2051,18 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<RentalApplication> CreateRentalApplicationAsync(RentalApplication application)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            var userId = await _userContext.GetUserIdAsync();
+
+            application.OrganizationId = organizationId!;
+            application.CreatedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
             application.CreatedOn = DateTime.UtcNow;
             application.AppliedOn = DateTime.UtcNow;
             application.Status = ApplicationConstants.ApplicationStatuses.Submitted;
 
             // Get organization settings for fee and expiration defaults
             var orgSettings = await _dbContext.OrganizationSettings
-                .FirstOrDefaultAsync(s => s.OrganizationId.ToString() == application.OrganizationId && !s.IsDeleted);
+                .FirstOrDefaultAsync(s => s.OrganizationId == application.OrganizationId && !s.IsDeleted);
 
             if (orgSettings != null)
             {
@@ -2073,30 +2118,50 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<RentalApplication> UpdateRentalApplicationAsync(RentalApplication application)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            var userId = await _userContext.GetUserIdAsync();
+
+            if (application.OrganizationId != organizationId)
+            {
+                throw new UnauthorizedAccessException("User is not authorized to update this rental application.");
+            }
+
+            application.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
             application.LastModifiedOn = DateTime.UtcNow;
             _dbContext.RentalApplications.Update(application);
             await _dbContext.SaveChangesAsync();
             return application;
         }
 
-        public async Task DeleteRentalApplicationAsync(int id, string organizationId, string deletedBy)
+        public async Task DeleteRentalApplicationAsync(int id)
         {
-            var application = await GetRentalApplicationByIdAsync(id, organizationId);
-            if (application != null)
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            var userId = await _userContext.GetUserIdAsync();
+
+            var application = await GetRentalApplicationByIdAsync(id);
+
+            if(application == null)
             {
+                throw new InvalidOperationException("Rental application not found.");
+            }
+
+            if (application.OrganizationId != organizationId)
+            {
+                throw new UnauthorizedAccessException("User is not authorized to delete this rental application.");
+            }
                 application.IsDeleted = true;
                 application.LastModifiedOn = DateTime.UtcNow;
-                application.LastModifiedBy = deletedBy;
+                application.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
                 await _dbContext.SaveChangesAsync();
-            }
         }
 
         #endregion
 
         #region ApplicationScreening CRUD
 
-        public async Task<ApplicationScreening?> GetScreeningByApplicationIdAsync(int rentalApplicationId, string organizationId)
+        public async Task<ApplicationScreening?> GetScreeningByApplicationIdAsync(int rentalApplicationId)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.ApplicationScreenings
                 .Where(asc => asc.RentalApplicationId == rentalApplicationId && asc.OrganizationId == organizationId && !asc.IsDeleted)
                 .Include(asc => asc.RentalApplication)
@@ -2105,6 +2170,11 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<ApplicationScreening> CreateScreeningAsync(ApplicationScreening screening)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            var userId = await _userContext.GetUserIdAsync();
+
+            screening.OrganizationId = organizationId!;
+            screening.CreatedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
             screening.CreatedOn = DateTime.UtcNow;
             screening.OverallResult = ApplicationConstants.ScreeningResults.Pending;
 
@@ -2133,7 +2203,17 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<ApplicationScreening> UpdateScreeningAsync(ApplicationScreening screening)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            var userId = await _userContext.GetUserIdAsync();
+            if (screening.OrganizationId != organizationId)
+            {
+                throw new UnauthorizedAccessException("User is not authorized to update this application screening.");
+            }
+
+
+
             screening.LastModifiedOn = DateTime.UtcNow;
+            screening.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
             _dbContext.ApplicationScreenings.Update(screening);
             await _dbContext.SaveChangesAsync();
             return screening;
@@ -2143,16 +2223,24 @@ namespace Aquiis.SimpleStart.Application.Services
 
         #region Business Logic
 
-        public async Task<bool> ApproveApplicationAsync(int applicationId, string organizationId, string approvedBy)
+        public async Task<bool> ApproveApplicationAsync(int applicationId)
         {
-            var application = await GetRentalApplicationByIdAsync(applicationId, organizationId);
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            var userId = await _userContext.GetUserIdAsync() ?? string.Empty;
+            
+            var application = await GetRentalApplicationByIdAsync(applicationId);
             if (application == null) return false;
+
+            if (application.OrganizationId != organizationId)
+            {
+                throw new UnauthorizedAccessException("User is not authorized to approve this rental application.");
+            }
 
             application.Status = ApplicationConstants.ApplicationStatuses.Approved;
             application.DecidedOn = DateTime.UtcNow;
-            application.DecisionBy = approvedBy;
+            application.DecisionBy = userId;
             application.LastModifiedOn = DateTime.UtcNow;
-            application.LastModifiedBy = approvedBy;
+            application.LastModifiedBy = userId;
 
             _dbContext.RentalApplications.Update(application);
 
@@ -2161,7 +2249,7 @@ namespace Aquiis.SimpleStart.Application.Services
             {
                 prospective.Status = ApplicationConstants.ProspectiveStatuses.Approved;
                 prospective.LastModifiedOn = DateTime.UtcNow;
-                prospective.LastModifiedBy = approvedBy;
+                prospective.LastModifiedBy = userId;
                 _dbContext.ProspectiveTenants.Update(prospective);
             }
 
@@ -2169,59 +2257,75 @@ namespace Aquiis.SimpleStart.Application.Services
             return true;
         }
 
-        public async Task<bool> DenyApplicationAsync(int applicationId, string organizationId, string deniedBy, string reason)
+        public async Task<bool> DenyApplicationAsync(int applicationId, string reason)
         {
-            var application = await GetRentalApplicationByIdAsync(applicationId, organizationId);
-            if (application == null) return false;
+            var userId = await _userContext.GetUserIdAsync() ?? string.Empty;
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
+            var application = await GetRentalApplicationByIdAsync(applicationId);
+            if (application == null) return false;
+            if (application.OrganizationId != organizationId)
+            {
+                throw new UnauthorizedAccessException("User is not authorized to deny this rental application.");
+            }
             application.Status = ApplicationConstants.ApplicationStatuses.Denied;
             application.DecidedOn = DateTime.UtcNow;
-            application.DecisionBy = deniedBy;
+            application.DecisionBy = userId;
             application.DenialReason = reason;
             application.LastModifiedOn = DateTime.UtcNow;
-            application.LastModifiedBy = deniedBy;
+            application.LastModifiedBy = userId;
 
             var prospective = await _dbContext.ProspectiveTenants.FindAsync(application.ProspectiveTenantId);
             if (prospective != null)
             {
                 prospective.Status = ApplicationConstants.ProspectiveStatuses.Denied;
                 prospective.LastModifiedOn = DateTime.UtcNow;
-                prospective.LastModifiedBy = deniedBy;
+                prospective.LastModifiedBy = userId;
             }
 
             await _dbContext.SaveChangesAsync();
             return true;
         }
 
-        public async Task<bool> WithdrawApplicationAsync(int applicationId, string organizationId, string withdrawnBy, string? reason = null)
+        public async Task<bool> WithdrawApplicationAsync(int applicationId, string? reason = null)
         {
-            var application = await GetRentalApplicationByIdAsync(applicationId, organizationId);
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            var userId = await _userContext.GetUserIdAsync() ?? string.Empty;
+
+            var application = await GetRentalApplicationByIdAsync(applicationId);
             if (application == null) return false;
+
+            if (application.OrganizationId != organizationId)
+            {
+                throw new UnauthorizedAccessException("User is not authorized to withdraw this rental application.");
+            }
 
             application.Status = ApplicationConstants.ApplicationStatuses.Withdrawn;
             application.DecidedOn = DateTime.UtcNow;
-            application.DecisionBy = withdrawnBy;
+            application.DecisionBy = userId;
             application.DenialReason = reason; // Reusing this field for withdrawal reason
             application.LastModifiedOn = DateTime.UtcNow;
-            application.LastModifiedBy = withdrawnBy;
+            application.LastModifiedBy = userId;
 
             var prospective = await _dbContext.ProspectiveTenants.FindAsync(application.ProspectiveTenantId);
+
+
             if (prospective != null)
             {
                 prospective.Status = ApplicationConstants.ProspectiveStatuses.Withdrawn;
                 prospective.LastModifiedOn = DateTime.UtcNow;
-                prospective.LastModifiedBy = withdrawnBy;
+                prospective.LastModifiedBy = userId;
             }
 
             // If there's a lease offer, mark it as withdrawn too
-            var leaseOffer = await GetLeaseOfferByApplicationIdAsync(applicationId, organizationId);
+            var leaseOffer = await GetLeaseOfferByApplicationIdAsync(applicationId);
             if (leaseOffer != null)
             {
                 leaseOffer.Status = "Withdrawn";
                 leaseOffer.RespondedOn = DateTime.UtcNow;
                 leaseOffer.ResponseNotes = reason ?? "Application withdrawn";
                 leaseOffer.LastModifiedOn = DateTime.UtcNow;
-                leaseOffer.LastModifiedBy = withdrawnBy;
+                leaseOffer.LastModifiedBy = userId;
             }
 
             // Update property status back to available if it was in lease pending
@@ -2230,15 +2334,16 @@ namespace Aquiis.SimpleStart.Application.Services
             {
                 property.Status = ApplicationConstants.PropertyStatuses.Available;
                 property.LastModifiedOn = DateTime.UtcNow;
-                property.LastModifiedBy = withdrawnBy;
+                property.LastModifiedBy = userId;
             }
 
             await _dbContext.SaveChangesAsync();
             return true;
         }
 
-        public async Task<List<ProspectiveTenant>> GetProspectivesByStatusAsync(string status, string organizationId)
+        public async Task<List<ProspectiveTenant>> GetProspectivesByStatusAsync(string status)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.ProspectiveTenants
                 .Where(pt => pt.Status == status && pt.OrganizationId == organizationId && !pt.IsDeleted)
                 .Include(pt => pt.InterestedProperty)
@@ -2246,8 +2351,9 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<List<Tour>> GetUpcomingToursAsync(string organizationId, int days = 7)
+        public async Task<List<Tour>> GetUpcomingToursAsync(int days = 7)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var startDate = DateTime.UtcNow;
             var endDate = startDate.AddDays(days);
 
@@ -2264,8 +2370,9 @@ namespace Aquiis.SimpleStart.Application.Services
             .ToListAsync();
         }
 
-        public async Task<List<RentalApplication>> GetPendingApplicationsAsync(string organizationId)
+        public async Task<List<RentalApplication>> GetPendingApplicationsAsync()
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.RentalApplications
                 .Where(ra => ra.OrganizationId == organizationId 
                     && !ra.IsDeleted 
@@ -2285,42 +2392,60 @@ namespace Aquiis.SimpleStart.Application.Services
 
         public async Task<LeaseOffer?> CreateLeaseOfferAsync(LeaseOffer leaseOffer)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            var userId = await _userContext.GetUserIdAsync();
+
+            leaseOffer.OrganizationId = organizationId!;
+            leaseOffer.CreatedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
+            leaseOffer.CreatedOn = DateTime.UtcNow;
             _dbContext.LeaseOffers.Add(leaseOffer);
             await _dbContext.SaveChangesAsync();
             return leaseOffer;
         }
 
-        public async Task<LeaseOffer?> GetLeaseOfferByIdAsync(int leaseOfferId, string organizationId)
+        public async Task<LeaseOffer?> GetLeaseOfferByIdAsync(int leaseOfferId)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.LeaseOffers
                 .Include(lo => lo.RentalApplication)
                 .Include(lo => lo.Property)
                 .Include(lo => lo.ProspectiveTenant)
-                .FirstOrDefaultAsync(lo => lo.Id == leaseOfferId && lo.OrganizationId == Guid.Parse(organizationId) && !lo.IsDeleted);
+                .FirstOrDefaultAsync(lo => lo.Id == leaseOfferId && lo.OrganizationId == organizationId && !lo.IsDeleted);
         }
 
-        public async Task<LeaseOffer?> GetLeaseOfferByApplicationIdAsync(int applicationId, string organizationId)
+        public async Task<LeaseOffer?> GetLeaseOfferByApplicationIdAsync(int applicationId)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.LeaseOffers
                 .Include(lo => lo.RentalApplication)
                 .Include(lo => lo.Property)
                 .Include(lo => lo.ProspectiveTenant)
-                .FirstOrDefaultAsync(lo => lo.RentalApplicationId == applicationId && lo.OrganizationId == Guid.Parse(organizationId) && !lo.IsDeleted);
+                .FirstOrDefaultAsync(lo => lo.RentalApplicationId == applicationId && lo.OrganizationId == organizationId && !lo.IsDeleted);
         }
 
-        public async Task<List<LeaseOffer>> GetLeaseOffersByPropertyIdAsync(int propertyId, string organizationId)
+        public async Task<List<LeaseOffer>> GetLeaseOffersByPropertyIdAsync(int propertyId)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.LeaseOffers
                 .Include(lo => lo.RentalApplication)
                 .Include(lo => lo.Property)
                 .Include(lo => lo.ProspectiveTenant)
-                .Where(lo => lo.PropertyId == propertyId && lo.OrganizationId == Guid.Parse(organizationId) && !lo.IsDeleted)
+                .Where(lo => lo.PropertyId == propertyId && lo.OrganizationId == organizationId && !lo.IsDeleted)
                 .OrderByDescending(lo => lo.OfferedOn)
                 .ToListAsync();
         }
 
         public async Task<LeaseOffer> UpdateLeaseOfferAsync(LeaseOffer leaseOffer)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            var userId = await _userContext.GetUserIdAsync();
+
+            if (leaseOffer.OrganizationId != organizationId)
+            {
+                throw new UnauthorizedAccessException("User is not authorized to update this lease offer.");
+            }
+
+            leaseOffer.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
             leaseOffer.LastModifiedOn = DateTime.UtcNow;
             _dbContext.LeaseOffers.Update(leaseOffer);
             await _dbContext.SaveChangesAsync();

@@ -1,11 +1,18 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Aquiis.SimpleStart.Core.Entities;
+using System.Text.Json.Serialization;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {
     public class RentalApplication : BaseModel
     {
+        [Required]
+        [JsonInclude]
+        [StringLength(100)]
+        [DataType(DataType.Text)]
+        [Display(Name = "Organization ID")]
+        public string OrganizationId { get; set; } = string.Empty;
+
         [Required]
         [Display(Name = "Prospective Tenant")]
         public int ProspectiveTenantId { get; set; }
@@ -141,11 +148,7 @@ namespace Aquiis.SimpleStart.Core.Entities
         [Display(Name = "Decision By")]
         public string? DecisionBy { get; set; } // UserId
 
-        [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
-
+        
         // Navigation properties
         [ForeignKey(nameof(ProspectiveTenantId))]
         public virtual ProspectiveTenant? ProspectiveTenant { get; set; }

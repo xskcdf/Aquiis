@@ -1,7 +1,6 @@
 @page "/propertymanagement/checklists/templates/edit/{TemplateId:int}"
 
 @using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
@@ -13,7 +12,7 @@
 @inject ChecklistService ChecklistService
 @inject UserContextService UserContext
 @inject NavigationManager NavigationManager
-@attribute [Authorize(Roles = "PropertyManager, Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Edit Template</PageTitle>

@@ -2,10 +2,6 @@
 
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 
@@ -13,7 +9,7 @@
 @inject PropertyManagementService PropertyManagementService
 @inject NavigationManager Navigation
 
-@attribute [Authorize(Roles="PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Documents - Property Management</PageTitle>
@@ -182,7 +178,7 @@ else
                                                 <td>@doc.FileSizeFormatted</td>
                                                 <td>
                                                     @doc.CreatedOn.ToString("MMM dd, yyyy")
-                                                    <br /><small class="text-muted">@doc.UploadedBy</small>
+                                                    <br /><small class="text-muted">@doc.CreatedBy</small>
                                                 </td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm">
@@ -283,7 +279,7 @@ else
                                     <td>@doc.FileSizeFormatted</td>
                                     <td>
                                         @doc.CreatedOn.ToString("MMM dd, yyyy")
-                                        <br /><small class="text-muted">@doc.UploadedBy</small>
+                                        <br /><small class="text-muted">@doc.CreatedBy</small>
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">

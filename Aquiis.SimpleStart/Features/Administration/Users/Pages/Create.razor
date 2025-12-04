@@ -10,7 +10,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @rendermode InteractiveServer
 
-@attribute [Authorize(Roles = "Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator")]
 
 <PageTitle>Create User - Administration</PageTitle>
 
@@ -248,7 +248,8 @@
                 PhoneNumber = userModel.PhoneNumber,
                 FirstName = userModel.FirstName,
                 LastName = userModel.LastName,
-                OrganizationId = currentUser.OrganizationId
+                OrganizationId = currentUser.ActiveOrganizationId,
+                ActiveOrganizationId = currentUser.ActiveOrganizationId
             };
 
             var createResult = await UserManager.CreateAsync(newUser, userModel.Password);

@@ -1,8 +1,6 @@
 @page "/propertymanagement/applications/{ApplicationId:int}/generate-lease-offer"
 
 @using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
@@ -16,7 +14,7 @@
 @inject UserContextService UserContext
 @inject ToastService ToastService
 
-@attribute [Authorize(Roles = "PropertyManager,Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Generate Lease Offer</PageTitle>
@@ -275,9 +273,8 @@
     {
         try
         {
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-            organizationId = await UserContext.GetOrganizationIdAsync() ?? string.Empty;
+            userId = await UserContext.GetUserIdAsync() ?? string.Empty;
+            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
 
             await LoadApplication();
         }
@@ -293,7 +290,7 @@
 
     private async Task LoadApplication()
     {
-        application = await PropertyService.GetRentalApplicationByIdAsync(ApplicationId, organizationId);
+        application = await PropertyService.GetRentalApplicationByIdAsync(ApplicationId);
         
         if (application != null)
         {
@@ -332,7 +329,7 @@
             // Create the lease offer
             var leaseOffer = new LeaseOffer
             {
-                OrganizationId = Guid.Parse(organizationId),
+                OrganizationId = organizationId,
                 RentalApplicationId = application.Id,
                 PropertyId = application.PropertyId,
                 ProspectiveTenantId = application.ProspectiveTenantId,
@@ -402,7 +399,7 @@
     {
         try
         {
-            var allApplications = await PropertyService.GetAllRentalApplicationsAsync(organizationId);
+            var allApplications = await PropertyService.GetAllRentalApplicationsAsync();
             var competingApps = allApplications.Where(a => 
                 a.PropertyId == propertyId && 
                 a.Id != currentApplicationId &&
@@ -413,9 +410,7 @@
             foreach (var app in competingApps)
             {
                 await PropertyService.DenyApplicationAsync(
-                    app.Id, 
-                    organizationId, 
-                    userId, 
+                    app.Id,
                     "Property is no longer available - lease offered to another applicant");
             }
         }

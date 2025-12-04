@@ -1,12 +1,14 @@
 @page "/propertymanagement/leases/{LeaseId:int}/documents"
+
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @inject NavigationManager Navigation
 @inject PropertyManagementService PropertyManagementService
+@inject UserContextService UserContext
 @inject IJSRuntime JSRuntime
 
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Lease Documents - Property Management</PageTitle>
@@ -152,7 +154,7 @@ else
                                         <span class="badge bg-secondary">@doc.DocumentType</span>
                                     </td>
                                     <td>@doc.FileSizeFormatted</td>
-                                    <td>@doc.UploadedBy</td>
+                                    <td>@doc.CreatedBy</td>
                                     <td>@doc.CreatedOn.ToString("MMM dd, yyyy h:mm tt")</td>
                                     <td>
                                         <div class="btn-group" role="group">
@@ -245,9 +247,7 @@ else
         isUploading = true;
         try
         {
-            var authState = await AuthenticationStateTask;
-            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            var userName = authState.User.Identity?.Name ?? "Unknown";
+           var organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
 
             // Read file data
             using var memoryStream = new MemoryStream();
@@ -255,7 +255,7 @@ else
             
             var document = new Document
             {
-                UserId = userId ?? string.Empty,
+                OrganizationId = organizationId,
                 FileName = selectedFile.Name,
                 FileExtension = Path.GetExtension(selectedFile.Name),
                 FileData = memoryStream.ToArray(),
@@ -265,9 +265,6 @@ else
                 FilePath = string.Empty,
                 Description = uploadModel.Description ?? string.Empty,
                 LeaseId = LeaseId,
-                UploadedBy = userId ?? string.Empty,
-                CreatedBy = userId ?? string.Empty,
-                CreatedOn = DateTime.UtcNow
             };
 
             await PropertyManagementService.AddDocumentAsync(document);

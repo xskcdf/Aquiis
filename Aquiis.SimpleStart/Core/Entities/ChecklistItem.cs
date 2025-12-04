@@ -5,6 +5,12 @@ namespace Aquiis.SimpleStart.Core.Entities
 {
     public class ChecklistItem : BaseModel
     {
+
+        [Required]
+        [StringLength(100)]
+        [Display(Name = "Organization ID")]
+        public string OrganizationId { get; set; } = string.Empty;
+
         [Required]
         [Display(Name = "Checklist ID")]
         public int ChecklistId { get; set; }
@@ -42,11 +48,6 @@ namespace Aquiis.SimpleStart.Core.Entities
 
         [Display(Name = "Is Checked")]
         public bool IsChecked { get; set; } = false;
-
-        [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
 
         // Navigation properties
         [ForeignKey(nameof(ChecklistId))]

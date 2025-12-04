@@ -5,8 +5,6 @@
 @using Microsoft.EntityFrameworkCore
 @using Aquiis.SimpleStart.Infrastructure.Data
 @using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Shared.Components.Account
 
@@ -14,7 +12,7 @@
 @inject PropertyManagementService PropertyManagementService
 @inject IJSRuntime JSRuntime
 
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Leases - Property Management</PageTitle>

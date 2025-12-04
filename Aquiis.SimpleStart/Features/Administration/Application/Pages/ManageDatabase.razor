@@ -12,7 +12,7 @@
 @inject IOptions<ApplicationSettings> AppSettings
 @inject IJSRuntime JSRuntime
 @inject IHostApplicationLifetime AppLifetime
-@attribute [Authorize(Roles = "Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator")]
 @rendermode InteractiveServer
 
 <PageTitle>Database Backup & Recovery</PageTitle>

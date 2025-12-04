@@ -1,11 +1,15 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Aquiis.SimpleStart.Core.Entities;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {
     public class ProspectiveTenant : BaseModel
     {
+        [Required]
+        [StringLength(100)]
+        [Display(Name = "Organization ID")]
+        public string OrganizationId { get; set; } = string.Empty;
+
         [Required]
         [StringLength(100)]
         [Display(Name = "First Name")]
@@ -62,10 +66,7 @@ namespace Aquiis.SimpleStart.Core.Entities
         [Display(Name = "First Contact Date")]
         public DateTime? FirstContactedOn { get; set; }
 
-        [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
+        
 
         // Computed Property
         [NotMapped]

@@ -1,8 +1,5 @@
 @page "/propertymanagement/checklists/create"
 
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
@@ -17,7 +14,7 @@
 @inject PropertyManagementService PropertyManagementService
 @inject UserContextService UserContext
 @inject NavigationManager NavigationManager
-@attribute [Authorize(Roles = "PropertyManager, Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Create Checklist</PageTitle>
@@ -230,10 +227,10 @@
         {
             loading = true;
 
-            var organizationId = await UserContext.GetOrganizationIdAsync();
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
 
-            if (string.IsNullOrEmpty(organizationId) || string.IsNullOrEmpty(userId))
+            if (organizationId == null || string.IsNullOrEmpty(userId))
             {
                 errorMessage = "Unable to determine user context. Please log in again.";
                 return;

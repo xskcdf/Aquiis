@@ -13,7 +13,7 @@
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-@attribute [Authorize(Roles = "Administrator,SuperAdministrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator")]
 
 <PageTitle>Calendar Settings</PageTitle>
 
@@ -261,7 +261,7 @@ else
         loading = true;
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
+            var orgId = await UserContext.GetActiveOrganizationIdAsync();
             if (!string.IsNullOrEmpty(orgId))
             {
                 settings = await SettingsService.GetSettingsAsync(orgId);

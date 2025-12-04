@@ -1,15 +1,15 @@
 @page "/propertymanagement/invoices/view/{Id:int}"
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @inject NavigationManager NavigationManager
 @inject PropertyManagementService PropertyManagementService
+@inject UserContextService UserContextService
 @inject IJSRuntime JSRuntime
 
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>View Invoice - Property Management</PageTitle>
@@ -360,12 +360,10 @@ else
 
         try
         {
-            // Get current user info
-            var authState = await AuthenticationStateTask;
-            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            var userName = authState.User.Identity?.Name ?? "System";
+           var organizationId = await UserContextService.GetActiveOrganizationIdAsync();
+           var userId = await UserContextService.GetUserIdAsync();
 
-            if (string.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(userId) || organizationId == null)
             {
                 await JSRuntime.InvokeVoidAsync("alert", "Unable to determine current user.");
                 return;
@@ -377,7 +375,7 @@ else
             // Create the document entity
             var document = new Document
             {
-                UserId = userId,
+                OrganizationId = organizationId,
                 FileName = $"Invoice_{invoice!.InvoiceNumber?.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf",
                 FileExtension = ".pdf",
                 FileData = pdfBytes,
@@ -389,11 +387,6 @@ else
                 LeaseId = invoice.LeaseId,
                 PropertyId = invoice.Lease?.PropertyId,
                 TenantId = invoice.Lease?.TenantId,
-                UploadedBy = userId,
-                CreatedBy = userId,
-                CreatedOn = DateTime.UtcNow,
-                LastModifiedBy = userId,
-                LastModifiedOn = DateTime.UtcNow,
                 IsDeleted = false
             };
 
@@ -402,8 +395,7 @@ else
 
             // Update invoice with DocumentId
             invoice.DocumentId = document.Id;
-            invoice.LastModifiedOn = DateTime.UtcNow;
-            invoice.LastModifiedBy = userId;
+            
             await PropertyManagementService.UpdateInvoiceAsync(invoice);
 
             // Reload invoice and document

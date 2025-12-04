@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Aquiis.SimpleStart.Core.Entities;
 
 /// <summary>
@@ -5,6 +7,11 @@ namespace Aquiis.SimpleStart.Core.Entities;
 /// </summary>
 public class IncomeStatement
 {
+    [Required]
+    [StringLength(100)]
+    [Display(Name = "Organization ID")]
+    public string OrganizationId { get; set; } = string.Empty;
+        
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public int? PropertyId { get; set; }

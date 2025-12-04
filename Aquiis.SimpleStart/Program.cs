@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Aquiis.SimpleStart.Shared.Components.Account;
 using Aquiis.SimpleStart.Infrastructure.Data;
@@ -8,6 +9,7 @@ using Aquiis.SimpleStart.Core.Constants;
 using Aquiis.SimpleStart.Application.Services;
 using Aquiis.SimpleStart.Application.Services.PdfGenerators;
 using Aquiis.SimpleStart.Shared.Services;
+using Aquiis.SimpleStart.Shared.Authorization;
 using ElectronNET.API;
 using Microsoft.Extensions.Options;
 
@@ -58,9 +60,9 @@ var connectionString = HybridSupport.IsElectronActive
     : builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString, b => b.MigrationsAssembly("Aquiis.SimpleStart").MigrationsHistoryTable("__EFMigrationsHistory")));
+    options.UseSqlite(connectionString));
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString, b => b.MigrationsAssembly("Aquiis.SimpleStart").MigrationsHistoryTable("__EFMigrationsHistory")), ServiceLifetime.Scoped);
+    options.UseSqlite(connectionString), ServiceLifetime.Scoped);
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options => {
@@ -77,6 +79,11 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => {
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
+
+// Configure organization-based authorization
+builder.Services.AddAuthorization();
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, OrganizationPolicyProvider>();
+builder.Services.AddScoped<IAuthorizationHandler, OrganizationRoleAuthorizationHandler>();
 
 builder.Services.Configure<ApplicationSettings>(builder.Configuration.GetSection("ApplicationSettings"));
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
@@ -142,6 +149,7 @@ builder.Services.AddScoped<UserContextService>();
 builder.Services.AddScoped<DocumentService>();
 builder.Services.AddScoped<NoteService>();
 builder.Services.AddScoped<SecurityDepositService>();
+builder.Services.AddScoped<OrganizationService>();
 builder.Services.AddSingleton<ToastService>();
 builder.Services.AddSingleton<ThemeService>();
 builder.Services.AddScoped<LeaseRenewalPdfGenerator>();
@@ -403,33 +411,6 @@ using (var scope = app.Services.CreateScope())
             app.Logger.LogError(ex, "Failed to apply database migrations");
             throw;
         }
-    }
-
-    // Seed roles
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    var roles = ApplicationConstants.DefaultRoles;
-    foreach (var role in roles)
-    {
-        if (!await roleManager.RoleExistsAsync(role))
-        {
-            await roleManager.CreateAsync(new IdentityRole(role));
-        }
-    }
-
-    // Add Admin user
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    var superAdminEmail = ApplicationConstants.SuperAdminEmail;
-    var adminUser = await userManager.FindByEmailAsync(superAdminEmail);
-    if (adminUser == null)
-    {
-        adminUser = new ApplicationUser
-        {
-            UserName = superAdminEmail,
-            Email = superAdminEmail,
-            EmailConfirmed = true
-        };
-        await userManager.CreateAsync(adminUser, ApplicationConstants.DefaultSuperAdminPassword);
-        await userManager.AddToRoleAsync(adminUser, ApplicationConstants.DefaultSuperAdminRole);
     }
 
     // Validate and update schema version

@@ -1,5 +1,5 @@
 @page "/propertymanagement/checklists/mychecklists"
-@using Aquiis.SimpleStart.Core.Entities
+
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Core.Constants
 @using Aquiis.SimpleStart.Application.Services
@@ -10,7 +10,7 @@
 @inject ChecklistService ChecklistService
 @inject UserContextService UserContext
 @inject NavigationManager NavigationManager
-@attribute [Authorize (Roles = "PropertyManager,Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 
 @rendermode InteractiveServer
 

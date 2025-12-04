@@ -10,6 +10,7 @@
 
 @inject NavigationManager NavigationManager
 @inject PropertyManagementService PropertyManagementService
+@inject UserContextService UserContextService
 @inject ApplicationDbContext DbContext
 
 @rendermode InteractiveServer
@@ -20,8 +21,7 @@
     <Authorized>
         <SchemaValidationWarning ExpectedVersion="1.0.0" />
         
-        <AuthorizeView Roles="PropertyManager" Context="pmContext">
-            <Authorized>
+        <OrganizationAuthorizeView Roles="Owner,Administrator,PropertyManager">
                 <div class="row mb-3">
                     <div class="col">
                         <h1><span class="bi bi-speedometer2" aria-hidden="true"></span> Property Management Dashboard</h1>
@@ -283,87 +283,7 @@
                         </div>
                     </div>
                 }
-            </Authorized>
-        </AuthorizeView>
-        @* <AuthorizeView Roles="Administrator" Context="adminContext">
-            <Authorized>
-                <h1><span class="bi bi-speedometer2" aria-hidden="true"></span> Administrator Dashboard</h1>
-
-                        @if (isLoading)
-                        {
-                            <div class="text-center">
-                                <div class="spinner-border" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="row mb-4">
-                                <div class="col-md-3">
-                                    <div class="card text-white bg-primary">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between">
-                                                <div>
-                                                    <h4>@totalAccounts</h4>
-                                                    <p class="card-text">Total Accounts</p>
-                                                </div>
-                                                <div class="align-self-center">
-                                                    <i class="bi bi-people-fill" style="font-size: 2rem;"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="card text-white bg-success">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between">
-                                                <div>
-                                                    <h4>@activeAccounts</h4>
-                                                    <p class="card-text">Active Accounts</p>
-                                                </div>
-                                                <div class="align-self-center">
-                                                    <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="card text-white bg-info">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between">
-                                                <div>
-                                                    <h4>@usersOnline</h4>
-                                                    <p class="card-text">Users Online</p>
-                                                </div>
-                                                <div class="align-self-center">
-                                                    <i class="bi bi-person-circle" style="font-size: 2rem;"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="card text-white bg-warning">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between">
-                                                <div>
-                                                    <h4>@lockedAccounts</h4>
-                                                    <p class="card-text">Locked Accounts</p>
-                                                </div>
-                                                <div class="align-self-center">
-                                                    <i class="bi bi-lock-fill" style="font-size: 2rem;"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }   
-            </Authorized>
-        </AuthorizeView> *@
+        </OrganizationAuthorizeView>
     </Authorized>
     <NotAuthorized>
         <div class="text-center py-5">
@@ -420,13 +340,6 @@
     private int totalTenants = 0;
     private int activeLeases = 0;
 
-    @* private int lockedAccounts = 0;
-
-    private int totalAccounts = 0;
-    private int activeAccounts = 0;
-
-    private int usersOnline = 0; *@
-    
     private List<Property> availablePropertiesList = new();
     private List<Lease> pendingLeases = new List<Lease>();
     private List<MaintenanceRequest> openMaintenanceRequests = new List<MaintenanceRequest>();
@@ -451,10 +364,10 @@
 
     private async Task LoadDashboardData()
     {
-        var authState = await AuthenticationStateTask;
-        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var userId = await UserContextService.GetUserIdAsync();
+        var organizationId = await UserContextService.GetOrganizationIdAsync();
         
-        if (string.IsNullOrEmpty(userId))
+        if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId))
             return;
 
         // Load summary counts
@@ -473,13 +386,13 @@
 
         // Load available properties and pending leases
         availablePropertiesList = properties
-            .Where(p => p.UserId == userId && p.IsAvailable)
+            .Where(p => p.OrganizationId == organizationId && p.IsAvailable)
             .OrderByDescending(p => p.CreatedOn)
             .Take(5)
             .ToList();
 
         pendingLeases = leases
-            .Where(l => l.UserId == userId && l.Status == "Pending")
+            .Where(l => l.OrganizationId == organizationId && l.Status == "Pending")
             .OrderByDescending(l => l.CreatedOn)
             .Take(5)
             .ToList();
@@ -487,7 +400,7 @@
         // Load open maintenance requests
         var allMaintenanceRequests = await PropertyManagementService.GetMaintenanceRequestsAsync();
         openMaintenanceRequests = allMaintenanceRequests
-            .Where(m => m.Status != "Completed" && m.Status != "Cancelled")
+            .Where(m => m.OrganizationId == organizationId && m.Status != "Completed" && m.Status != "Cancelled")
             .OrderByDescending(m => m.Priority == "Urgent" ? 1 : m.Priority == "High" ? 2 : 3)
             .ThenByDescending(m => m.RequestedOn)
             .Take(5)

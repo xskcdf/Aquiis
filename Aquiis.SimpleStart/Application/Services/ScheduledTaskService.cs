@@ -3,13 +3,6 @@ using Aquiis.SimpleStart.Infrastructure.Data;
 using Aquiis.SimpleStart.Core.Entities;
 using Aquiis.SimpleStart.Shared.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Aquiis.SimpleStart.Application.Services
 {
@@ -88,7 +81,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     // Get all distinct organization IDs from OrganizationSettings
                     var organizations = await dbContext.OrganizationSettings
                         .Where(s => !s.IsDeleted)
-                        .Select(s => s.OrganizationId.ToString())
+                        .Select(s => s.OrganizationId)
                         .Distinct()
                         .ToListAsync(stoppingToken);
 
@@ -144,7 +137,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 var overdueInvoices = await dbContext.Invoices
                     .Include(i => i.Lease)
                     .Where(i => !i.IsDeleted &&
-                               i.UserId == organizationId &&
+                               i.OrganizationId == organizationId &&
                                i.Status == "Pending" &&
                                i.DueOn < today.AddDays(-settings.LateFeeGracePeriodDays) &&
                                (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
@@ -160,7 +153,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     invoice.Amount += lateFee;
                     invoice.Status = "Overdue";
                     invoice.LastModifiedOn = DateTime.UtcNow;
-                    invoice.LastModifiedBy = "System";
+                    invoice.LastModifiedBy = string.Empty;
                     invoice.Notes = string.IsNullOrEmpty(invoice.Notes)
                         ? $"Late fee of {lateFee:C} applied on {DateTime.Now:MMM dd, yyyy}"
                         : $"{invoice.Notes}\nLate fee of {lateFee:C} applied on {DateTime.Now:MMM dd, yyyy}";
@@ -192,7 +185,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 // Update pending invoices that are now overdue (and haven't had late fees applied)
                 var newlyOverdueInvoices = await dbContext.Invoices
                     .Where(i => !i.IsDeleted &&
-                               i.UserId == organizationId &&
+                               i.OrganizationId == organizationId &&
                                i.Status == "Pending" &&
                                i.DueOn < today &&
                                (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
@@ -202,7 +195,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 {
                     invoice.Status = "Overdue";
                     invoice.LastModifiedOn = DateTime.UtcNow;
-                    invoice.LastModifiedBy = "System";
+                    invoice.LastModifiedBy = string.Empty;
                 }
 
                 if (newlyOverdueInvoices.Any())
@@ -235,7 +228,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     .Include(i => i.Lease)
                         .ThenInclude(l => l.Property)
                     .Where(i => !i.IsDeleted &&
-                               i.UserId == organizationId &&
+                               i.OrganizationId == organizationId &&
                                i.Status == "Pending" &&
                                i.DueOn >= today &&
                                i.DueOn <= today.AddDays(settings.PaymentReminderDaysBefore) &&
@@ -256,7 +249,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     invoice.ReminderSent = true;
                     invoice.ReminderSentOn = DateTime.UtcNow;
                     invoice.LastModifiedOn = DateTime.UtcNow;
-                    invoice.LastModifiedBy = "System";
+                    invoice.LastModifiedBy = string.Empty;
                 }
 
                 if (upcomingInvoices.Any())
@@ -283,7 +276,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     .Include(l => l.Tenant)
                     .Include(l => l.Property)
                     .Where(l => !l.IsDeleted &&
-                               l.UserId == organizationId &&
+                               l.OrganizationId == organizationId &&
                                l.Status == "Active" &&
                                l.EndDate >= today.AddDays(85) &&
                                l.EndDate <= today.AddDays(95) &&
@@ -304,7 +297,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     lease.RenewalNotificationSentOn = DateTime.UtcNow;
                     lease.RenewalStatus = "Pending";
                     lease.LastModifiedOn = DateTime.UtcNow;
-                    lease.LastModifiedBy = "System";
+                    lease.LastModifiedBy = string.Empty;
                 }
 
                 // Check for leases expiring in 60 days (reminder)
@@ -312,7 +305,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     .Include(l => l.Tenant)
                     .Include(l => l.Property)
                     .Where(l => !l.IsDeleted &&
-                               l.UserId == organizationId &&
+                               l.OrganizationId == organizationId &&
                                l.Status == "Active" &&
                                l.EndDate >= today.AddDays(55) &&
                                l.EndDate <= today.AddDays(65) &&
@@ -332,7 +325,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
                     lease.RenewalReminderSentOn = DateTime.UtcNow;
                     lease.LastModifiedOn = DateTime.UtcNow;
-                    lease.LastModifiedBy = "System";
+                    lease.LastModifiedBy = string.Empty;
                 }
 
                 // Check for leases expiring in 30 days (final reminder)
@@ -340,7 +333,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     .Include(l => l.Tenant)
                     .Include(l => l.Property)
                     .Where(l => !l.IsDeleted &&
-                               l.UserId == organizationId &&
+                               l.OrganizationId == organizationId &&
                                l.Status == "Active" &&
                                l.EndDate >= today.AddDays(25) &&
                                l.EndDate <= today.AddDays(35) &&
@@ -361,7 +354,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 // Update status for expired leases
                 var expiredLeases = await dbContext.Leases
                     .Where(l => !l.IsDeleted &&
-                               l.UserId == organizationId &&
+                               l.OrganizationId == organizationId &&
                                l.Status == "Active" &&
                                l.EndDate < today &&
                                (l.RenewalStatus == null || l.RenewalStatus == "Pending"))
@@ -372,7 +365,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     lease.Status = "Expired";
                     lease.RenewalStatus = "Expired";
                     lease.LastModifiedOn = DateTime.UtcNow;
-                    lease.LastModifiedBy = "System";
+                    lease.LastModifiedBy = string.Empty;
 
                     _logger.LogInformation(
                         "Lease expired: Lease ID {LeaseId}, End Date: {EndDate}",
@@ -488,12 +481,12 @@ namespace Aquiis.SimpleStart.Application.Services
 
                 foreach (var orgSettings in organizations)
                 {
-                    var organizationId = orgSettings.OrganizationId.ToString();
+                    var organizationId = orgSettings.OrganizationId;
                     var gracePeriodHours = orgSettings.TourNoShowGracePeriodHours;
 
                     // Check for tours that should be marked as no-show
                     var cutoffTime = DateTime.Now.AddHours(-gracePeriodHours);
-                    var potentialNoShowTours = await propertyManagementService.GetAllToursAsync(organizationId);
+                    var potentialNoShowTours = await propertyManagementService.GetAllToursAsync();
                     
                     var noShowTours = potentialNoShowTours
                         .Where(t => t.Status == ApplicationConstants.TourStatuses.Scheduled &&
@@ -503,7 +496,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
                     foreach (var tour in noShowTours)
                     {
-                        await propertyManagementService.MarkTourAsNoShowAsync(tour.Id, organizationId, "System");
+                        await propertyManagementService.MarkTourAsNoShowAsync(tour.Id);
                         totalMarkedNoShow++;
                         
                         _logger.LogInformation(
@@ -580,12 +573,12 @@ namespace Aquiis.SimpleStart.Application.Services
                 {
                     application.Status = ApplicationConstants.ApplicationStatuses.Expired;
                     application.LastModifiedOn = DateTime.UtcNow;
-                    application.LastModifiedBy = "System";
+                    application.LastModifiedBy = string.Empty;
                     
                     _logger.LogInformation("Expired application {ApplicationId} for property {PropertyId} (Expired on: {ExpirationDate})",
                         application.Id,
                         application.PropertyId,
-                        application.ExpiresOn.Value.ToString("yyyy-MM-dd"));
+                        application.ExpiresOn!.Value.ToString("yyyy-MM-dd"));
                 }
 
                 if (expiredApplications.Any())

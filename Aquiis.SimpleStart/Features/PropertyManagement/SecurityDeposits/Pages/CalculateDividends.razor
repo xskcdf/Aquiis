@@ -3,14 +3,14 @@
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Core.Constants
 @using Microsoft.AspNetCore.Authorization
 @inject SecurityDepositService SecurityDepositService
 @inject NavigationManager NavigationManager
 @inject ToastService ToastService
 @rendermode InteractiveServer
-@attribute [Authorize]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
+
 
 <PageTitle>Calculate Dividends - @(pool?.Year ?? 0)</PageTitle>
 
@@ -303,7 +303,7 @@
         isCalculating = true;
         try
         {
-            await SecurityDepositService.CalculateDividendsAsync(pool!.Year, "system");
+            await SecurityDepositService.CalculateDividendsAsync(pool!.Year);
             
             ToastService.ShowSuccess($"Dividends calculated for {pool.Year}. Tenants can now choose their payment method.");
             NavigationManager.NavigateTo($"/property-management/security-deposits/investment-pool/{PoolId}");

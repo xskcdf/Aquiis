@@ -129,7 +129,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        currentUserId = await UserContext.GetUserIdAsync() ?? string.Empty;
+        currentUserId = (await UserContext.GetUserIdAsync()) ?? string.Empty;
         await LoadNotes();
     }
 
@@ -147,10 +147,10 @@
         isLoading = true;
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(orgId) && EntityId > 0)
+            var organizationId = await UserContext.GetOrganizationIdAsync();
+            if (!string.IsNullOrEmpty(organizationId) && EntityId > 0)
             {
-                notes = await NoteService.GetNotesAsync(EntityType, EntityId, orgId);
+                notes = await NoteService.GetNotesAsync(EntityType, EntityId);
             }
         }
         catch (Exception ex)
@@ -201,10 +201,10 @@
 
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(orgId))
+            var organizationId = await UserContext.GetOrganizationIdAsync();
+            if (!string.IsNullOrEmpty(organizationId))
             {
-                var success = await NoteService.DeleteNoteAsync(noteId, orgId);
+                var success = await NoteService.DeleteNoteAsync(noteId);
                 if (success)
                 {
                     notes.RemoveAll(n => n.Id == noteId);

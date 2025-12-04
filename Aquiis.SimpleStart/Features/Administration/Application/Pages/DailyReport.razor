@@ -4,7 +4,7 @@
 @using Microsoft.AspNetCore.Authorization
 
 @inject ApplicationService ApplicationService
-@attribute [Authorize(Roles = "Administrator, PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Daily Payment Report</PageTitle>

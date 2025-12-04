@@ -1,5 +1,5 @@
 @page "/reports/income-statement"
-@using Aquiis.SimpleStart.Core.Entities
+
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
@@ -181,7 +181,7 @@
         var authState = await AuthenticationStateTask;
         var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-        organizationId = await UserContextService.GetOrganizationIdAsync();
+        organizationId = await UserContextService.GetActiveOrganizationIdAsync();
 
         if (!string.IsNullOrEmpty(organizationId))
         {

@@ -111,14 +111,14 @@ public class FinancialReportService
                        l.StartDate <= asOfDate &&
                        l.EndDate >= asOfDate)
             .OrderBy(l => l.Property.Address)
-            .ThenBy(l => l.Tenant.LastName)
+            .ThenBy(l => l.Tenant!.LastName)
             .Select(l => new RentRollItem
             {
                 PropertyId = l.PropertyId,
                 PropertyName = l.Property.Address,
                 PropertyAddress = l.Property.Address,
                 TenantId = l.TenantId,
-                TenantName = $"{l.Tenant.FirstName} {l.Tenant.LastName}",
+                TenantName = $"{l.Tenant!.FirstName} {l.Tenant!.LastName}",
                 LeaseStatus = l.Status,
                 LeaseStartDate = l.StartDate,
                 LeaseEndDate = l.EndDate,

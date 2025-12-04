@@ -1,12 +1,10 @@
 @page "/propertymanagement/tenants/view/{Id:int}"
 @using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
 @inject NavigationManager NavigationManager
 @inject PropertyManagementService PropertyManagementService
 
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 @if (tenant == null)

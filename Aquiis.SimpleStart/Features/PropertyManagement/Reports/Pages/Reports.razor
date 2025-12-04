@@ -6,7 +6,7 @@
 @using Aquiis.SimpleStart.Core.Constants
 
 @inject ApplicationService ApplicationService
-@attribute [Authorize(Roles = "PropertyManager,Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 
 
 <PageTitle>Financial Reports - Aquiis</PageTitle>

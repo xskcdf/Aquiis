@@ -1,4 +1,5 @@
 @page "/PropertyManagement/ProspectiveTenants/{ProspectId:int}"
+
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
@@ -7,7 +8,8 @@
 @using Aquiis.SimpleStart.Utilities
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize(Roles = "SuperAdministrator,Administrator,PropertyManager")]
+
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @inject PropertyManagementService PropertyService
 @inject UserContextService UserContext
 @inject NavigationManager Navigation
@@ -586,18 +588,18 @@
         loading = true;
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
+            var orgId = await UserContext.GetActiveOrganizationIdAsync();
             if (!string.IsNullOrEmpty(orgId))
             {
-                prospect = await PropertyService.GetProspectiveTenantByIdAsync(ProspectId, orgId);
+                prospect = await PropertyService.GetProspectiveTenantByIdAsync(ProspectId);
                 
                 if (prospect != null)
                 {
-                    tours = await PropertyService.GetToursByProspectiveIdAsync(ProspectId, orgId);
-                    application = await PropertyService.GetApplicationByProspectiveIdAsync(ProspectId, orgId);
+                    tours = await PropertyService.GetToursByProspectiveIdAsync(ProspectId);
+                    application = await PropertyService.GetApplicationByProspectiveIdAsync(ProspectId);
                     
                     // Load properties for edit dropdown
-                    availableProperties = await PropertyService.GetPropertiesByOrganizationIdAsync(orgId);
+                    availableProperties = await PropertyService.GetPropertiesAsync();
                 }
             }
         }

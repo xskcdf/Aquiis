@@ -1,8 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Core.Entities;
+using System.Text.Json.Serialization;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {
@@ -13,6 +11,9 @@ namespace Aquiis.SimpleStart.Core.Entities
     public class SecurityDepositDividend : BaseModel
     {
         [Required]
+        [JsonInclude]
+        [StringLength(100)]
+        [Display(Name = "Organization ID")]
         public string OrganizationId { get; set; } = string.Empty;
 
         [Required]

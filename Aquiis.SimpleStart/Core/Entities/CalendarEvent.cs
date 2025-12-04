@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Aquiis.SimpleStart.Core.Entities;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {
@@ -10,6 +9,11 @@ namespace Aquiis.SimpleStart.Core.Entities
     /// </summary>
     public class CalendarEvent : BaseModel
     {
+        [Required]
+        [StringLength(100)]
+        [Display(Name = "Organization ID")]
+        public string OrganizationId { get; set; } = string.Empty;
+
         [Required]
         [StringLength(200)]
         [Display(Name = "Title")]
@@ -60,11 +64,6 @@ namespace Aquiis.SimpleStart.Core.Entities
         [StringLength(100)]
         [Display(Name = "Source Entity Type")]
         public string? SourceEntityType { get; set; }
-
-        [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
 
         // Navigation properties
         [ForeignKey(nameof(PropertyId))]

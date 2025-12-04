@@ -1,11 +1,4 @@
 @page "/propertymanagement/properties/view/{PropertyId:int}"
-
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Core.Constants
 @using Aquiis.SimpleStart.Core.Entities
@@ -15,7 +8,7 @@
 @inject ChecklistService ChecklistService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 @if (property == null)
@@ -282,7 +275,7 @@ else
                             {
                                 var lastInspection = propertyInspections.Where(i => i.CompletedOn == property.LastRoutineInspectionDate.Value && i.InspectionType == "Routine").FirstOrDefault();
                                 <small>
-                                    <a href="/propertymanagement/inspections/view/@lastInspection.Id" class="text-decoration-none">
+                                    <a href="/propertymanagement/inspections/view/@lastInspection!.Id" class="text-decoration-none">
                                         <i class="bi bi-eye"></i> View Last Routine Inspection
                                     </a>
                                 </small>

@@ -1,3 +1,4 @@
+using Aquiis.SimpleStart.Shared.Services;
 using Microsoft.AspNetCore.Identity;
 
 namespace Aquiis.SimpleStart.Shared.Components.Account;
@@ -5,6 +6,12 @@ namespace Aquiis.SimpleStart.Shared.Components.Account;
 // Add profile data for application users by adding properties to the ApplicationUser class
 public class ApplicationUser : IdentityUser
 {
+    /// <summary>
+    /// The currently active organization ID for this user session
+    /// </summary>
+    public string ActiveOrganizationId { get; set; } = string.Empty;
+
+    // The organization ID this user belongs to
     public string OrganizationId { get; set; } = string.Empty;
 
     public string FirstName { get; set; } = string.Empty;

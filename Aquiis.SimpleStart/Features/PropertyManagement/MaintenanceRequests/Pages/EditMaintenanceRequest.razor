@@ -2,7 +2,7 @@
 @inject PropertyManagementService PropertyManagementService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
-@attribute [Authorize(Roles = "PropertyManager, Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Edit Maintenance Request</PageTitle>

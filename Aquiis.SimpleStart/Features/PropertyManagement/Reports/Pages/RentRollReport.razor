@@ -189,10 +189,7 @@
 
         try
         {
-            var authState = await AuthenticationStateTask;
-            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-            organizationId = await UserContextService.GetOrganizationIdAsync();
+            organizationId = await UserContextService.GetActiveOrganizationIdAsync();
 
             if (!string.IsNullOrEmpty(organizationId))
             {

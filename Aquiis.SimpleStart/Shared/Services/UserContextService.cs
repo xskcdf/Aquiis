@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Aquiis.SimpleStart.Shared.Components.Account;
+using Aquiis.SimpleStart.Core.Entities;
+using Aquiis.SimpleStart.Core.Constants;
 using System.Security.Claims;
 
 namespace Aquiis.SimpleStart.Shared.Services
@@ -14,19 +16,28 @@ namespace Aquiis.SimpleStart.Shared.Services
     {
         private readonly AuthenticationStateProvider _authenticationStateProvider;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly Func<Task<Application.Services.OrganizationService>> _organizationServiceFactory;
 
         // Cached values
         private string? _userId;
         private string? _organizationId;
+        private string? _activeOrganizationId;
         private ApplicationUser? _currentUser;
         private bool _isInitialized = false;
 
         public UserContextService(
             AuthenticationStateProvider authenticationStateProvider,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IServiceProvider serviceProvider)
         {
             _authenticationStateProvider = authenticationStateProvider;
             _userManager = userManager;
+            // Use factory pattern to avoid circular dependency
+            _organizationServiceFactory = async () => 
+            {
+                await Task.CompletedTask;
+                return serviceProvider.GetRequiredService<Application.Services.OrganizationService>();
+            };
         }
 
         /// <summary>
@@ -40,11 +51,28 @@ namespace Aquiis.SimpleStart.Shared.Services
 
         /// <summary>
         /// Gets the current user's OrganizationId. Cached after first access.
+        /// DEPRECATED: Use GetActiveOrganizationIdAsync() for multi-org support
         /// </summary>
         public async Task<string?> GetOrganizationIdAsync()
         {
             await EnsureInitializedAsync();
             return _organizationId;
+        }
+
+        /// <summary>
+        /// Gets the current user's active organization ID (new multi-org support).
+        /// Throws InvalidOperationException if user has no active organization.
+        /// </summary>
+        public async Task<string?> GetActiveOrganizationIdAsync()
+        {
+            await EnsureInitializedAsync();
+            
+            if (string.IsNullOrEmpty(_activeOrganizationId))
+            {
+                throw new InvalidOperationException("User does not have an active organization. This is a critical security issue.");
+            }
+            
+            return _activeOrganizationId;
         }
 
         /// <summary>
@@ -96,6 +124,121 @@ namespace Aquiis.SimpleStart.Shared.Services
             return authState.User.IsInRole(role);
         }
 
+        #region Multi-Organization Support
+
+        /// <summary>
+        /// Get all organizations the current user has access to
+        /// </summary>
+        public async Task<List<UserOrganization>> GetAccessibleOrganizationsAsync()
+        {
+            var userId = await GetUserIdAsync();
+            if (string.IsNullOrEmpty(userId))
+                return new List<UserOrganization>();
+
+            var organizationService = await _organizationServiceFactory();
+            return await organizationService.GetUserOrganizationsAsync(userId);
+        }
+
+        /// <summary>
+        /// Get the current user's role in the active organization
+        /// </summary>
+        public async Task<string?> GetCurrentOrganizationRoleAsync()
+        {
+            var userId = await GetUserIdAsync();
+            var activeOrganizationId = await GetActiveOrganizationIdAsync();
+
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(activeOrganizationId))
+                return null;
+
+            var organizationService = await _organizationServiceFactory();
+            return await organizationService.GetUserRoleForOrganizationAsync(userId, activeOrganizationId);
+        }
+
+        /// <summary>
+        /// Get the active organization entity
+        /// </summary>
+        public async Task<Organization?> GetActiveOrganizationAsync()
+        {
+            var activeOrganizationId = await GetActiveOrganizationIdAsync();
+            if (string.IsNullOrEmpty(activeOrganizationId))
+                return null;
+
+            var organizationService = await _organizationServiceFactory();
+            return await organizationService.GetOrganizationByIdAsync(activeOrganizationId);
+        }
+
+        /// <summary>
+        /// Switch the user's active organization
+        /// </summary>
+        public async Task<bool> SwitchOrganizationAsync(string organizationId)
+        {
+            var userId = await GetUserIdAsync();
+            if (string.IsNullOrEmpty(userId))
+                return false;
+
+            // Verify user has access to this organization
+            var organizationService = await _organizationServiceFactory();
+            if (!await organizationService.CanAccessOrganizationAsync(userId, organizationId))
+                return false;
+
+            // Update user's active organization
+            var user = await GetCurrentUserAsync();
+            if (user == null)
+                return false;
+
+            user.ActiveOrganizationId = organizationId;
+            var result = await _userManager.UpdateAsync(user);
+
+            if (result.Succeeded)
+            {
+                // Refresh cache
+                await RefreshAsync();
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Check if the current user has a specific permission in their active organization
+        /// </summary>
+        public async Task<bool> HasPermissionAsync(string permission)
+        {
+            var role = await GetCurrentOrganizationRoleAsync();
+            if (string.IsNullOrEmpty(role))
+                return false;
+
+            // Permission checks based on role
+            return permission.ToLower() switch
+            {
+                "organizations.create" => role == ApplicationConstants.OrganizationRoles.Owner,
+                "organizations.delete" => role == ApplicationConstants.OrganizationRoles.Owner,
+                "organizations.backup" => role == ApplicationConstants.OrganizationRoles.Owner,
+                "organizations.deletedata" => role == ApplicationConstants.OrganizationRoles.Owner,
+                "settings.edit" => ApplicationConstants.OrganizationRoles.CanEditSettings(role),
+                "settings.retention" => role == ApplicationConstants.OrganizationRoles.Owner || role == ApplicationConstants.OrganizationRoles.Administrator,
+                "users.manage" => ApplicationConstants.OrganizationRoles.CanManageUsers(role),
+                "properties.manage" => role != ApplicationConstants.OrganizationRoles.User,
+                _ => false
+            };
+        }
+
+        /// <summary>
+        /// Check if the current user is an account owner (owns at least one organization)
+        /// </summary>
+        public async Task<bool> IsAccountOwnerAsync()
+        {
+            var userId = await GetUserIdAsync();
+            if (string.IsNullOrEmpty(userId))
+                return false;
+
+            var organizationService = await _organizationServiceFactory();
+            var ownedOrgs = await organizationService.GetOwnedOrganizationsAsync(userId);
+            return ownedOrgs.Any();
+        }
+
+        #endregion
+
         /// <summary>
         /// Forces a refresh of the cached user data.
         /// Call this if user data has been updated and you need to reload it.
@@ -105,6 +248,7 @@ namespace Aquiis.SimpleStart.Shared.Services
             _isInitialized = false;
             _userId = null;
             _organizationId = null;
+            _activeOrganizationId = null;
             _currentUser = null;
             await EnsureInitializedAsync();
         }
@@ -123,14 +267,17 @@ namespace Aquiis.SimpleStart.Shared.Services
 
             if (user.Identity?.IsAuthenticated == true)
             {
-                _userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var claimsUserId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                if (!string.IsNullOrEmpty(_userId))
+                if (!string.IsNullOrEmpty(claimsUserId))
                 {
-                    _currentUser = await _userManager.FindByIdAsync(_userId);
+                    _userId = claimsUserId;
+                }
+                {
+                    _currentUser = await _userManager.FindByIdAsync(_userId!);
                     if (_currentUser != null)
                     {
-                        _organizationId = _currentUser.OrganizationId;
+                        _activeOrganizationId = _currentUser.ActiveOrganizationId; // New multi-org
                     }
                 }
             }

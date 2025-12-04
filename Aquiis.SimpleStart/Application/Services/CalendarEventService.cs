@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Aquiis.SimpleStart.Infrastructure.Data;
 using Aquiis.SimpleStart.Core.Entities;
+using Aquiis.SimpleStart.Shared.Services;
 
 namespace Aquiis.SimpleStart.Application.Services
 {
@@ -11,11 +12,13 @@ namespace Aquiis.SimpleStart.Application.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly CalendarSettingsService _settingsService;
+        private readonly UserContextService _userContextService;
 
-        public CalendarEventService(ApplicationDbContext context, CalendarSettingsService settingsService)
+        public CalendarEventService(ApplicationDbContext context, CalendarSettingsService settingsService, UserContextService userContext)
         {
             _context = context;
             _settingsService = settingsService;
+            _userContextService = userContext;
         }
 
         /// <summary>
@@ -28,7 +31,7 @@ namespace Aquiis.SimpleStart.Application.Services
             
             // Check if auto-creation is enabled for this entity type
             var isEnabled = await _settingsService.IsAutoCreateEnabledAsync(
-                entity.OrganizationId.ToString(), 
+                entity.OrganizationId, 
                 entityType
             );
             
@@ -101,11 +104,11 @@ namespace Aquiis.SimpleStart.Application.Services
         /// Get calendar events for a date range with optional filtering
         /// </summary>
         public async Task<List<CalendarEvent>> GetEventsAsync(
-            string organizationId,
             DateTime startDate,
             DateTime endDate,
             List<string>? eventTypes = null)
         {
+            var organizationId = await _userContextService.GetActiveOrganizationIdAsync();
             var query = _context.CalendarEvents
                 .Include(e => e.Property)
                 .Where(e => e.OrganizationId == organizationId
@@ -124,8 +127,9 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Get a specific calendar event by ID
         /// </summary>
-        public async Task<CalendarEvent?> GetEventByIdAsync(int eventId, string organizationId)
+        public async Task<CalendarEvent?> GetEventByIdAsync(int eventId)
         {
+            var organizationId = await _userContextService.GetActiveOrganizationIdAsync();
             return await _context.CalendarEvents
                 .Include(e => e.Property)
                 .FirstOrDefaultAsync(e => e.Id == eventId 
@@ -183,8 +187,9 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Get all calendar events for a specific property
         /// </summary>
-        public async Task<List<CalendarEvent>> GetEventsByPropertyIdAsync(int propertyId, string organizationId)
+        public async Task<List<CalendarEvent>> GetEventsByPropertyIdAsync(int propertyId)
         {
+            var organizationId = await _userContextService.GetActiveOrganizationIdAsync();
             return await _context.CalendarEvents
                 .Include(e => e.Property)
                 .Where(e => e.PropertyId == propertyId 
@@ -198,14 +203,12 @@ namespace Aquiis.SimpleStart.Application.Services
         /// Get upcoming events for the next N days
         /// </summary>
         public async Task<List<CalendarEvent>> GetUpcomingEventsAsync(
-            string organizationId,
             int days = 7,
             List<string>? eventTypes = null)
         {
             var startDate = DateTime.Today;
             var endDate = DateTime.Today.AddDays(days);
-
-            return await GetEventsAsync(organizationId, startDate, endDate, eventTypes);
+            return await GetEventsAsync(startDate, endDate, eventTypes);
         }
 
         /// <summary>

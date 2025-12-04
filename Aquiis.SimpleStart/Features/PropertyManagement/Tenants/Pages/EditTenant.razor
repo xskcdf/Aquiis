@@ -6,7 +6,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
 
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @inject NavigationManager NavigationManager
 @inject PropertyManagementService PropertyManagementService
 @rendermode InteractiveServer
@@ -221,7 +221,7 @@ else
             IdentificationNumber = tenant.IdentificationNumber,
             IsActive = tenant.IsActive,
             EmergencyContactName = tenant.EmergencyContactName,
-            EmergencyContactPhone = tenant.EmergencyContactPhone,
+            EmergencyContactPhone = tenant.EmergencyContactPhone!,
             Notes = tenant.Notes
         };
     }

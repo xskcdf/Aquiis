@@ -8,13 +8,13 @@
 @using Microsoft.EntityFrameworkCore
 @using System.ComponentModel.DataAnnotations
 @using Aquiis.SimpleStart.Shared.Components.Account
+
 @rendermode InteractiveServer
 @inject UserManager<ApplicationUser> UserManager
 @inject RoleManager<IdentityRole> RoleManager
 @inject NavigationManager NavigationManager
 
-<AuthorizeView Roles="SuperAdministrator, Administrator">
-    <Authorized>
+<OrganizationAuthorizeView Roles="Owner,Administrator">
         <h3>View User Details</h3>
         <!-- User details UI goes here -->
         @if (isLoading)
@@ -267,11 +267,7 @@ else
     font-weight: bold;
 }
 </style>
-    </Authorized>
-    <NotAuthorized>
-        <p>You are not authorized to view this page.</p>
-    </NotAuthorized>
-</AuthorizeView>
+</OrganizationAuthorizeView>
 
 @code {
     [Parameter] public string UserId { get; set; } = string.Empty;

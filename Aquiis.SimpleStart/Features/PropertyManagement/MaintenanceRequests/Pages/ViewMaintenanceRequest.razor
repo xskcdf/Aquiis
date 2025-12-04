@@ -8,7 +8,7 @@
 @inject NavigationManager NavigationManager
 @inject ToastService ToastService
 
-@attribute [Authorize(Roles = "PropertyManager, Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Maintenance Request Details</PageTitle>

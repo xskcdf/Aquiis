@@ -11,7 +11,7 @@
 @inject UserContextService UserContext
 @inject PropertyManagementService PropertyService
 
-@attribute [Authorize(Roles = "PropertyManager,Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Rental Applications</PageTitle>
@@ -193,7 +193,7 @@
     {
         try
         {
-            organizationId = await UserContext.GetOrganizationIdAsync() ?? string.Empty;
+            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
             await LoadApplications();
         }
         catch (Exception ex)
@@ -208,7 +208,7 @@
 
     private async Task LoadApplications()
     {
-        applications = await PropertyService.GetAllRentalApplicationsAsync(organizationId);
+        applications = await PropertyService.GetAllRentalApplicationsAsync();
         
         pendingApplications = applications.Where(a => 
             a.Status == ApplicationConstants.ApplicationStatuses.Submitted ||

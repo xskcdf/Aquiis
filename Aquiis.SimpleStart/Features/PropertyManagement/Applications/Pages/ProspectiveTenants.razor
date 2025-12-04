@@ -7,7 +7,7 @@
 @using Aquiis.SimpleStart.Utilities
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize(Roles = "SuperAdministrator,Administrator,PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @inject UserContextService UserContext
 @inject NavigationManager Navigation
 @inject ToastService ToastService
@@ -289,10 +289,10 @@
         loading = true;
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(orgId))
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            if (!string.IsNullOrEmpty(organizationId))
             {
-                prospects = await PropertyService.GetAllProspectiveTenantsAsync(orgId);
+                prospects = await PropertyService.GetAllProspectiveTenantsAsync();
                 
                 // Load properties for dropdown
                 var dbContextFactory = Navigation.ToAbsoluteUri("/").ToString(); // Get service
@@ -327,10 +327,10 @@
     {
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
 
-            if (string.IsNullOrEmpty(orgId) || string.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(organizationId) || string.IsNullOrEmpty(userId))
             {
                 ToastService.ShowError("User context not available");
                 return;
@@ -350,8 +350,7 @@
                 Notes = newProspect.Notes,
                 InterestedPropertyId = newProspect.InterestedPropertyId,
                 DesiredMoveInDate = newProspect.DesiredMoveInDate,
-                OrganizationId = orgId,
-                CreatedBy = userId
+                OrganizationId = organizationId,
             };
             
             await PropertyService.CreateProspectiveTenantAsync(prospect);
@@ -391,12 +390,12 @@
         // TODO: Add confirmation dialog in future sprint
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
             
-            if (!string.IsNullOrEmpty(orgId) && !string.IsNullOrEmpty(userId))
+            if (!string.IsNullOrEmpty(organizationId) && !string.IsNullOrEmpty(userId))
             {
-                await PropertyService.DeleteProspectiveTenantAsync(prospectId, orgId, userId);
+                await PropertyService.DeleteProspectiveTenantAsync(prospectId);
                 ToastService.ShowSuccess("Prospect deleted successfully");
                 await LoadData();
             }

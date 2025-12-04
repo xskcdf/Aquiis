@@ -1,7 +1,8 @@
 using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Core.Entities;
 using Aquiis.SimpleStart.Infrastructure.Data;
+using Aquiis.SimpleStart.Shared.Services;
 using Microsoft.EntityFrameworkCore;
+
 
 namespace Aquiis.SimpleStart.Application.Services
 {
@@ -13,24 +14,29 @@ namespace Aquiis.SimpleStart.Application.Services
         private readonly ApplicationDbContext _context;
         private readonly ILogger<TenantConversionService> _logger;
 
+        private readonly UserContextService _userContext;
+
         public TenantConversionService(
             ApplicationDbContext context,
-            ILogger<TenantConversionService> logger)
+            ILogger<TenantConversionService> logger,
+            UserContextService userContext)
         {
             _context = context;
             _logger = logger;
+            _userContext = userContext;
         }
 
         /// <summary>
         /// Converts a ProspectiveTenant to a Tenant, maintaining audit trail
         /// </summary>
         /// <param name="prospectiveTenantId">ID of the prospective tenant to convert</param>
-        /// <param name="userId">User performing the conversion</param>
         /// <returns>The newly created Tenant, or existing Tenant if already converted</returns>
-        public async Task<Tenant?> ConvertProspectToTenantAsync(int prospectiveTenantId, string userId)
+        public async Task<Tenant?> ConvertProspectToTenantAsync(int prospectiveTenantId)
         {
             try
             {
+                var userId = await _userContext.GetUserIdAsync();
+
                 // Check if this prospect has already been converted
                 var existingTenant = await _context.Tenants
                     .FirstOrDefaultAsync(t => t.ProspectiveTenantId == prospectiveTenantId && !t.IsDeleted);
@@ -56,7 +62,6 @@ namespace Aquiis.SimpleStart.Application.Services
                 var tenant = new Tenant
                 {
                     OrganizationId = prospect.OrganizationId,
-                    UserId = userId,
                     FirstName = prospect.FirstName,
                     LastName = prospect.LastName,
                     Email = prospect.Email,
@@ -66,7 +71,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     IsActive = true,
                     Notes = prospect.Notes ?? string.Empty,
                     ProspectiveTenantId = prospectiveTenantId, // Maintain audit trail
-                    CreatedBy = userId,
+                    CreatedBy = userId ?? string.Empty,
                     CreatedOn = DateTime.UtcNow
                 };
 

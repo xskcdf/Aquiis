@@ -1,19 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Core.Entities;
 
 namespace Aquiis.SimpleStart.Core.Entities {
 
     public class Payment : BaseModel
     {
-
         [Required]
-        public string UserId { get; set; } = string.Empty;
+        [StringLength(100)]
+        [Display(Name = "Organization ID")]
+        public string OrganizationId { get; set; } = string.Empty;
 
         [Required]
         public int InvoiceId { get; set; }

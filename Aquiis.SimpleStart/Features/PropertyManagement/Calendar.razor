@@ -5,14 +5,11 @@
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
 @using Aquiis.SimpleStart.Utilities
 @using Aquiis.SimpleStart.Core.Constants
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Shared.Components
 
 
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize(Roles = "SuperAdministrator,Administrator,PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @inject CalendarEventService CalendarEventService
 @inject CalendarSettingsService CalendarSettingsService
 @inject UserContextService UserContext
@@ -607,7 +604,6 @@
                                     <option value="bi-people">👥 People</option>
                                     <option value="bi-briefcase">💼 Briefcase</option>
                                     <option value="bi-calendar-check">✅ Calendar Check</option>
-                                    <option value="bi-calendar-x">❌ Calendar X</option>
                                 </InputSelect>
                                 <small class="text-muted">Choose an icon for this event</small>
                             </div>
@@ -646,10 +642,10 @@
     protected override async Task OnInitializedAsync()
     {
         // Load filter defaults from settings
-        var orgId = await UserContext.GetOrganizationIdAsync();
-        if (!string.IsNullOrEmpty(orgId))
+        var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+        if (!string.IsNullOrEmpty(organizationId))
         {
-            var settings = await CalendarSettingsService.GetSettingsAsync(orgId);
+            var settings = await CalendarSettingsService.GetSettingsAsync(organizationId);
             selectedEventTypes = settings
                 .Where(s => s.ShowOnCalendar)
                 .Select(s => s.EntityType)
@@ -670,8 +666,8 @@
         loading = true;
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(orgId))
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            if (!string.IsNullOrEmpty(organizationId))
             {
                 // Get date range based on current view
                 var (startDate, endDate) = viewMode switch
@@ -689,7 +685,6 @@
                     : null;
 
                 allEvents = await CalendarEventService.GetEventsAsync(
-                    orgId, 
                     startDate, 
                     endDate,
                     eventTypesToLoad
@@ -736,7 +731,7 @@
 
     private async Task ShowAddEventModal()
     {
-        var orgId = await UserContext.GetOrganizationIdAsync();
+        var organizationId = await UserContext.GetActiveOrganizationIdAsync();
         var userId = await UserContext.GetUserIdAsync();
         
         newEvent = new CalendarEvent
@@ -746,8 +741,8 @@
             Icon = "bi-calendar-event",
             EventType = CalendarEventTypes.Custom,
             Status = "Scheduled",
-            OrganizationId = orgId ?? string.Empty,
-            CreatedBy = userId ?? string.Empty,
+            OrganizationId = !string.IsNullOrEmpty(organizationId) ? organizationId : string.Empty,
+            CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty,
             CreatedOn = DateTime.UtcNow
         };
         showAddEventModal = true;
@@ -810,7 +805,7 @@
             var userId = await UserContext.GetUserIdAsync();
             
             // Update last modified fields
-            newEvent.LastModifiedBy = userId ?? string.Empty;
+            newEvent.LastModifiedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty;
             newEvent.LastModifiedOn = DateTime.UtcNow;
 
             // Calculate duration if end time is set
@@ -1221,13 +1216,13 @@
 
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
-            if (string.IsNullOrEmpty(orgId)) return;
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            if (string.IsNullOrEmpty(organizationId)) return;
 
             switch (calendarEvent.EventType)
             {
                 case CalendarEventTypes.Tour:
-                    await ShowTourDetailById(calendarEvent.SourceEntityId.Value, orgId);
+                    await ShowTourDetailById(calendarEvent.SourceEntityId.Value);
                     break;
 
                 case CalendarEventTypes.Inspection:
@@ -1240,12 +1235,12 @@
                     else
                     {
                         // This is linked to an actual Inspection record
-                        await ShowInspectionDetailById(calendarEvent.SourceEntityId.Value, orgId);
+                        await ShowInspectionDetailById(calendarEvent.SourceEntityId.Value);
                     }
                     break;
 
                 case CalendarEventTypes.Maintenance:
-                    await ShowMaintenanceRequestDetailById(calendarEvent.SourceEntityId.Value, orgId);
+                    await ShowMaintenanceRequestDetailById(calendarEvent.SourceEntityId.Value);
                     break;
 
                 // Other event types (LeaseExpiry, RentDue, Custom) just show basic info
@@ -1259,9 +1254,9 @@
         }
     }
 
-    private async Task ShowTourDetailById(int tourId, string orgId)
+    private async Task ShowTourDetailById(int tourId)
     {
-        var tour = await PropertyService.GetTourByIdAsync(tourId, orgId);
+        var tour = await PropertyService.GetTourByIdAsync(tourId);
         if (tour != null)
         {
             selectedTour = tour;
@@ -1272,7 +1267,7 @@
         }
     }
 
-    private async Task ShowInspectionDetailById(int inspectionId, string orgId)
+    private async Task ShowInspectionDetailById(int inspectionId)
     {
         var inspection = await PropertyService.GetInspectionByIdAsync(inspectionId);
         if (inspection != null)
@@ -1285,7 +1280,7 @@
         }
     }
 
-    private async Task ShowMaintenanceRequestDetailById(int maintenanceId, string orgId)
+    private async Task ShowMaintenanceRequestDetailById(int maintenanceId)
     {
         var maintenanceRequest = await PropertyService.GetMaintenanceRequestByIdAsync(maintenanceId);
         if (maintenanceRequest != null)
@@ -1351,10 +1346,10 @@
     {
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(orgId))
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            if (!string.IsNullOrEmpty(organizationId))
             {
-                var tour = await PropertyService.GetTourByIdAsync(tourId, orgId);
+                var tour = await PropertyService.GetTourByIdAsync(tourId);
                 if (tour != null)
                 {
                     CloseModal();
@@ -1379,12 +1374,12 @@
     {
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
             
-            if (!string.IsNullOrEmpty(orgId) && !string.IsNullOrEmpty(userId))
+            if (!string.IsNullOrEmpty(organizationId) && !string.IsNullOrEmpty(userId))
             {
-                await PropertyService.CancelTourAsync(tourId, orgId, userId);
+                await PropertyService.CancelTourAsync(tourId);
                 ToastService.ShowSuccess("Tour cancelled successfully");
                 CloseModal();
                 await LoadEvents();
@@ -1400,12 +1395,12 @@
     {
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
             
-            if (!string.IsNullOrEmpty(orgId) && !string.IsNullOrEmpty(userId))
+            if (!string.IsNullOrEmpty(organizationId) && !string.IsNullOrEmpty(userId))
             {
-                await PropertyService.MarkTourAsNoShowAsync(tourId, orgId, userId);
+                await PropertyService.MarkTourAsNoShowAsync(tourId);
                 ToastService.ShowSuccess("Tour marked as No Show");
                 CloseModal();
                 await LoadEvents();
@@ -1421,23 +1416,22 @@
     {
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
             
-            if (!string.IsNullOrEmpty(orgId) && !string.IsNullOrEmpty(userId))
+            if (!string.IsNullOrEmpty(organizationId) && !string.IsNullOrEmpty(userId))
             {
                 var request = await PropertyService.GetMaintenanceRequestByIdAsync(maintenanceRequestId);
                 if (request != null)
                 {
                     request.Status = ApplicationConstants.MaintenanceRequestStatuses.InProgress;
-                    request.LastModifiedBy = userId;
-                    request.LastModifiedOn = DateTime.UtcNow;
+                    
                     
                     await PropertyService.UpdateMaintenanceRequestAsync(request);
                     ToastService.ShowSuccess("Work started on maintenance request");
                     
                     // Reload the maintenance request to show updated status
-                    await ShowMaintenanceRequestDetailById(maintenanceRequestId, orgId);
+                    await ShowMaintenanceRequestDetailById(maintenanceRequestId);
                     await LoadEvents();
                 }
             }
@@ -1452,23 +1446,21 @@
     {
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
             
-            if (!string.IsNullOrEmpty(orgId) && !string.IsNullOrEmpty(userId))
+            if (!string.IsNullOrEmpty(organizationId) && !string.IsNullOrEmpty(userId))
             {
                 var request = await PropertyService.GetMaintenanceRequestByIdAsync(maintenanceRequestId);
                 if (request != null)
                 {
                     request.Status = ApplicationConstants.MaintenanceRequestStatuses.Completed;
-                    request.LastModifiedBy = userId;
-                    request.LastModifiedOn = DateTime.UtcNow;
                     
                     await PropertyService.UpdateMaintenanceRequestAsync(request);
                     ToastService.ShowSuccess("Maintenance request marked as complete");
                     
                     // Reload the maintenance request to show updated status
-                    await ShowMaintenanceRequestDetailById(maintenanceRequestId, orgId);
+                    await ShowMaintenanceRequestDetailById(maintenanceRequestId);
                     await LoadEvents();
                 }
             }
@@ -1483,17 +1475,15 @@
     {
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
             
-            if (!string.IsNullOrEmpty(orgId) && !string.IsNullOrEmpty(userId))
+            if (!string.IsNullOrEmpty(organizationId) && !string.IsNullOrEmpty(userId))
             {
                 var request = await PropertyService.GetMaintenanceRequestByIdAsync(maintenanceRequestId);
                 if (request != null)
                 {
                     request.Status = ApplicationConstants.MaintenanceRequestStatuses.Cancelled;
-                    request.LastModifiedBy = userId;
-                    request.LastModifiedOn = DateTime.UtcNow;
                     
                     await PropertyService.UpdateMaintenanceRequestAsync(request);
                     ToastService.ShowSuccess("Maintenance request cancelled");
@@ -1512,21 +1502,19 @@
     {
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
             
-            if (string.IsNullOrEmpty(orgId) || string.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(organizationId) || string.IsNullOrEmpty(userId))
             {
                 ToastService.ShowError("Unable to identify user or organization");
                 return;
             }
 
-            var calendarEvent = await CalendarEventService.GetEventByIdAsync(eventId, orgId);
+            var calendarEvent = await CalendarEventService.GetEventByIdAsync(eventId);
             if (calendarEvent != null && calendarEvent.IsCustomEvent)
             {
                 calendarEvent.Status = newStatus;
-                calendarEvent.LastModifiedBy = userId;
-                calendarEvent.LastModifiedOn = DateTime.UtcNow;
                 
                 await CalendarEventService.UpdateCustomEventAsync(calendarEvent);
                 

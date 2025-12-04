@@ -8,7 +8,7 @@
 @inject PropertyManagementService PropertyManagementService
 @inject IJSRuntime JSRuntime
 
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Payments - Property Management</PageTitle>

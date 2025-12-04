@@ -6,9 +6,6 @@
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
 @using Aquiis.SimpleStart.Infrastructure.Data
 @using Aquiis.SimpleStart.Core.Constants
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore
@@ -21,7 +18,7 @@
 @inject ToastService ToastService
 @inject SecurityDepositService SecurityDepositService
 
-@attribute [Authorize(Roles = "PropertyManager,Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Lease Offer Details</PageTitle>
@@ -380,7 +377,7 @@
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-            organizationId = await UserContext.GetOrganizationIdAsync() ?? string.Empty;
+            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
 
             await LoadLeaseOffer();
         }
@@ -396,7 +393,7 @@
 
     private async Task LoadLeaseOffer()
     {
-        leaseOffer = await PropertyService.GetLeaseOfferByIdAsync(Id, organizationId);
+        leaseOffer = await PropertyService.GetLeaseOfferByIdAsync(Id);
     }
 
     private int CalculateDuration()
@@ -433,6 +430,7 @@
             // 1. Create Tenant from ProspectiveTenant
             var tenant = new Tenant
             {
+                OrganizationId = organizationId,
                 FirstName = leaseOffer.ProspectiveTenant.FirstName,
                 LastName = leaseOffer.ProspectiveTenant.LastName,
                 Email = leaseOffer.ProspectiveTenant.Email,
@@ -442,8 +440,7 @@
                 ProspectiveTenantId = leaseOffer.ProspectiveTenantId,
                 EmergencyContactName = string.Empty,
                 EmergencyContactPhone = null,
-                CreatedOn = DateTime.UtcNow,
-                CreatedBy = userId
+                
             };
 
             var createdTenant = await PropertyService.AddTenantAsync(tenant);
@@ -451,6 +448,7 @@
             // 2. Create Lease with reference to LeaseOffer and Tenant
             var lease = new Lease
             {
+                OrganizationId = organizationId,
                 PropertyId = leaseOffer.PropertyId,
                 TenantId = createdTenant.Id,
                 LeaseOfferId = leaseOffer.Id,
@@ -460,10 +458,8 @@
                 SecurityDeposit = leaseOffer.SecurityDeposit,
                 Terms = leaseOffer.Terms ?? string.Empty,
                 Status = ApplicationConstants.LeaseStatuses.Active,
-                UserId = userId,
                 SignedOn = DateTime.UtcNow,
-                CreatedOn = DateTime.UtcNow,
-                CreatedBy = userId
+               
             };
 
             var createdLease = await PropertyService.AddLeaseAsync(lease);
@@ -473,18 +469,16 @@
             leaseOffer.RespondedOn = DateTime.UtcNow;
             leaseOffer.ResponseNotes = "Lease offer accepted and converted to active lease";
             leaseOffer.ConvertedLeaseId = createdLease?.Id;
-            leaseOffer.LastModifiedOn = DateTime.UtcNow;
-            leaseOffer.LastModifiedBy = userId;
+            
 
             await PropertyService.UpdateLeaseOfferAsync(leaseOffer);
 
             // 4. Update RentalApplication status
-            var application = await PropertyService.GetRentalApplicationByIdAsync(leaseOffer.RentalApplicationId, organizationId);
+            var application = await PropertyService.GetRentalApplicationByIdAsync(leaseOffer.RentalApplicationId);
             if (application != null)
             {
                 application.Status = ApplicationConstants.ApplicationStatuses.LeaseAccepted;
-                application.LastModifiedOn = DateTime.UtcNow;
-                application.LastModifiedBy = userId;
+               
                 await PropertyService.UpdateRentalApplicationAsync(application);
             }
 
@@ -493,8 +487,7 @@
             if (property != null)
             {
                 property.Status = ApplicationConstants.PropertyStatuses.Occupied;
-                property.LastModifiedOn = DateTime.UtcNow;
-                property.LastModifiedBy = userId;
+                
                 await PropertyService.UpdatePropertyAsync(property);
             }
 
@@ -503,8 +496,7 @@
             if (prospective != null)
             {
                 prospective.Status = ApplicationConstants.ProspectiveStatuses.ConvertedToTenant;
-                prospective.LastModifiedOn = DateTime.UtcNow;
-                prospective.LastModifiedBy = userId;
+                
                 await PropertyService.UpdateProspectiveTenantAsync(prospective);
             }
 
@@ -518,7 +510,6 @@
                     lease.SecurityDeposit,
                     "Online Payment",
                     "Security deposit collected upon lease acceptance",
-                    userId,
                     tenant.Id); // Pass the newly created tenant ID
             }
             catch (Exception depositEx)
@@ -541,7 +532,7 @@
                 // Add deposit to investment pool (will start earning dividends)
                 try
                 {
-                    await SecurityDepositService.AddToInvestmentPoolAsync(securityDeposit.Id, userId);
+                    await SecurityDepositService.AddToInvestmentPoolAsync(securityDeposit.Id);
                 }
                 catch (Exception poolEx)
                 {
@@ -590,8 +581,6 @@
             leaseOffer.Status = "Declined";
             leaseOffer.RespondedOn = DateTime.UtcNow;
             leaseOffer.ResponseNotes = declineReason;
-            leaseOffer.LastModifiedOn = DateTime.UtcNow;
-            leaseOffer.LastModifiedBy = userId;
 
             await PropertyService.UpdateLeaseOfferAsync(leaseOffer);
 

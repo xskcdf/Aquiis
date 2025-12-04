@@ -6,7 +6,7 @@
 
 @inject PropertyManagementService PropertyManagementService
 @inject NavigationManager NavigationManager
-@attribute [Authorize(Roles = "PropertyManager, Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Inspection Schedule</PageTitle>

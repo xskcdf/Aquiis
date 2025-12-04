@@ -4,7 +4,6 @@
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Core.Constants
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
@@ -381,7 +380,7 @@
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-            organizationId = await UserContext.GetOrganizationIdAsync() ?? string.Empty;
+            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
 
             await LoadData();
         }
@@ -398,12 +397,12 @@
     private async Task LoadData()
     {
         // Load prospect
-        prospect = await PropertyService.GetProspectiveTenantByIdAsync(ProspectId, organizationId);
+        prospect = await PropertyService.GetProspectiveTenantByIdAsync(ProspectId);
         
         if (prospect == null) return;
 
         // Check if application already exists
-        existingApplication = await PropertyService.GetApplicationByProspectiveIdAsync(ProspectId, organizationId);
+        existingApplication = await PropertyService.GetApplicationByProspectiveIdAsync(ProspectId);
 
         // Load available properties
         var allProperties = await PropertyService.GetPropertiesAsync();
@@ -438,6 +437,8 @@
             selectedProperty = null;
         }
         StateHasChanged();
+        await Task.CompletedTask;
+
     }
 
     private async Task HandleSubmitApplication()
@@ -483,9 +484,8 @@
                 ApplicationFee = applicationFee,
                 ApplicationFeePaid = false, // Will be paid separately
                 
-                OrganizationId = organizationId,
-                CreatedOn = DateTime.UtcNow,
-                CreatedBy = userId
+                OrganizationId = organizationId
+                
             };
 
             var createdApplication = await PropertyService.CreateRentalApplicationAsync(application);

@@ -6,7 +6,7 @@
 @inject PropertyManagementService PropertyManagementService
 @inject IJSRuntime JSRuntime
 
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <div class="d-flex justify-content-between align-items-center mb-4">

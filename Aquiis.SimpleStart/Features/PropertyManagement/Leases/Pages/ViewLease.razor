@@ -13,10 +13,12 @@
 
 @inject NavigationManager Navigation
 @inject PropertyManagementService PropertyManagementService
+
+@inject UserContextService UserContextService
 @inject LeaseRenewalPdfGenerator RenewalPdfGenerator
 @inject ToastService ToastService
 @inject IJSRuntime JSRuntime
-@attribute [Authorize(Roles = "Administrator, PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 
 @rendermode InteractiveServer
 
@@ -502,14 +504,8 @@ else
 
         try
         {
-            var authState = await AuthenticationStateTask;
-            var userName = authState.User.Identity?.Name ?? "System";
-            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                ToastService.ShowError("Unable to determine current user.");
-                return;
-            }
+           var userId = await UserContextService.GetUserIdAsync();
+           var organizationId = await UserContextService.GetOrganizationIdAsync();
 
             // Update lease with renewal offer details
             lease.RenewalStatus = "Offered";
@@ -544,14 +540,12 @@ else
             isGeneratingPdf = true;
             StateHasChanged();
 
-            var authState = await AuthenticationStateTask;
-            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            var userName = authState.User.Identity?.Name ?? "System";
+            var userId = await UserContextService.GetUserIdAsync();
+            var organizationId = await UserContextService.GetOrganizationIdAsync();
 
-            if (string.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId) || lease == null || lease.OrganizationId != organizationId)
             {
-                ToastService.ShowError("Unable to determine current user.");
-                return;
+                throw new UnauthorizedAccessException("User is not authorized.");
             }
 
             // Ensure proposed rent is set
@@ -561,13 +555,13 @@ else
             }
 
             // Generate renewal offer PDF
-            var pdfBytes = RenewalPdfGenerator.GenerateRenewalOfferLetter(lease, lease.Property, lease.Tenant);
+            var pdfBytes = RenewalPdfGenerator.GenerateRenewalOfferLetter(lease, lease.Property, lease.Tenant!);
             var fileName = $"Lease_Renewal_Offer_{lease.Property?.Address?.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
 
             // Save PDF to Documents table
             var document = new Document
             {
-                UserId = userId,
+                OrganizationId = organizationId,
                 PropertyId = lease.PropertyId,
                 TenantId = lease.TenantId,
                 LeaseId = lease.Id,
@@ -579,7 +573,6 @@ else
                 ContentType = "application/pdf",
                 DocumentType = "Lease Renewal Offer",
                 Description = $"Renewal offer letter for {lease.Property?.Address}. Proposed rent: {lease.ProposedRenewalRent:C}",
-                UploadedBy = userId,
                 CreatedBy = userId,
                 CreatedOn = DateTime.UtcNow
             };
@@ -605,13 +598,12 @@ else
 
         try
         {
-            var authState = await AuthenticationStateTask;
-            var userName = authState.User.Identity?.Name ?? "System";
-            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
+            var userId = await UserContextService.GetUserIdAsync();
+            var organizationId = await UserContextService.GetOrganizationIdAsync();
+
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId) || lease == null || lease.OrganizationId != organizationId)
             {
-                ToastService.ShowError("Unable to determine current user.");
-                return;
+                throw new UnauthorizedAccessException("User is not authorized.");
             }
 
             // Update current lease status
@@ -629,7 +621,7 @@ else
 
             var newLease = new Lease
             {
-                UserId = userId,
+                OrganizationId = organizationId,
                 PropertyId = lease.PropertyId,
                 TenantId = lease.TenantId,
                 StartDate = newLeaseStartDate,
@@ -665,14 +657,9 @@ else
 
         try
         {
-            var authState = await AuthenticationStateTask;
-            var userName = authState.User.Identity?.Name ?? "System";
-            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                ToastService.ShowError("Unable to determine current user.");
-                return;
-            }
+            var userId = await UserContextService.GetUserIdAsync();
+            var organizationId = await UserContextService.GetOrganizationIdAsync();
+                
             lease.RenewalStatus = "Declined";
             lease.RenewalResponseOn = DateTime.UtcNow;
             lease.LastModifiedOn = DateTime.UtcNow;
@@ -766,15 +753,12 @@ else
 
         try
         {
-            // Get current user info
-            var authState = await AuthenticationStateTask;
-            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            var userName = authState.User.Identity?.Name ?? "System";
+            var userId = await UserContextService.GetUserIdAsync();
+            var organizationId = await UserContextService.GetOrganizationIdAsync();
 
-            if (string.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId) || lease == null || lease.OrganizationId != organizationId)
             {
-                await JSRuntime.InvokeVoidAsync("alert", "Unable to determine current user.");
-                return;
+                throw new UnauthorizedAccessException("User is not authorized.");
             }
 
             // Generate the PDF
@@ -783,7 +767,7 @@ else
             // Create the document entity
             var document = new Document
             {
-                UserId = userId,
+                OrganizationId = organizationId,
                 FileName = $"Lease_{lease!.Property?.Address?.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf",
                 FileExtension = ".pdf",
                 FileData = pdfBytes,
@@ -794,12 +778,6 @@ else
                 LeaseId = lease.Id,
                 PropertyId = lease.PropertyId,
                 TenantId = lease.TenantId,
-                UploadedBy = userId,
-                CreatedBy = userId,
-                CreatedOn = DateTime.UtcNow,
-                LastModifiedBy = userId,
-                LastModifiedOn = DateTime.UtcNow,
-                IsDeleted = false
             };
 
             // Save to database
@@ -807,8 +785,7 @@ else
 
             // Update lease with DocumentId
             lease.DocumentId = document.Id;
-            lease.LastModifiedOn = DateTime.UtcNow;
-            lease.LastModifiedBy = userId;
+            
             await PropertyManagementService.UpdateLeaseAsync(lease);
 
             // Reload lease and document

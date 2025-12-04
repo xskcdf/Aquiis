@@ -1,11 +1,15 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Aquiis.SimpleStart.Core.Entities;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {
     public class Tour : BaseModel, ISchedulableEntity
     {
+        [Required]
+        [StringLength(100)]
+        [Display(Name = "Organization ID")]
+        public string OrganizationId { get; set; } = string.Empty;
+        
         [Required]
         [Display(Name = "Prospective Tenant")]
         public int ProspectiveTenantId { get; set; }
@@ -35,18 +39,13 @@ namespace Aquiis.SimpleStart.Core.Entities
 
         [StringLength(100)]
         [Display(Name = "Conducted By")]
-        public string? ConductedBy { get; set; } // UserId of property manager
+        public string? ConductedBy { get; set; } = string.Empty; // UserId of property manager
 
         [Display(Name = "Property Tour Checklist")]
         public int? ChecklistId { get; set; } // Links to property tour checklist
 
         [Display(Name = "Calendar Event")]
         public int? CalendarEventId { get; set; }
-
-        [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
 
         // Navigation properties
         [ForeignKey(nameof(ProspectiveTenantId))]

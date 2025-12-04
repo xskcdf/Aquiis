@@ -32,7 +32,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.ChecklistTemplates
                 .Include(ct => ct.Items.OrderBy(i => i.ItemOrder))
@@ -49,7 +49,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.ChecklistTemplates
                 .Include(ct => ct.Items.OrderBy(i => i.ItemOrder))
@@ -65,7 +65,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             // Check for duplicate template name within organization
             var existingTemplate = await _dbContext.ChecklistTemplates
@@ -78,8 +78,8 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new InvalidOperationException($"A template named '{template.Name}' already exists.");
             }
 
-            template.OrganizationId = organizationId;
-            template.CreatedBy = userId;
+            template.OrganizationId = organizationId!;
+            template.CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty;
             template.CreatedOn = DateTime.UtcNow;
 
             _dbContext.ChecklistTemplates.Add(template);
@@ -96,7 +96,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            template.LastModifiedBy = userId;
+            template.LastModifiedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty;
             template.LastModifiedOn = DateTime.UtcNow;
 
             _dbContext.ChecklistTemplates.Update(template);
@@ -133,10 +133,10 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
-            item.OrganizationId = organizationId;
-            item.CreatedBy = userId;
+            item.OrganizationId = organizationId!;
+            item.CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty;
             item.CreatedOn = DateTime.UtcNow;
 
             _dbContext.ChecklistTemplateItems.Add(item);
@@ -188,7 +188,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             var query = _dbContext.Checklists
                 .Include(c => c.Property)
@@ -219,7 +219,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.Checklists
                 .Include(c => c.Property)
@@ -239,7 +239,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.Checklists
                 .Include(c => c.Property)
@@ -259,12 +259,12 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             return await _dbContext.Checklists
                 .Include(c => c.Property)
                 .Include(c => c.Lease)
-                    .ThenInclude(l => l.Tenant)
+                    .ThenInclude(l => l!.Tenant)
                 .Include(c => c.ChecklistTemplate)
                 .Include(c => c.Items.OrderBy(i => i.ItemOrder))
                 .Include(c => c.Document)
@@ -282,7 +282,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             // Get the template with items
             var template = await GetChecklistTemplateByIdAsync(templateId);
@@ -298,8 +298,8 @@ namespace Aquiis.SimpleStart.Application.Services
                 ChecklistType = template.Category,
                 ChecklistTemplateId = template.Id,
                 Status = ApplicationConstants.ChecklistStatuses.Draft,
-                OrganizationId = organizationId,
-                CreatedBy = userId,
+                OrganizationId = organizationId!,
+                CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty,
                 CreatedOn = DateTime.UtcNow
             };
 
@@ -318,7 +318,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     SectionOrder = templateItem.SectionOrder,
                     RequiresValue = templateItem.RequiresValue,
                     IsChecked = false,
-                    OrganizationId = organizationId
+                    OrganizationId = organizationId!
                 };
                 _dbContext.ChecklistItems.Add(checklistItem);
             }
@@ -337,10 +337,10 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
-            checklist.OrganizationId = organizationId;
-            checklist.CreatedBy = userId;
+            checklist.OrganizationId = organizationId!;
+            checklist.CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty;
             checklist.CreatedOn = DateTime.UtcNow;
 
             _dbContext.Checklists.Add(checklist);
@@ -372,7 +372,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             var checklist = await _dbContext.Checklists
                 .Include(c => c.Items)
@@ -401,10 +401,10 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             var checklist = await _dbContext.Checklists
-                .FirstOrDefaultAsync(c => c.Id == checklistId && c.OrganizationId == organizationId);
+                .FirstOrDefaultAsync(c => c.Id == checklistId && c.OrganizationId == organizationId!);
             
             if (checklist != null)
             {
@@ -423,10 +423,10 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             var checklist = await _dbContext.Checklists
-                .FirstOrDefaultAsync(c => c.Id == checklistId && c.OrganizationId == organizationId);
+                .FirstOrDefaultAsync(c => c.Id == checklistId && c.OrganizationId == organizationId!);
             
             if (checklist != null)
             {
@@ -449,9 +449,9 @@ namespace Aquiis.SimpleStart.Application.Services
             if (checklist != null)
             {
                 checklist.Status = "Completed";
-                checklist.CompletedBy = userId;
+                checklist.CompletedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty;
                 checklist.CompletedOn = DateTime.UtcNow;
-                checklist.LastModifiedBy = userId;
+                checklist.LastModifiedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty;
                 checklist.LastModifiedOn = DateTime.UtcNow;
                 await _dbContext.SaveChangesAsync();
 
@@ -514,12 +514,12 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             // Check for duplicate template name
             var existingTemplate = await _dbContext.ChecklistTemplates
                 .FirstOrDefaultAsync(t => t.Name == templateName && 
-                                         t.OrganizationId == organizationId && 
+                                         t.OrganizationId == organizationId! && 
                                          !t.IsDeleted);
             
             if (existingTemplate != null)
@@ -530,7 +530,7 @@ namespace Aquiis.SimpleStart.Application.Services
             // Get the checklist with its items
             var checklist = await _dbContext.Checklists
                 .Include(c => c.Items.OrderBy(i => i.ItemOrder))
-                .FirstOrDefaultAsync(c => c.Id == checklistId && c.OrganizationId == organizationId);
+                .FirstOrDefaultAsync(c => c.Id == checklistId && c.OrganizationId == organizationId!);
 
             if (checklist == null)
             {
@@ -544,8 +544,8 @@ namespace Aquiis.SimpleStart.Application.Services
                 Description = templateDescription ?? $"Template created from checklist: {checklist.Name}",
                 Category = checklist.ChecklistType,
                 IsSystemTemplate = false,
-                OrganizationId = organizationId,
-                CreatedBy = userId,
+                OrganizationId = organizationId!,
+                CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty,
                 CreatedOn = DateTime.UtcNow
             };
 
@@ -565,8 +565,8 @@ namespace Aquiis.SimpleStart.Application.Services
                     IsRequired = false, // User can customize this later
                     RequiresValue = item.RequiresValue,
                     AllowsNotes = true,
-                    OrganizationId = organizationId,
-                    CreatedBy = userId,
+                    OrganizationId = organizationId!,
+                    CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty,
                     CreatedOn = DateTime.UtcNow
                 };
 
@@ -590,10 +590,10 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
-            item.OrganizationId = organizationId;
-            item.CreatedBy = userId;
+            item.OrganizationId = organizationId!;
+            item.CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty;
             item.CreatedOn = DateTime.UtcNow;
 
             _dbContext.ChecklistItems.Add(item);

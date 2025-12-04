@@ -6,6 +6,11 @@ namespace Aquiis.SimpleStart.Core.Entities
     public class ChecklistTemplateItem : BaseModel
     {
         [Required]
+        [StringLength(100)]
+        [Display(Name = "Organization ID")]
+        public string OrganizationId { get; set; } = string.Empty;
+
+        [Required]
         [Display(Name = "Checklist Template ID")]
         public int ChecklistTemplateId { get; set; }
 
@@ -33,11 +38,6 @@ namespace Aquiis.SimpleStart.Core.Entities
 
         [Display(Name = "Allows Notes")]
         public bool AllowsNotes { get; set; } = true;
-
-        [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
 
         // Navigation properties
         [ForeignKey(nameof(ChecklistTemplateId))]

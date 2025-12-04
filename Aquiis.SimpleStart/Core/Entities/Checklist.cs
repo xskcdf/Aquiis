@@ -1,13 +1,15 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Core.Entities;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {
     public class Checklist : BaseModel
     {
+        [Required]
+        [StringLength(100)]
+        [Display(Name = "Organization ID")]
+        public string OrganizationId { get; set; } = string.Empty;
+
         [Display(Name = "Property ID")]
         public int? PropertyId { get; set; }
 
@@ -46,11 +48,6 @@ namespace Aquiis.SimpleStart.Core.Entities
         [StringLength(2000)]
         [Display(Name = "General Notes")]
         public string? GeneralNotes { get; set; }
-
-        [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
 
         // Navigation properties
         [ForeignKey(nameof(PropertyId))]

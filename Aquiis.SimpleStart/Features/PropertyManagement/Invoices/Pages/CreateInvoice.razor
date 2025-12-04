@@ -1,7 +1,6 @@
 @page "/propertymanagement/invoices/create"
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Forms
@@ -9,7 +8,7 @@
 @inject NavigationManager NavigationManager
 @inject PropertyManagementService PropertyManagementService
 
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Create Invoice - Property Management</PageTitle>
@@ -208,14 +207,8 @@
 
     private async Task LoadLeases()
     {
-        var authState = await AuthenticationStateTask;
-        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-        if (!string.IsNullOrEmpty(userId))
-        {
-            var allLeases = await PropertyManagementService.GetLeasesAsync();
-            leases = allLeases.Where(l => l.Status == "Active").ToList();
-        }
+        var allLeases = await PropertyManagementService.GetLeasesAsync();
+        leases = allLeases.Where(l => l.Status == "Active").ToList();
     }
 
     private void OnLeaseSelected()
@@ -253,7 +246,6 @@
 
             var invoice = new Invoice
             {
-                UserId = userId,
                 LeaseId = invoiceModel.LeaseId,
                 InvoiceNumber = invoiceModel.InvoiceNumber,
                 InvoicedOn = invoiceModel.InvoicedOn,

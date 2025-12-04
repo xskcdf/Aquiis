@@ -1,7 +1,6 @@
 @page "/propertymanagement/inspections/view/{InspectionId:int}"
 
 @using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
@@ -13,7 +12,7 @@
 @inject UserContextService UserContext
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
-@attribute [Authorize(Roles = "PropertyManager, Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Inspection Report</PageTitle>
@@ -347,7 +346,7 @@ else
 
             var userId = await UserContext.GetUserIdAsync();
             var userEmail = await UserContext.GetUserEmailAsync();
-            var organizationId = await UserContext.GetOrganizationIdAsync();
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
 
             var newDocument = new Document
             {
@@ -360,9 +359,7 @@ else
                 DocumentType = "Inspection Report",
                 PropertyId = inspection.PropertyId,
                 LeaseId = inspection.LeaseId,
-                UserId = userId!,
                 OrganizationId = organizationId!,
-                UploadedBy = userId!,
                 CreatedOn = DateTime.UtcNow,
                 CreatedBy = userId!,
                 Description = $"{inspection.InspectionType} Inspection - {inspection.CompletedOn:MMM dd, yyyy}"

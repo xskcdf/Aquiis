@@ -22,7 +22,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// </summary>
         public async Task<Note> AddNoteAsync(string entityType, int entityId, string content)
         {
-            var organizationId = await _userContext.GetOrganizationIdAsync();
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var userId = await _userContext.GetUserIdAsync();
             var userFullName = await _userContext.GetUserNameAsync();
 
@@ -33,12 +33,12 @@ namespace Aquiis.SimpleStart.Application.Services
 
             var note = new Note
             {
-                OrganizationId = organizationId,
+                OrganizationId = organizationId!,
                 EntityType = entityType,
                 EntityId = entityId,
                 Content = content.Trim(),
                 UserFullName = !string.IsNullOrWhiteSpace(userFullName) ? userFullName : "Unknown User",
-                CreatedBy = userId,
+                CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty,
                 CreatedOn = DateTime.UtcNow
             };
 
@@ -51,8 +51,9 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Get all notes for an entity, ordered by newest first
         /// </summary>
-        public async Task<List<Note>> GetNotesAsync(string entityType, int entityId, string organizationId)
+        public async Task<List<Note>> GetNotesAsync(string entityType, int entityId)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _context.Notes
                 .Include(n => n.User)
                 .Where(n => n.EntityType == entityType 
@@ -66,8 +67,9 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Delete a note (soft delete)
         /// </summary>
-        public async Task<bool> DeleteNoteAsync(int noteId, string organizationId)
+        public async Task<bool> DeleteNoteAsync(int noteId)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var note = await _context.Notes
                 .FirstOrDefaultAsync(n => n.Id == noteId 
                     && n.OrganizationId == organizationId
@@ -88,8 +90,9 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Get note count for an entity
         /// </summary>
-        public async Task<int> GetNoteCountAsync(string entityType, int entityId, string organizationId)
+        public async Task<int> GetNoteCountAsync(string entityType, int entityId)
         {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _context.Notes
                 .CountAsync(n => n.EntityType == entityType 
                     && n.EntityId == entityId 

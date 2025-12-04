@@ -6,6 +6,11 @@ namespace Aquiis.SimpleStart.Core.Entities
     public class ApplicationScreening : BaseModel
     {
         [Required]
+        [StringLength(100)]
+        [Display(Name = "Organization ID")]
+        public string OrganizationId { get; set; } = string.Empty;
+
+        [Required]
         [Display(Name = "Rental Application")]
         public int RentalApplicationId { get; set; }
 
@@ -55,11 +60,6 @@ namespace Aquiis.SimpleStart.Core.Entities
         [StringLength(2000)]
         [Display(Name = "Result Notes")]
         public string? ResultNotes { get; set; }
-
-        [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
 
         // Navigation properties
         [ForeignKey(nameof(RentalApplicationId))]

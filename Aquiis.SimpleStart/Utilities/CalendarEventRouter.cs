@@ -1,6 +1,4 @@
 using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Core.Entities;
 
 namespace Aquiis.SimpleStart.Utilities
 {

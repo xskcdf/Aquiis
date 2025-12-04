@@ -1,14 +1,15 @@
 @page "/propertymanagement/payments/view/{PaymentId:int}"
+
 @using Aquiis.SimpleStart.Features.PropertyManagement
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager Navigation
 @inject PropertyManagementService PropertyManagementService
+@inject UserContextService UserContextService
 @inject IJSRuntime JSRuntime
 
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>View Payment - Property Management</PageTitle>
@@ -368,11 +369,10 @@ else
         try
         {
             // Get current user info
-            var authState = await AuthenticationStateTask;
-            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            var userName = authState.User.Identity?.Name ?? "System";
+            var organizationId = await UserContextService.GetOrganizationIdAsync();
+            var userId = await UserContextService.GetUserIdAsync();
 
-            if (string.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId))
             {
                 await JSRuntime.InvokeVoidAsync("alert", "Unable to determine current user.");
                 return;
@@ -384,7 +384,7 @@ else
             // Create the document entity
             var document = new Document
             {
-                UserId = userId,
+                OrganizationId = organizationId,
                 FileName = $"Receipt_{payment!.PaidOn:yyyyMMdd}_{DateTime.Now:HHmmss}.pdf",
                 FileExtension = ".pdf",
                 FileData = pdfBytes,
@@ -397,11 +397,6 @@ else
                 PropertyId = payment.Invoice?.Lease?.PropertyId,
                 TenantId = payment.Invoice?.Lease?.TenantId,
                 InvoiceId = payment.InvoiceId,
-                UploadedBy = userId,
-                CreatedBy = userId,
-                CreatedOn = DateTime.UtcNow,
-                LastModifiedBy = userId,
-                LastModifiedOn = DateTime.UtcNow,
                 IsDeleted = false
             };
 
@@ -410,8 +405,7 @@ else
 
             // Update payment with DocumentId
             payment.DocumentId = document.Id;
-            payment.LastModifiedOn = DateTime.UtcNow;
-            payment.LastModifiedBy = userId;
+           
             await PropertyManagementService.UpdatePaymentAsync(payment);
 
             // Reload payment and document

@@ -2,14 +2,50 @@ using Aquiis.SimpleStart.Core.Entities;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using QuestPDF.Drawing;
 
 namespace Aquiis.SimpleStart.Application.Services.PdfGenerators;
 
 public class ChecklistPdfGenerator
 {
+    private static bool _fontsRegistered = false;
+
     public ChecklistPdfGenerator()
     {
         QuestPDF.Settings.License = LicenseType.Community;
+        
+        // Register fonts once
+        if (!_fontsRegistered)
+        {
+            try
+            {
+                // Register Lato fonts (from QuestPDF package)
+                var latoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "LatoFont");
+                if (Directory.Exists(latoPath))
+                {
+                    FontManager.RegisterFont(File.OpenRead(Path.Combine(latoPath, "Lato-Regular.ttf")));
+                    FontManager.RegisterFont(File.OpenRead(Path.Combine(latoPath, "Lato-Bold.ttf")));
+                    FontManager.RegisterFont(File.OpenRead(Path.Combine(latoPath, "Lato-Italic.ttf")));
+                    FontManager.RegisterFont(File.OpenRead(Path.Combine(latoPath, "Lato-BoldItalic.ttf")));
+                }
+                
+                // Register DejaVu fonts (custom fonts for Unicode support)
+                var dejaVuPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Fonts", "DejaVu");
+                if (Directory.Exists(dejaVuPath))
+                {
+                    FontManager.RegisterFont(File.OpenRead(Path.Combine(dejaVuPath, "DejaVuSans.ttf")));
+                    FontManager.RegisterFont(File.OpenRead(Path.Combine(dejaVuPath, "DejaVuSans-Bold.ttf")));
+                    FontManager.RegisterFont(File.OpenRead(Path.Combine(dejaVuPath, "DejaVuSans-Oblique.ttf")));
+                    FontManager.RegisterFont(File.OpenRead(Path.Combine(dejaVuPath, "DejaVuSans-BoldOblique.ttf")));
+                }
+                
+                _fontsRegistered = true;
+            }
+            catch
+            {
+                // If fonts aren't available, QuestPDF will fall back to default fonts
+            }
+        }
     }
 
     public byte[] GenerateChecklistPdf(Checklist checklist)
@@ -21,7 +57,7 @@ public class ChecklistPdfGenerator
                 page.Size(PageSizes.Letter);
                 page.Margin(2, Unit.Centimetre);
                 page.PageColor(Colors.White);
-                page.DefaultTextStyle(x => x.FontSize(11));
+                page.DefaultTextStyle(x => x.FontSize(11).FontFamily("DejaVu Sans"));
 
                 page.Header()
                     .Column(column =>
@@ -108,7 +144,7 @@ public class ChecklistPdfGenerator
                                         .Element(CellStyle)
                                         .AlignCenter()
                                         .Text(item.IsChecked ? "☑" : "☐")
-                                        .FontSize(14);
+                                        .FontSize(12);
 
                                     table.Cell()
                                         .Element(CellStyle)

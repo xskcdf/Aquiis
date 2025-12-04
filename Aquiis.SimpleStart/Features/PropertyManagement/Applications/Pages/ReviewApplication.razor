@@ -4,7 +4,6 @@
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Core.Constants
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
@@ -15,7 +14,7 @@
 @inject UserContextService UserContext
 @inject ToastService ToastService
 
-@attribute [Authorize(Roles = "PropertyManager,Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Review Application</PageTitle>
@@ -794,7 +793,7 @@
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-            organizationId = await UserContext.GetOrganizationIdAsync() ?? string.Empty;
+            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
 
             await LoadApplication();
         }
@@ -810,14 +809,14 @@
 
     private async Task LoadApplication()
     {
-        application = await PropertyService.GetRentalApplicationByIdAsync(ApplicationId, organizationId);
+        application = await PropertyService.GetRentalApplicationByIdAsync(ApplicationId);
         
         if (application != null)
         {
-            screening = await PropertyService.GetScreeningByApplicationIdAsync(ApplicationId, organizationId);
+            screening = await PropertyService.GetScreeningByApplicationIdAsync(ApplicationId);
             
             // Check if a lease offer already exists for this application
-            leaseOffer = await PropertyService.GetLeaseOfferByApplicationIdAsync(application.Id, organizationId);
+            leaseOffer = await PropertyService.GetLeaseOfferByApplicationIdAsync(application.Id);
             hasLeaseOffer = leaseOffer != null && !leaseOffer.IsDeleted;
         }
     }
@@ -868,7 +867,7 @@
 
         try
         {
-            var result = await PropertyService.ApproveApplicationAsync(ApplicationId, organizationId, userId);
+            var result = await PropertyService.ApproveApplicationAsync(ApplicationId);
             
             if (result)
             {
@@ -899,7 +898,7 @@
 
         try
         {
-            var result = await PropertyService.DenyApplicationAsync(ApplicationId, organizationId, userId, denyReason);
+            var result = await PropertyService.DenyApplicationAsync(ApplicationId, denyReason);
             
             if (result)
             {
@@ -931,7 +930,7 @@
 
         try
         {
-            var result = await PropertyService.WithdrawApplicationAsync(ApplicationId, organizationId, userId, withdrawReason);
+            var result = await PropertyService.WithdrawApplicationAsync(ApplicationId, withdrawReason);
             
             if (result)
             {

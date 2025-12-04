@@ -1,16 +1,12 @@
 using System.ComponentModel.DataAnnotations;
-using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Core.Entities;
 
 namespace Aquiis.SimpleStart.Core.Entities {
 
     public class Tenant : BaseModel
     {
 
+        [Required]
         public string OrganizationId { get; set; } = string.Empty;
-
-        // Not currently used - tenants are tied to organization, not individual users
-        public string? UserId { get; set; }
 
         [Required]
         [StringLength(100)]

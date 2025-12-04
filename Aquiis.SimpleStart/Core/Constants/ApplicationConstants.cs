@@ -4,12 +4,49 @@ namespace Aquiis.SimpleStart.Core.Constants
 {
     public static class ApplicationConstants
     {
+        // DEPRECATED: Legacy Identity roles - kept for backward compatibility but not used for authorization
         public static string DefaultSuperAdminRole { get; } = "SuperAdministrator";
         public static string DefaultAdminRole { get; } = "Administrator";
         public static string DefaultPropertyManagerRole { get; } = "PropertyManager";
         public static string DefaultTenantRole { get; } = "Tenant";
         public static string DefaultUserRole { get; } = "User";
         public static string DefaultGuestRole { get; } = "Guest";
+
+        /// <summary>
+        /// Organization-scoped roles for multi-organization support
+        /// </summary>
+        public static class OrganizationRoles
+        {
+            /// <summary>
+            /// Owner - Full data sovereignty (create/delete orgs, backup/delete data, all features)
+            /// </summary>
+            public const string Owner = "Owner";
+            
+            /// <summary>
+            /// Administrator - Delegated owner access (all features except org creation/deletion/data management)
+            /// </summary>
+            public const string Administrator = "Administrator";
+            
+            /// <summary>
+            /// PropertyManager - Full property management features (no admin/settings access)
+            /// </summary>
+            public const string PropertyManager = "PropertyManager";
+            
+            /// <summary>
+            /// User - Limited feature access (view-only or basic operations)
+            /// </summary>
+            public const string User = "User";
+
+            public static readonly string[] AllRoles = { Owner, Administrator, PropertyManager, User };
+
+            public static bool IsValid(string role) => AllRoles.Contains(role);
+
+            public static bool CanManageUsers(string role) => role == Owner || role == Administrator;
+
+            public static bool CanEditSettings(string role) => role == Owner || role == Administrator;
+
+            public static bool CanManageOrganizations(string role) => role == Owner;
+        }
 
         public static string DefaultSuperAdminPassword { get; } = "SuperAdmin@123!";
         public static string DefaultAdminPassword { get; } = "Admin@123!";

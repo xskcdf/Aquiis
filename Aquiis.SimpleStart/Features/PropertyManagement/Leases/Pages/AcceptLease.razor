@@ -1,10 +1,6 @@
 @page "/propertymanagement/leases/{LeaseId:int}/accept"
 
 @using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
@@ -22,7 +18,7 @@
 @inject SecurityDepositService SecurityDepositService
 @inject IHttpContextAccessor HttpContextAccessor
 
-@attribute [Authorize(Roles = "PropertyManager,Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Accept Lease Offer</PageTitle>
@@ -349,7 +345,7 @@
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-            organizationId = await UserContext.GetOrganizationIdAsync() ?? string.Empty;
+            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
 
             await LoadLease();
         }
@@ -378,7 +374,7 @@
             // Find the application and prospective tenant
             if (lease.Property != null)
             {
-                var allApplications = await PropertyService.GetAllRentalApplicationsAsync(organizationId);
+                var allApplications = await PropertyService.GetAllRentalApplicationsAsync();
                 application = allApplications.FirstOrDefault(a => 
                     a.PropertyId == lease.PropertyId && 
                     a.Status == ApplicationConstants.ApplicationStatuses.Approved);
@@ -386,8 +382,7 @@
                 if (application != null)
                 {
                     prospectiveTenant = await PropertyService.GetProspectiveTenantByIdAsync(
-                        application.ProspectiveTenantId, 
-                        organizationId);
+                        application.ProspectiveTenantId);
                 }
             }
         }
@@ -404,8 +399,7 @@
         {
             // Convert prospect to tenant
             var tenant = await TenantConversionService.ConvertProspectToTenantAsync(
-                prospectiveTenant.Id,
-                userId);
+                prospectiveTenant.Id);
 
             if (tenant == null)
             {
@@ -425,7 +419,6 @@
                     lease.SecurityDeposit,
                     acceptanceModel.PaymentMethod,
                     acceptanceModel.TransactionReference,
-                    userId,
                     tenant.Id); // Pass the newly created tenant ID
             }
             catch (Exception depositEx)
@@ -448,7 +441,7 @@
             // Add deposit to investment pool (will start earning dividends)
             try
             {
-                await SecurityDepositService.AddToInvestmentPoolAsync(securityDeposit.Id, userId);
+                await SecurityDepositService.AddToInvestmentPoolAsync(securityDeposit.Id);
             }
             catch (Exception poolEx)
             {
@@ -472,8 +465,7 @@
                 lease.Notes += $"\nAcceptance Notes: {acceptanceModel.Notes}";
             }
 
-            lease.LastModifiedOn = DateTime.UtcNow;
-            lease.LastModifiedBy = userId;
+            
             await PropertyService.UpdateLeaseAsync(lease);
 
             // Update property status to Occupied
@@ -481,8 +473,7 @@
             {
                 lease.Property.Status = ApplicationConstants.PropertyStatuses.Occupied;
                 lease.Property.IsAvailable = false;
-                lease.Property.LastModifiedOn = DateTime.UtcNow;
-                lease.Property.LastModifiedBy = userId;
+                
                 await PropertyService.UpdatePropertyAsync(lease.Property);
             }
 
@@ -490,15 +481,13 @@
             if (application != null)
             {
                 application.Status = "LeaseAccepted"; // We'll add this status
-                application.LastModifiedOn = DateTime.UtcNow;
-                application.LastModifiedBy = userId;
+                
                 await PropertyService.UpdateRentalApplicationAsync(application);
             }
 
             // Update prospect status to ConvertedToTenant
             prospectiveTenant.Status = ApplicationConstants.ProspectiveStatuses.ConvertedToTenant;
-            prospectiveTenant.LastModifiedOn = DateTime.UtcNow;
-            prospectiveTenant.LastModifiedBy = userId;
+            
             await PropertyService.UpdateProspectiveTenantAsync(prospectiveTenant);
 
             ToastService.ShowSuccess($"Lease accepted! Tenant {tenant.FullName} created successfully.");
@@ -539,7 +528,7 @@
             await PropertyService.UpdateLeaseAsync(lease);
 
             // Check if there are other pending applications
-            var allApplications = await PropertyService.GetAllRentalApplicationsAsync(organizationId);
+            var allApplications = await PropertyService.GetAllRentalApplicationsAsync();
             var otherPendingApps = allApplications.Any(a => 
                 a.PropertyId == lease.PropertyId && 
                 (a.Status == ApplicationConstants.ApplicationStatuses.Submitted ||
@@ -553,8 +542,7 @@
                     ? ApplicationConstants.PropertyStatuses.ApplicationPending 
                     : ApplicationConstants.PropertyStatuses.Available;
                 lease.Property.IsAvailable = !otherPendingApps;
-                lease.Property.LastModifiedOn = DateTime.UtcNow;
-                lease.Property.LastModifiedBy = userId;
+                
                 await PropertyService.UpdatePropertyAsync(lease.Property);
             }
 
@@ -562,16 +550,14 @@
             if (application != null)
             {
                 application.Status = "LeaseDeclined";
-                application.LastModifiedOn = DateTime.UtcNow;
-                application.LastModifiedBy = userId;
+               
                 await PropertyService.UpdateRentalApplicationAsync(application);
             }
 
             if (prospectiveTenant != null)
             {
                 prospectiveTenant.Status = "LeaseDeclined";
-                prospectiveTenant.LastModifiedOn = DateTime.UtcNow;
-                prospectiveTenant.LastModifiedBy = userId;
+                
                 await PropertyService.UpdateProspectiveTenantAsync(prospectiveTenant);
             }
 

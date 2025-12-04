@@ -16,7 +16,7 @@
 
 @rendermode InteractiveServer
 
-@attribute [Authorize(Roles = "Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator")]
 
 <PageTitle>Service Settings</PageTitle>
 
@@ -205,8 +205,8 @@
             runningTask = taskType;
             taskResults.Clear();
 
-            var organizationId = await GetOrganizationIdAsync();
-            if (string.IsNullOrEmpty(organizationId))
+            var organizationId = await GetActiveOrganizationIdAsync();
+            if (organizationId == null)
             {
                 ToastService.ShowError("Could not determine organization ID");
                 return;
@@ -251,8 +251,8 @@
             runningTask = TaskType.All;
             taskResults.Clear();
 
-            var organizationId = await GetOrganizationIdAsync();
-            if (string.IsNullOrEmpty(organizationId))
+            var organizationId = await GetActiveOrganizationIdAsync();
+            if (organizationId == null)
             {
                 ToastService.ShowError("Could not determine organization ID");
                 return;
@@ -278,15 +278,15 @@
         }
     }
 
-    private async Task<string?> GetOrganizationIdAsync()
+    private async Task<string?> GetActiveOrganizationIdAsync()
     {
         // Get organization ID from UserContext
-        return await UserContext.GetOrganizationIdAsync();
+        return await UserContext.GetActiveOrganizationIdAsync();
     }
 
     private async Task ApplyLateFees(string organizationId)
     {
-        var settings = await PropertyService.GetOrganizationSettingsByOrgIdAsync(Guid.Parse(organizationId));
+        var settings = await PropertyService.GetOrganizationSettingsByOrgIdAsync(organizationId);
         
         if (settings == null || !settings.LateFeeEnabled || !settings.LateFeeAutoApply)
         {
@@ -301,7 +301,7 @@
         var overdueInvoices = await DbContext.Invoices
             .Include(i => i.Lease)
             .Where(i => !i.IsDeleted &&
-                       i.UserId == organizationId &&
+                       i.OrganizationId == organizationId &&
                        i.Status == "Pending" &&
                        i.DueOn < today.AddDays(-settings.LateFeeGracePeriodDays) &&
                        (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
@@ -335,7 +335,7 @@
         var today = DateTime.Today;
         var newlyOverdueInvoices = await DbContext.Invoices
             .Where(i => !i.IsDeleted &&
-                       i.UserId == organizationId &&
+                       i.OrganizationId == organizationId &&
                        i.Status == "Pending" &&
                        i.DueOn < today &&
                        (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
@@ -358,7 +358,7 @@
 
     private async Task SendPaymentReminders(string organizationId)
     {
-        var settings = await PropertyService.GetOrganizationSettingsByOrgIdAsync(Guid.Parse(organizationId));
+        var settings = await PropertyService.GetOrganizationSettingsByOrgIdAsync(organizationId);
         if (settings == null || !settings.PaymentReminderEnabled)
         {
             var reason = settings == null ? "Settings not found" : "Payment reminders disabled";
@@ -373,7 +373,7 @@
             .Include(i => i.Lease)
                 .ThenInclude(l => l.Property)
             .Where(i => !i.IsDeleted &&
-                       i.UserId == organizationId &&
+                       i.OrganizationId == organizationId &&
                        i.Status == "Pending" &&
                        i.DueOn >= today &&
                        i.DueOn <= today.AddDays(settings.PaymentReminderDaysBefore) &&
@@ -406,7 +406,7 @@
             .Include(l => l.Tenant)
             .Include(l => l.Property)
             .Where(l => !l.IsDeleted &&
-                       l.UserId == organizationId &&
+                       l.OrganizationId == organizationId &&
                        l.Status == "Active" &&
                        l.EndDate >= today.AddDays(85) &&
                        l.EndDate <= today.AddDays(95) &&
@@ -426,7 +426,7 @@
         // Expired leases
         var expiredLeases = await DbContext.Leases
             .Where(l => !l.IsDeleted &&
-                       l.UserId == organizationId &&
+                       l.OrganizationId == organizationId &&
                        l.Status == "Active" &&
                        l.EndDate < today &&
                        (l.RenewalStatus == null || l.RenewalStatus == "Pending"))

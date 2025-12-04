@@ -3,11 +3,9 @@
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Core.Constants
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
-@using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
@@ -20,7 +18,7 @@
 @inject ChecklistPdfGenerator PdfGenerator
 @inject DocumentService DocumentService
 @inject IJSRuntime JSRuntime
-@attribute [Authorize(Roles = "PropertyManager, Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>View Checklist</PageTitle>
@@ -514,7 +512,7 @@ else
             errorMessage = null;
 
             var userId = await UserContext.GetUserIdAsync();
-            var organizationId = await UserContext.GetOrganizationIdAsync();
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
 
             // Generate PDF
             var pdfBytes = PdfGenerator.GenerateChecklistPdf(checklist);
@@ -523,7 +521,6 @@ else
             var document = new Document
             {
                 OrganizationId = organizationId!,
-                UserId = userId!,
                 FileName = $"Checklist_{checklist.Name.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf",
                 FileExtension = ".pdf",
                 FileData = pdfBytes,
@@ -534,7 +531,6 @@ else
                 Description = $"Checklist report for {checklist.Name}",
                 PropertyId = checklist.PropertyId,
                 LeaseId = checklist.LeaseId,
-                UploadedBy = userId!,
                 CreatedBy = userId!,
                 CreatedOn = DateTime.UtcNow
             };

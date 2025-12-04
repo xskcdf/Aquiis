@@ -6,6 +6,11 @@ namespace Aquiis.SimpleStart.Core.Entities
     {
         [Required]
         [StringLength(100)]
+        [Display(Name = "Organization ID")]
+        public string OrganizationId { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(100)]
         [Display(Name = "Template Name")]
         public string Name { get; set; } = string.Empty;
 
@@ -20,11 +25,6 @@ namespace Aquiis.SimpleStart.Core.Entities
 
         [Display(Name = "Is System Template")]
         public bool IsSystemTemplate { get; set; } = false;
-
-        [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
 
         // Navigation properties
         public virtual ICollection<ChecklistTemplateItem> Items { get; set; } = new List<ChecklistTemplateItem>();

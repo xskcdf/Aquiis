@@ -1,7 +1,7 @@
 @page "/propertymanagement/maintenance"
 @inject PropertyManagementService PropertyManagementService
 @inject NavigationManager NavigationManager
-@attribute [Authorize(Roles = "PropertyManager, Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Maintenance Requests</PageTitle>

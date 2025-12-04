@@ -4,14 +4,14 @@
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
-@using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @inject SecurityDepositService SecurityDepositService
 @inject PropertyManagementService PropertyManagementService
 @inject NavigationManager NavigationManager
 @inject ToastService ToastService
 @rendermode InteractiveServer
-@attribute [Authorize]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
+
 
 <PageTitle>Record Investment Performance</PageTitle>
 
@@ -282,7 +282,7 @@
             else
             {
                 // Create new pool to get starting balance
-                existingPool = await SecurityDepositService.GetOrCreateInvestmentPoolAsync(Year.Value, "system");
+                existingPool = await SecurityDepositService.GetOrCreateInvestmentPoolAsync(Year.Value);
             }
 
             // Load recent pools for reference
@@ -323,8 +323,7 @@
                 performanceModel.Year,
                 existingPool?.StartingBalance ?? 0,
                 endingBalance,
-                performanceModel.TotalEarnings,
-                "system" // TODO: Get actual user ID
+                performanceModel.TotalEarnings
             );
 
             ToastService.ShowSuccess($"Investment performance recorded for {performanceModel.Year}");

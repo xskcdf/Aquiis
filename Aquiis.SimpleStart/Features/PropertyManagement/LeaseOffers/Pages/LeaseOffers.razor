@@ -11,7 +11,7 @@
 @inject UserContextService UserContext
 @inject PropertyManagementService PropertyService
 
-@attribute [Authorize(Roles = "PropertyManager,Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Lease Offers - Property Management</PageTitle>
@@ -109,7 +109,7 @@ else
     {
         try
         {
-            organizationId = await UserContext.GetOrganizationIdAsync() ?? string.Empty;
+            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
             await LoadLeaseOffers();
         }
         catch (Exception ex)
@@ -128,11 +128,11 @@ else
         var allOffers = new List<LeaseOffer>();
         
         // We'll need to get offers from all applications
-        var applications = await PropertyService.GetAllRentalApplicationsAsync(organizationId);
+        var applications = await PropertyService.GetAllRentalApplicationsAsync();
         
         foreach (var app in applications)
         {
-            var offer = await PropertyService.GetLeaseOfferByApplicationIdAsync(app.Id, organizationId);
+            var offer = await PropertyService.GetLeaseOfferByApplicationIdAsync(app.Id);
             if (offer != null && !offer.IsDeleted)
             {
                 allOffers.Add(offer);

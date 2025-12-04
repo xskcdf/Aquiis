@@ -11,7 +11,7 @@
 @using Microsoft.AspNetCore.Authorization
 
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @inject PropertyManagementService PropertyManagementService
 @inject NavigationManager NavigationManager
 

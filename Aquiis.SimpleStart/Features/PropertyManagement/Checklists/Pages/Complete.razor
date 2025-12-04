@@ -3,10 +3,7 @@
 
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Features.PropertyManagement
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Core.Constants
-@using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components
 
@@ -14,7 +11,7 @@
 @inject PropertyManagementService PropertyManagementService
 @inject UserContextService UserContext
 @inject NavigationManager NavigationManager
-@attribute [Authorize(Roles = "PropertyManager, Administrator")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Complete Checklist</PageTitle>
@@ -379,7 +376,7 @@ else
             }
 
             isNewChecklist = true;
-            var organizationId = await UserContext.GetOrganizationIdAsync();
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
 
             // Create a temporary checklist object (not saved to DB yet)

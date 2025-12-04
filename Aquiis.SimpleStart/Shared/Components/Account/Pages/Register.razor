@@ -5,58 +5,93 @@
 @using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
-@using Aquiis.SimpleStart.Data
+@using Aquiis.SimpleStart.Infrastructure.Data
+@using Aquiis.SimpleStart.Application.Services
+@using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Constants
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
 @inject SignInManager<ApplicationUser> SignInManager
-@inject RoleManager<IdentityRole> RoleManager
 @inject IEmailSender<ApplicationUser> EmailSender
 @inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject ApplicationDbContext DbContext
+@inject OrganizationService OrganizationService
 
 <PageTitle>Register</PageTitle>
 
-<h1>Register</h1>
+@if (!_allowRegistration)
+{
+    <h1>Registration Disabled</h1>
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="alert alert-warning" role="alert">
+                <h4 class="alert-heading">Registration is currently disabled</h4>
+                <p>An administrator account already exists. Please contact your system administrator to request access.</p>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <h1>Register</h1>
 
-<div class="row">
-    <div class="col-lg-6">
-        <StatusMessage Message="@Message" />
-        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
-            <DataAnnotationsValidator />
-            <h2>Create a new account.</h2>
-            <hr />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                <label for="Input.Email">Email</label>
-                <ValidationMessage For="() => Input.Email" class="text-danger" />
-            </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="Input.Password">Password</label>
-                <ValidationMessage For="() => Input.Password" class="text-danger" />
-            </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="Input.ConfirmPassword">Confirm Password</label>
-                <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
-        </EditForm>
+    <div class="row">
+        <div class="col-lg-6">
+            <StatusMessage Message="@Message" />
+            <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
+                <DataAnnotationsValidator />
+                <h2>Create your account.</h2>
+                @if (_isFirstUser)
+                {
+                    <div class="alert alert-info">
+                        <strong>Welcome!</strong> You are creating the first account. You will be the organization owner with full administrative privileges.
+                    </div>
+                }
+                <hr />
+                <ValidationSummary class="text-danger" role="alert" />
+                @if (_isFirstUser)
+                {
+                    <div class="form-floating mb-3">
+                        <InputText @bind-Value="Input.OrganizationName" id="Input.OrganizationName" class="form-control" aria-required="true" placeholder="Organization Name" />
+                        <label for="Input.OrganizationName">Organization Name</label>
+                        <ValidationMessage For="() => Input.OrganizationName" class="text-danger" />
+                    </div>
+                }
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                    <label for="Input.Email">Email</label>
+                    <ValidationMessage For="() => Input.Email" class="text-danger" />
+                </div>
+                <div class="form-floating mb-3">
+                    <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                    <label for="Input.Password">Password</label>
+                    <ValidationMessage For="() => Input.Password" class="text-danger" />
+                </div>
+                <div class="form-floating mb-3">
+                    <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                    <label for="Input.ConfirmPassword">Confirm Password</label>
+                    <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
+                </div>
+                <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
+            </EditForm>
+        </div>
+        <div class="col-lg-4 col-lg-offset-2">
+            <section>
+                <h3>Use another service to register.</h3>
+                <hr />
+                <ExternalLoginPicker />
+            </section>
+        </div>
     </div>
-    <div class="col-lg-4 col-lg-offset-2">
-        <section>
-            <h3>Use another service to register.</h3>
-            <hr />
-            <ExternalLoginPicker />
-        </section>
-    </div>
-</div>
+}
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;
+    private bool _isFirstUser = false;
+    private bool _allowRegistration = false;
 
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = new();
@@ -66,8 +101,30 @@
 
     private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
 
+    protected override async Task OnInitializedAsync()
+    {
+        // Check if this is the first user
+        var userCount = await Task.Run(() => DbContext.Users.Count());
+        _isFirstUser = userCount == 0;
+        _allowRegistration = _isFirstUser; // Only allow registration if this is the first user
+    }
+
     public async Task RegisterUser(EditContext editContext)
     {
+        // Double-check registration is allowed
+        if (!_allowRegistration)
+        {
+            identityErrors = new[] { new IdentityError { Description = "Registration is disabled. Please contact your administrator." } };
+            return;
+        }
+
+        // Validate organization name for first user
+        if (_isFirstUser && string.IsNullOrWhiteSpace(Input.OrganizationName))
+        {
+            identityErrors = new[] { new IdentityError { Description = "Organization name is required." } };
+            return;
+        }
+
         var user = CreateUser();
 
         await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
@@ -84,6 +141,52 @@
         Logger.LogInformation("User created a new account with password.");
 
         var userId = await UserManager.GetUserIdAsync(user);
+
+        // First user setup - create organization and grant owner access
+        if (_isFirstUser)
+        {
+            try
+            {
+                Logger.LogInformation("Creating organization for first user: {Email}", Input.Email);
+
+                // Create organization
+                var organization = await OrganizationService.CreateOrganizationAsync(
+                    name: Input.OrganizationName!,
+                    ownerId: userId,
+                    displayName: Input.OrganizationName,
+                    state: null);
+
+                if (organization != null)
+                {
+                    // Set user's active organization and default organization.
+                    user.ActiveOrganizationId = organization.Id;
+                    user.OrganizationId = organization.Id;
+                    await UserManager.UpdateAsync(user);
+
+                    Logger.LogInformation("Organization {OrgName} created successfully for user {Email}", 
+                        Input.OrganizationName, Input.Email);
+                }
+                else
+                {
+                    Logger.LogError("Failed to create organization for first user");
+                    identityErrors = new[] { new IdentityError { Description = "Failed to create organization." } };
+                    
+                    // Clean up user account
+                    await UserManager.DeleteAsync(user);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error creating organization for first user");
+                identityErrors = new[] { new IdentityError { Description = $"Error creating organization: {ex.Message}" } };
+                
+                // Clean up user account
+                await UserManager.DeleteAsync(user);
+                return;
+            }
+        }
+
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
         code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
         var callbackUrl = NavigationManager.GetUriWithQueryParameters(
@@ -92,85 +195,6 @@
 
         await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
 
-        // Automatically assign the 'User' role to new accounts
-        try
-        {
-            // Ensure the 'User' role exists
-            if (!await RoleManager.RoleExistsAsync("User"))
-            {
-                await RoleManager.CreateAsync(new IdentityRole("User"));
-            }
-
-            // Assign the user to the 'User' role
-            var roleResult = await UserManager.AddToRoleAsync(user, "User");
-
-            if (!roleResult.Succeeded)
-            {
-                // Log the error but don't prevent registration
-                // The user can be assigned a role later by an admin
-                Console.WriteLine($"Failed to assign User role to {user.Email}: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}");
-            }
-        }
-        catch (Exception ex)
-        {
-            // Log the error but don't prevent registration
-            Console.WriteLine($"Error assigning role to new user {user.Email}: {ex.Message}");
-        }
-
-        // Automatically assign the 'PropertyManager' role to new accounts
-        try
-        {
-            // Ensure the 'PropertyManager' role exists
-            if (!await RoleManager.RoleExistsAsync("PropertyManager"))
-            {
-                await RoleManager.CreateAsync(new IdentityRole("PropertyManager"));
-            }
-
-            // Assign the user to the 'PropertyManager' role
-            var roleResult = await UserManager.AddToRoleAsync(user, "PropertyManager");
-
-            if (!roleResult.Succeeded)
-            {
-                // Log the error but don't prevent registration
-                // The user can be assigned a role later by an admin
-                Console.WriteLine($"Failed to assign PropertyManager role to {user.Email}: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}");
-            }
-        }
-        catch (Exception ex)
-        {
-            // Log the error but don't prevent registration
-            Console.WriteLine($"Error assigning role to new user {user.Email}: {ex.Message}");
-        }
-
-        // Automatically assign the 'Administrator' role to new accounts
-        try
-        {
-            // Ensure the 'Administrator' role exists
-            if (!await RoleManager.RoleExistsAsync("Administrator"))
-            {
-                await RoleManager.CreateAsync(new IdentityRole("Administrator"));
-            }
-
-            // Assign the user to the 'Administrator' role
-            var roleResult = await UserManager.AddToRoleAsync(user, "Administrator");
-
-            if (!roleResult.Succeeded)
-            {
-                // Log the error but don't prevent registration
-                // The user can be assigned a role later by an admin
-                Console.WriteLine($"Failed to assign Administrator role to {user.Email}: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}");
-            }
-        }
-        catch (Exception ex)
-        {
-            // Log the error but don't prevent registration
-            Console.WriteLine($"Error assigning role to new user {user.Email}: {ex.Message}");
-        }
-
-        // assign the organization ID
-        user.OrganizationId = userId;
-        await UserManager.UpdateAsync(user);
-        
         if (UserManager.Options.SignIn.RequireConfirmedAccount)
         {
             RedirectManager.RedirectTo(
@@ -206,6 +230,11 @@
 
     private sealed class InputModel
     {
+        [Required]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 3)]
+        [Display(Name = "Organization Name")]
+        public string? OrganizationName { get; set; }
+
         [Required]
         [EmailAddress]
         [Display(Name = "Email")]

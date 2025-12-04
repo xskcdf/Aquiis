@@ -11,7 +11,7 @@
 @inject ToastService ToastService
 @rendermode InteractiveServer
 
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 <h3>Create Tenant</h3>
 
 <div class="row">
@@ -146,7 +146,6 @@
 
             var tenant = new Tenant
             {
-                UserId = userId,
                 FirstName = tenantModel.FirstName,
                 LastName = tenantModel.LastName,
                 Email = tenantModel.Email,

@@ -4,12 +4,12 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using System.ComponentModel.DataAnnotations
 
 @inject NavigationManager Navigation
 @inject PropertyManagementService PropertyManagementService
+@inject UserContextService UserContextService
 
 @rendermode InteractiveServer
 
@@ -212,10 +212,10 @@ else
 
     private async Task LoadLease()
     {
-        var authState = await AuthenticationStateTask;
-        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var userId = await UserContextService.GetUserIdAsync();
+        var organizationId = await UserContextService.GetOrganizationIdAsync();
 
-        if (string.IsNullOrEmpty(userId))
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId))
         {
             isAuthorized = false;
             return;
@@ -223,7 +223,7 @@ else
 
         lease = await PropertyManagementService.GetLeaseByIdAsync(Id);
 
-        if (lease == null || lease.UserId != userId)
+        if (lease == null || lease.OrganizationId != organizationId)
         {
             isAuthorized = false;
             return;
@@ -266,8 +266,7 @@ else
             lease.Status = leaseModel.Status;
             lease.Terms = leaseModel.Terms;
             lease.Notes = leaseModel.Notes;
-            lease.LastModifiedOn = DateTime.UtcNow;
-
+            
             // Update property availability based on lease status change
             if (lease.Property != null && oldStatus != leaseModel.Status)
             {

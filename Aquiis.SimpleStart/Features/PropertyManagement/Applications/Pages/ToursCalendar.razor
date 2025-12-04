@@ -1,11 +1,12 @@
 @page "/PropertyManagement/Tours/Calendar"
+
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
 @using Aquiis.SimpleStart.Core.Constants
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize(Roles = "SuperAdministrator,Administrator,PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @inject UserContextService UserContext
 @inject NavigationManager Navigation
 @inject ToastService ToastService
@@ -205,10 +206,10 @@
         loading = true;
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(orgId))
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            if (!string.IsNullOrEmpty(organizationId))
             {
-                allTours = await PropertyService.GetAllToursAsync(orgId);
+                allTours = await PropertyService.GetAllToursAsync();
             }
         }
         catch (Exception ex)
@@ -565,10 +566,10 @@
     {
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(orgId))
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            if (!string.IsNullOrEmpty(organizationId))
             {
-                var tour = await PropertyService.GetTourByIdAsync(tourId, orgId);
+                var tour = await PropertyService.GetTourByIdAsync(tourId);
                 if (tour != null)
                 {
                     CloseModal();
@@ -593,12 +594,12 @@
     {
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
             
-            if (!string.IsNullOrEmpty(orgId) && !string.IsNullOrEmpty(userId))
+            if (!string.IsNullOrEmpty(organizationId) && !string.IsNullOrEmpty(userId))
             {
-                await PropertyService.CancelTourAsync(tourId, orgId, userId);
+                await PropertyService.CancelTourAsync(tourId);
                 ToastService.ShowSuccess("Tour cancelled successfully");
                 CloseModal();
                 await LoadTours();

@@ -3,14 +3,15 @@
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Core.Constants
 @using Microsoft.AspNetCore.Authorization
 @inject SecurityDepositService SecurityDepositService
 @inject NavigationManager NavigationManager
 @inject ToastService ToastService
 @rendermode InteractiveServer
-@attribute [Authorize]
+
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
+
 
 <PageTitle>Investment Pool Details - @(pool?.Year ?? 0)</PageTitle>
 

@@ -1,11 +1,6 @@
 @page "/propertymanagement/leases/create"
 
 @using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Core.Constants
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Authorization
@@ -19,7 +14,7 @@
 
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
-@attribute [Authorize(Roles = "PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 <PageTitle>Create Lease</PageTitle>
@@ -204,7 +199,7 @@
         if (PropertyId.HasValue)
         {
             leaseModel.PropertyId = PropertyId.Value;
-            OnPropertyChanged();
+            await OnPropertyChanged();
         }
         
         // If TenantId is provided in query string, pre-select it
@@ -300,7 +295,7 @@
 
             var lease = new Lease
             {
-                UserId = userId,
+                
                 PropertyId = leaseModel.PropertyId,
                 TenantId = leaseModel.TenantId,
                 StartDate = leaseModel.StartDate,

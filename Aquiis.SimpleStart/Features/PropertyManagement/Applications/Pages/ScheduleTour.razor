@@ -1,13 +1,13 @@
 @page "/PropertyManagement/Tours/Schedule/{ProspectId:int}"
+
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
-@using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Core.Constants
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize(Roles = "SuperAdministrator,Administrator,PropertyManager")]
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @inject PropertyManagementService PropertyService
 @inject ChecklistService ChecklistService
 @inject UserContextService UserContext
@@ -201,15 +201,15 @@
         loading = true;
         try
         {
-            var orgId = await UserContext.GetOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(orgId))
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            if (!string.IsNullOrEmpty(organizationId))
             {
-                prospect = await PropertyService.GetProspectiveTenantByIdAsync(ProspectId, orgId);
+                prospect = await PropertyService.GetProspectiveTenantByIdAsync(ProspectId);
                 
                 if (prospect != null)
                 {
                     // Load available properties (Available status only)
-                    var allProperties = await PropertyService.GetPropertiesByOrganizationIdAsync(orgId);
+                    var allProperties = await PropertyService.GetPropertiesAsync();
                     availableProperties = allProperties
                         .Where(p => p.Status == ApplicationConstants.PropertyStatuses.Available)
                         .ToList();
@@ -223,7 +223,7 @@
                         .ToList();
 
                     // Load existing tours for this prospect
-                    upcomingTours = await PropertyService.GetToursByProspectiveIdAsync(ProspectId, orgId);
+                    upcomingTours = await PropertyService.GetToursByProspectiveIdAsync(ProspectId);
                     upcomingTours = upcomingTours
                         .Where(s => s.ScheduledOn >= DateTime.Now && s.Status == ApplicationConstants.TourStatuses.Scheduled)
                         .OrderBy(s => s.ScheduledOn)
@@ -267,10 +267,10 @@
                 return;
             }
 
-            var orgId = await UserContext.GetOrganizationIdAsync();
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
 
-            if (string.IsNullOrEmpty(orgId) || string.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(organizationId) || string.IsNullOrEmpty(userId))
             {
                 ToastService.ShowError("User context not available");
                 return;
@@ -283,7 +283,7 @@
                 PropertyId = newTour.PropertyId,
                 ScheduledOn = newTour.ScheduledOn,
                 DurationMinutes = newTour.DurationMinutes,
-                OrganizationId = orgId,
+                OrganizationId = organizationId,
                 CreatedBy = userId
             };
             

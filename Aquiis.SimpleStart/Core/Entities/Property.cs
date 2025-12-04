@@ -1,10 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
-using Aquiis.SimpleStart.Core.Entities;
-using Aquiis.SimpleStart.Core.Entities;
 using Aquiis.SimpleStart.Core.Constants;
-using Aquiis.SimpleStart.Core.Entities;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {
@@ -12,11 +9,10 @@ namespace Aquiis.SimpleStart.Core.Entities
     {
         [Required]
         [JsonInclude]
+        [StringLength(100)]
+        [DataType(DataType.Text)]
+        [Display(Name = "Organization ID")]
         public string OrganizationId { get; set; } = string.Empty;
-
-        [Required]
-        [JsonInclude]
-        public string UserId { get; set; } = string.Empty;
 
         [Required]
         [JsonInclude]
