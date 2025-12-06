@@ -110,7 +110,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 Reason = reason,
                 PerformedBy = userId,
                 PerformedOn = DateTime.UtcNow,
-                OrganizationId = int.Parse(activeOrgId ?? "0"),
+                OrganizationId = activeOrgId ?? string.Empty,
                 Metadata = metadata != null ? JsonSerializer.Serialize(metadata) : null,
                 CreatedOn = DateTime.UtcNow,
                 CreatedBy = userId
@@ -131,7 +131,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
             
             return await _context.WorkflowAuditLogs
                 .Where(w => w.EntityType == entityType && w.EntityId == entityId)
-                .Where(w => w.OrganizationId == int.Parse(activeOrgId ?? "0"))
+                .Where(w => w.OrganizationId == activeOrgId)
                 .OrderBy(w => w.PerformedOn)
                 .ToListAsync();
         }

@@ -51,7 +51,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// <summary>
         /// Organization context for the workflow action
         /// </summary>
-        public required int OrganizationId { get; set; }
+        public required string OrganizationId { get; set; }
 
         /// <summary>
         /// Additional context data (JSON serialized)
