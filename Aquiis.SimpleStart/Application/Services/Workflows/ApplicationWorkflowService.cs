@@ -154,7 +154,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 };
 
                 _context.RentalApplications.Add(application);
-                await _context.SaveChangesAsync(); // Save to get application ID for logging
+                // Note: EF Core will assign ID when transaction commits
 
                 // Update property status if this is first application
                 var property = await _context.Properties
@@ -623,7 +623,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 };
 
                 _context.LeaseOffers.Add(leaseOffer);
-                await _context.SaveChangesAsync(); // Save to get ID
+                // Note: EF Core will assign ID when transaction commits
 
                 // Update application
                 var oldAppStatus = application.Status;
@@ -752,7 +752,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 };
 
                 _context.Tenants.Add(tenant);
-                await _context.SaveChangesAsync(); // Save to get tenant ID
+                // Note: EF Core will assign ID when transaction commits
 
                 // Create lease
                 var lease = new Lease
@@ -771,7 +771,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 };
 
                 _context.Leases.Add(lease);
-                await _context.SaveChangesAsync(); // Save to get lease ID
+                // Note: EF Core will assign ID when transaction commits
 
                 // Update lease offer
                 leaseOffer.Status = "Accepted";
