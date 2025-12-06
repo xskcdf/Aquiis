@@ -4,6 +4,7 @@
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
+@using Aquiis.SimpleStart.Application.Services.Workflows
 @using Aquiis.SimpleStart.Infrastructure.Data
 @using Aquiis.SimpleStart.Core.Constants
 @using Microsoft.AspNetCore.Authorization
@@ -11,6 +12,7 @@
 @using Microsoft.EntityFrameworkCore
 
 @inject PropertyManagementService PropertyService
+@inject ApplicationWorkflowService WorkflowService
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
@@ -420,137 +422,30 @@
 
     private async Task AcceptOffer()
     {
-        if (leaseOffer == null || leaseOffer.ProspectiveTenant == null || leaseOffer.Property == null) return;
+        if (leaseOffer == null) return;
 
         isSubmitting = true;
         errorMessage = string.Empty;
 
         try
         {
-            // 1. Create Tenant from ProspectiveTenant
-            var tenant = new Tenant
-            {
-                FirstName = leaseOffer.ProspectiveTenant.FirstName,
-                LastName = leaseOffer.ProspectiveTenant.LastName,
-                Email = leaseOffer.ProspectiveTenant.Email,
-                PhoneNumber = leaseOffer.ProspectiveTenant.Phone,
-                DateOfBirth = leaseOffer.ProspectiveTenant.DateOfBirth,
-                IdentificationNumber = leaseOffer.ProspectiveTenant.IdentificationNumber ?? string.Empty,
-                ProspectiveTenantId = leaseOffer.ProspectiveTenantId,
-                EmergencyContactName = string.Empty,
-                EmergencyContactPhone = null,
-                
-            };
-
-            var createdTenant = await PropertyService.AddTenantAsync(tenant);
-
-            // 2. Create Lease with reference to LeaseOffer and Tenant
-            var lease = new Lease
-            {
-                PropertyId = leaseOffer.PropertyId,
-                OrganizationId = createdTenant.OrganizationId,
-                TenantId = createdTenant.Id,
-                LeaseOfferId = leaseOffer.Id,
-                StartDate = leaseOffer.StartDate,
-                EndDate = leaseOffer.EndDate,
-                MonthlyRent = leaseOffer.MonthlyRent,
-                SecurityDeposit = leaseOffer.SecurityDeposit,
-                Terms = leaseOffer.Terms ?? string.Empty,
-                Status = ApplicationConstants.LeaseStatuses.Active,
-                SignedOn = DateTime.UtcNow,
-               
-            };
-
-            var createdLease = await PropertyService.AddLeaseAsync(lease);
-
-            // 3. Update LeaseOffer status to Accepted
-            leaseOffer.Status = "Accepted";
-            leaseOffer.RespondedOn = DateTime.UtcNow;
-            leaseOffer.ResponseNotes = "Lease offer accepted and converted to active lease";
-            leaseOffer.ConvertedLeaseId = createdLease?.Id;
+            var result = await WorkflowService.AcceptLeaseOfferAsync(leaseOffer.Id);
             
-
-            await PropertyService.UpdateLeaseOfferAsync(leaseOffer);
-
-            // 4. Update RentalApplication status
-            var application = await PropertyService.GetRentalApplicationByIdAsync(leaseOffer.RentalApplicationId);
-            if (application != null)
+            if (result.Success)
             {
-                application.Status = ApplicationConstants.ApplicationStatuses.LeaseAccepted;
-               
-                await PropertyService.UpdateRentalApplicationAsync(application);
-            }
-
-            // 5. Update Property status to Occupied
-            var property = await PropertyService.GetPropertyByIdAsync(leaseOffer.PropertyId);
-            if (property != null)
-            {
-                property.Status = ApplicationConstants.PropertyStatuses.Occupied;
+                ToastService.ShowSuccess("Lease offer accepted! Tenant and lease created successfully.");
+                showAcceptModal = false;
                 
-                await PropertyService.UpdatePropertyAsync(property);
-            }
-
-            // 6. Update ProspectiveTenant status
-            var prospective = leaseOffer.ProspectiveTenant;
-            if (prospective != null)
-            {
-                prospective.Status = ApplicationConstants.ProspectiveStatuses.ConvertedToTenant;
-                
-                await PropertyService.UpdateProspectiveTenantAsync(prospective);
-            }
-
-            // 7. Add Security Deposit to Investment Pool
-             // CRITICAL: Collect security deposit - this MUST succeed before proceeding
-            SecurityDeposit securityDeposit = new();
-            try
-            {
-                securityDeposit = await SecurityDepositService.CollectSecurityDepositAsync(
-                    lease.Id,
-                    lease.SecurityDeposit,
-                    "Online Payment",
-                    "Security deposit collected upon lease acceptance",
-                    tenant.Id); // Pass the newly created tenant ID
-            }
-            catch (Exception depositEx)
-            {
-                var message = depositEx.Message + (depositEx.InnerException != null ? $" - {depositEx.InnerException}" : string.Empty);
-                errorMessage = $"CRITICAL ERROR: Failed to collect security deposit. Lease acceptance aborted. Error: {message}";
-                isSubmitting = false;
-                ToastService.ShowError(errorMessage);
-                Console.WriteLine(errorMessage);
-                //return;
-            }
-
-            if(securityDeposit == null || securityDeposit.Id == 0)
-            {
-                errorMessage = "CRITICAL ERROR: Security deposit record not created. Lease acceptance aborted.";
-                isSubmitting = false;
-                ToastService.ShowError(errorMessage);
-                Console.WriteLine(errorMessage);
-            } else {
-                // Add deposit to investment pool (will start earning dividends)
-                try
+                // Navigate to the newly created lease
+                if (result.Data != null)
                 {
-                    await SecurityDepositService.AddToInvestmentPoolAsync(securityDeposit.Id);
-                }
-                catch (Exception poolEx)
-                {
-                    // Non-critical: deposit collected but not added to pool yet
-                    // Can be added manually later from Security Deposits page
-                    var message = poolEx.Message + (poolEx.InnerException != null ? $" - {poolEx.InnerException}" : string.Empty);
-                    ToastService.ShowWarning($"Security deposit collected but not added to investment pool: {message}");
-                    //return;
-                    Console.WriteLine($"Warning: Security deposit collected but not added to investment pool: {message}");
+                    Navigation.NavigateTo($"/propertymanagement/leases/view/{result.Data.Id}");
                 }
             }
-
-            ToastService.ShowSuccess("Lease offer accepted! Tenant and lease created successfully.");
-            showAcceptModal = false;
-            
-            // Navigate to the newly created lease
-            if (createdLease != null)
+            else
             {
-                Navigation.NavigateTo($"/propertymanagement/leases/view/{createdLease.Id}");
+                errorMessage = string.Join(", ", result.Errors);
+                ToastService.ShowError($"Failed to accept lease offer: {errorMessage}");
             }
         }
         catch (Exception ex)
@@ -577,15 +472,18 @@
 
         try
         {
-            leaseOffer.Status = "Declined";
-            leaseOffer.RespondedOn = DateTime.UtcNow;
-            leaseOffer.ResponseNotes = declineReason;
+            var result = await WorkflowService.DeclineLeaseOfferAsync(leaseOffer.Id, declineReason ?? "Declined by applicant");
 
-            await PropertyService.UpdateLeaseOfferAsync(leaseOffer);
-
-            ToastService.ShowSuccess("Lease offer declined.");
-            showDeclineModal = false;
-            await LoadLeaseOffer();
+            if (result.Success)
+            {
+                ToastService.ShowSuccess("Lease offer declined.");
+                showDeclineModal = false;
+                await LoadLeaseOffer();
+            }
+            else
+            {
+                errorMessage = string.Join(", ", result.Errors);
+            }
         }
         catch (Exception ex)
         {

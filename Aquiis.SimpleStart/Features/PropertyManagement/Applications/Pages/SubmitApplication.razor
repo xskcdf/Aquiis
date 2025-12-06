@@ -4,11 +4,13 @@
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
+@using Aquiis.SimpleStart.Application.Services.Workflows
 @using Aquiis.SimpleStart.Core.Constants
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
 
 @inject PropertyManagementService PropertyService
+@inject ApplicationWorkflowService WorkflowService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
 @inject UserContextService UserContext
@@ -450,13 +452,9 @@
 
         try
         {
-            var application = new RentalApplication
+            // Use ApplicationWorkflowService to submit application
+            var submissionModel = new Aquiis.SimpleStart.Application.Services.Workflows.ApplicationSubmissionModel
             {
-                ProspectiveTenantId = ProspectId,
-                PropertyId = applicationModel.PropertyId,
-                AppliedOn = DateTime.UtcNow,
-                Status = ApplicationConstants.ApplicationStatuses.Submitted,
-                
                 // Current Address
                 CurrentAddress = applicationModel.CurrentAddress,
                 CurrentCity = applicationModel.CurrentCity,
@@ -482,16 +480,23 @@
                 
                 // Fees
                 ApplicationFee = applicationFee,
-                ApplicationFeePaid = false, // Will be paid separately
-                
-                OrganizationId = organizationId
-                
+                ApplicationFeePaid = false // Will be paid separately
             };
 
-            var createdApplication = await PropertyService.CreateRentalApplicationAsync(application);
+            var result = await WorkflowService.SubmitApplicationAsync(
+                ProspectId, 
+                applicationModel.PropertyId, 
+                submissionModel);
 
-            ToastService.ShowSuccess("Application submitted successfully! You will be notified once reviewed.");
-            Navigation.NavigateTo($"/PropertyManagement/ProspectiveTenants/{ProspectId}");
+            if (result.Success)
+            {
+                ToastService.ShowSuccess("Application submitted successfully! You will be notified once reviewed.");
+                Navigation.NavigateTo($"/PropertyManagement/ProspectiveTenants/{ProspectId}");
+            }
+            else
+            {
+                errorMessage = string.Join(", ", result.Errors);
+            }
         }
         catch (Exception ex)
         {

@@ -4,11 +4,13 @@
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
+@using Aquiis.SimpleStart.Application.Services.Workflows
 @using Aquiis.SimpleStart.Core.Constants
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
 
 @inject PropertyManagementService PropertyService
+@inject ApplicationWorkflowService WorkflowService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
 @inject UserContextService UserContext
@@ -326,58 +328,28 @@
                 return;
             }
 
-            // Create the lease offer
-            var leaseOffer = new LeaseOffer
+            // Use workflow service to generate lease offer
+            var offerModel = new Aquiis.SimpleStart.Application.Services.Workflows.LeaseOfferModel
             {
-                OrganizationId = organizationId,
-                RentalApplicationId = application.Id,
-                PropertyId = application.PropertyId,
-                ProspectiveTenantId = application.ProspectiveTenantId,
                 StartDate = leaseModel.StartDate,
                 EndDate = leaseModel.EndDate,
                 MonthlyRent = leaseModel.MonthlyRent,
                 SecurityDeposit = leaseModel.SecurityDeposit,
                 Terms = leaseModel.Terms,
-                Notes = leaseModel.Notes ?? string.Empty,
-                Status = "Pending",
-                OfferedOn = DateTime.UtcNow,
-                ExpiresOn = DateTime.UtcNow.AddDays(30), // 30-day expiration
-                CreatedOn = DateTime.UtcNow,
-                CreatedBy = userId
+                Notes = leaseModel.Notes
             };
 
-            var createdOffer = await PropertyService.CreateLeaseOfferAsync(leaseOffer);
+            var result = await WorkflowService.GenerateLeaseOfferAsync(application.Id, offerModel);
 
-            if (createdOffer == null)
+            if (result.Success)
             {
-                errorMessage = "Failed to create lease offer.";
-                return;
+                ToastService.ShowSuccess("Lease offer generated successfully!");
+                Navigation.NavigateTo($"/propertymanagement/leaseoffers/view/{result.Data.Id}");
             }
-
-            // Update property status to LeasePending
-            var property = await PropertyService.GetPropertyByIdAsync(application.PropertyId);
-            if (property != null)
+            else
             {
-                property.Status = ApplicationConstants.PropertyStatuses.LeasePending;
-                await PropertyService.UpdatePropertyAsync(property);
+                errorMessage = string.Join(", ", result.Errors);
             }
-
-            // Update application status
-            application.Status = "LeaseOffered"; // We'll need to add this status
-            await PropertyService.UpdateRentalApplicationAsync(application);
-
-            // Update prospect status
-            if (application.ProspectiveTenant != null)
-            {
-                application.ProspectiveTenant.Status = "LeaseOffered"; // We'll need to add this status
-                await PropertyService.UpdateProspectiveTenantAsync(application.ProspectiveTenant);
-            }
-
-            // Auto-deny all other pending applications for this property
-            await DenyCompetingApplications(application.PropertyId, application.Id);
-
-            ToastService.ShowSuccess("Lease offer generated successfully!");
-            Navigation.NavigateTo($"/propertymanagement/leaseoffers/view/{createdOffer.Id}");
         }
         catch (Exception ex)
         {
@@ -391,28 +363,8 @@
 
     private async Task DenyCompetingApplications(int propertyId, int currentApplicationId)
     {
-        try
-        {
-            var allApplications = await PropertyService.GetAllRentalApplicationsAsync();
-            var competingApps = allApplications.Where(a => 
-                a.PropertyId == propertyId && 
-                a.Id != currentApplicationId &&
-                (a.Status == ApplicationConstants.ApplicationStatuses.Submitted ||
-                 a.Status == ApplicationConstants.ApplicationStatuses.UnderReview ||
-                 a.Status == ApplicationConstants.ApplicationStatuses.Screening)).ToList();
-
-            foreach (var app in competingApps)
-            {
-                await PropertyService.DenyApplicationAsync(
-                    app.Id,
-                    "Property is no longer available - lease offered to another applicant");
-            }
-        }
-        catch (Exception ex)
-        {
-            // Log but don't fail the main operation
-            Console.WriteLine($"Error denying competing applications: {ex.Message}");
-        }
+        // This method is no longer needed - workflow service handles it automatically
+        await Task.CompletedTask;
     }
 
     private string GetDefaultLeaseTerms()
