@@ -503,6 +503,460 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
             });
         }
 
+        /// <summary>
+        /// Updates screening results after background/credit checks are completed.
+        /// Does not automatically approve - requires manual ApproveApplicationAsync call.
+        /// </summary>
+        public async Task<WorkflowResult> CompleteScreeningAsync(
+            int applicationId,
+            ScreeningResultModel results)
+        {
+            return await ExecuteWorkflowAsync(async () =>
+            {
+                var application = await GetApplicationAsync(applicationId);
+                if (application == null)
+                    return WorkflowResult.Fail("Application not found");
+
+                if (application.Status != ApplicationConstants.ApplicationStatuses.Screening)
+                    return WorkflowResult.Fail(
+                        $"Application must be in Screening status. Current status: {application.Status}");
+
+                if (application.Screening == null)
+                    return WorkflowResult.Fail("Screening record not found");
+
+                var userId = await GetCurrentUserIdAsync();
+
+                // Update screening results
+                var screening = application.Screening;
+
+                if (results.BackgroundCheckPassed.HasValue)
+                {
+                    screening.BackgroundCheckPassed = results.BackgroundCheckPassed;
+                    screening.BackgroundCheckCompletedOn = DateTime.UtcNow;
+                    screening.BackgroundCheckNotes = results.BackgroundCheckNotes;
+                }
+
+                if (results.CreditCheckPassed.HasValue)
+                {
+                    screening.CreditCheckPassed = results.CreditCheckPassed;
+                    screening.CreditScore = results.CreditScore;
+                    screening.CreditCheckCompletedOn = DateTime.UtcNow;
+                    screening.CreditCheckNotes = results.CreditCheckNotes;
+                }
+
+                screening.OverallResult = results.OverallResult;
+                screening.ResultNotes = results.ResultNotes;
+                screening.LastModifiedBy = userId;
+                screening.LastModifiedOn = DateTime.UtcNow;
+
+                await LogTransitionAsync(
+                    "ApplicationScreening",
+                    screening.Id,
+                    "Pending",
+                    screening.OverallResult,
+                    "CompleteScreening",
+                    results.ResultNotes);
+
+                return WorkflowResult.Ok("Screening results updated successfully");
+
+            });
+        }
+
+        /// <summary>
+        /// Generates a lease offer for an approved application.
+        /// Creates LeaseOffer entity, updates property to LeasePending, and denies competing applications.
+        /// </summary>
+        public async Task<WorkflowResult<LeaseOffer>> GenerateLeaseOfferAsync(
+            int applicationId,
+            LeaseOfferModel model)
+        {
+            return await ExecuteWorkflowAsync<LeaseOffer>(async () =>
+            {
+                var application = await GetApplicationAsync(applicationId);
+                if (application == null)
+                    return WorkflowResult<LeaseOffer>.Fail("Application not found");
+
+                // Validate application approved
+                if (application.Status != ApplicationConstants.ApplicationStatuses.Approved)
+                    return WorkflowResult<LeaseOffer>.Fail(
+                        $"Application must be Approved to generate lease offer. Current status: {application.Status}");
+
+                // Validate property not already leased
+                var property = application.Property;
+                if (property == null)
+                    return WorkflowResult<LeaseOffer>.Fail("Property not found");
+
+                if (property.Status == ApplicationConstants.PropertyStatuses.Occupied)
+                    return WorkflowResult<LeaseOffer>.Fail("Property is already occupied");
+
+                // Validate lease dates
+                if (model.StartDate >= model.EndDate)
+                    return WorkflowResult<LeaseOffer>.Fail("End date must be after start date");
+
+                if (model.StartDate < DateTime.Today)
+                    return WorkflowResult<LeaseOffer>.Fail("Start date cannot be in the past");
+
+                if (model.MonthlyRent <= 0 || model.SecurityDeposit < 0)
+                    return WorkflowResult<LeaseOffer>.Fail("Invalid rent or deposit amount");
+
+                var userId = await GetCurrentUserIdAsync();
+                var orgId = await GetActiveOrganizationIdAsync();
+
+                // Create lease offer
+                var leaseOffer = new LeaseOffer
+                {
+                    OrganizationId = orgId.ToString(),
+                    RentalApplicationId = applicationId,
+                    PropertyId = property.Id,
+                    ProspectiveTenantId = application.ProspectiveTenantId,
+                    StartDate = model.StartDate,
+                    EndDate = model.EndDate,
+                    MonthlyRent = model.MonthlyRent,
+                    SecurityDeposit = model.SecurityDeposit,
+                    Terms = model.Terms,
+                    Notes = model.Notes ?? string.Empty,
+                    OfferedOn = DateTime.UtcNow,
+                    ExpiresOn = DateTime.UtcNow.AddDays(30),
+                    Status = "Pending",
+                    CreatedBy = userId,
+                    CreatedOn = DateTime.UtcNow
+                };
+
+                _context.LeaseOffers.Add(leaseOffer);
+                await _context.SaveChangesAsync(); // Save to get ID
+
+                // Update application
+                var oldAppStatus = application.Status;
+                application.Status = ApplicationConstants.ApplicationStatuses.LeaseOffered;
+                application.LastModifiedBy = userId;
+                application.LastModifiedOn = DateTime.UtcNow;
+
+                // Update prospect
+                if (application.ProspectiveTenant != null)
+                {
+                    application.ProspectiveTenant.Status = ApplicationConstants.ProspectiveStatuses.LeaseOffered;
+                    application.ProspectiveTenant.LastModifiedBy = userId;
+                    application.ProspectiveTenant.LastModifiedOn = DateTime.UtcNow;
+                }
+
+                // Update property to LeasePending
+                property.Status = ApplicationConstants.PropertyStatuses.LeasePending;
+                property.LastModifiedBy = userId;
+                property.LastModifiedOn = DateTime.UtcNow;
+
+                // Deny all competing applications
+                var competingApps = await _context.RentalApplications
+                    .Where(a => a.PropertyId == property.Id &&
+                               a.Id != applicationId &&
+                               a.OrganizationId == orgId.ToString() &&
+                               (a.Status == ApplicationConstants.ApplicationStatuses.Submitted ||
+                                a.Status == ApplicationConstants.ApplicationStatuses.UnderReview ||
+                                a.Status == ApplicationConstants.ApplicationStatuses.Screening ||
+                                a.Status == ApplicationConstants.ApplicationStatuses.Approved) &&
+                               !a.IsDeleted)
+                    .Include(a => a.ProspectiveTenant)
+                    .ToListAsync();
+
+                foreach (var competingApp in competingApps)
+                {
+                    competingApp.Status = ApplicationConstants.ApplicationStatuses.Denied;
+                    competingApp.DenialReason = "Property leased to another applicant";
+                    competingApp.DecidedOn = DateTime.UtcNow;
+                    competingApp.DecisionBy = userId;
+                    competingApp.LastModifiedBy = userId;
+                    competingApp.LastModifiedOn = DateTime.UtcNow;
+
+                    if (competingApp.ProspectiveTenant != null)
+                    {
+                        competingApp.ProspectiveTenant.Status = ApplicationConstants.ProspectiveStatuses.Denied;
+                        competingApp.ProspectiveTenant.LastModifiedBy = userId;
+                        competingApp.ProspectiveTenant.LastModifiedOn = DateTime.UtcNow;
+                    }
+
+                    await LogTransitionAsync(
+                        "RentalApplication",
+                        competingApp.Id,
+                        competingApp.Status,
+                        ApplicationConstants.ApplicationStatuses.Denied,
+                        "DenyCompetingApplication",
+                        "Property leased to another applicant");
+                }
+
+                await LogTransitionAsync(
+                    "RentalApplication",
+                    applicationId,
+                    oldAppStatus,
+                    application.Status,
+                    "GenerateLeaseOffer");
+
+                await LogTransitionAsync(
+                    "LeaseOffer",
+                    leaseOffer.Id,
+                    null,
+                    "Pending",
+                    "GenerateLeaseOffer");
+
+                return WorkflowResult<LeaseOffer>.Ok(
+                    leaseOffer,
+                    $"Lease offer generated successfully. {competingApps.Count} competing application(s) denied.");
+
+            });
+        }
+
+        /// <summary>
+        /// Accepts a lease offer and converts prospect to tenant.
+        /// Creates Tenant and Lease entities, updates property to Occupied.
+        /// </summary>
+        public async Task<WorkflowResult<Lease>> AcceptLeaseOfferAsync(int leaseOfferId)
+        {
+            return await ExecuteWorkflowAsync<Lease>(async () =>
+            {
+                var orgId = await GetActiveOrganizationIdAsync();
+                var userId = await GetCurrentUserIdAsync();
+
+                var leaseOffer = await _context.LeaseOffers
+                    .Include(lo => lo.RentalApplication)
+                        .ThenInclude(a => a.ProspectiveTenant)
+                    .Include(lo => lo.Property)
+                    .FirstOrDefaultAsync(lo => lo.Id == leaseOfferId &&
+                                              lo.OrganizationId == orgId.ToString() &&
+                                              !lo.IsDeleted);
+
+                if (leaseOffer == null)
+                    return WorkflowResult<Lease>.Fail("Lease offer not found");
+
+                if (leaseOffer.Status != "Pending")
+                    return WorkflowResult<Lease>.Fail($"Lease offer status is {leaseOffer.Status}, not Pending");
+
+                if (leaseOffer.ExpiresOn < DateTime.UtcNow)
+                    return WorkflowResult<Lease>.Fail("Lease offer has expired");
+
+                var prospect = leaseOffer.RentalApplication?.ProspectiveTenant;
+                if (prospect == null)
+                    return WorkflowResult<Lease>.Fail("Prospective tenant not found");
+
+                // Convert prospect to tenant
+                var tenant = new Tenant
+                {
+                    OrganizationId = orgId.ToString(),
+                    FirstName = prospect.FirstName,
+                    LastName = prospect.LastName,
+                    Email = prospect.Email,
+                    PhoneNumber = prospect.Phone,
+                    DateOfBirth = prospect.DateOfBirth,
+                    IdentificationNumber = prospect.IdentificationNumber ?? $"ID-{Guid.NewGuid().ToString("N")[..8]}",
+                    ProspectiveTenantId = prospect.Id,
+                    IsActive = true,
+                    CreatedBy = userId,
+                    CreatedOn = DateTime.UtcNow
+                };
+
+                _context.Tenants.Add(tenant);
+                await _context.SaveChangesAsync(); // Save to get tenant ID
+
+                // Create lease
+                var lease = new Lease
+                {
+                    OrganizationId = orgId.ToString(),
+                    PropertyId = leaseOffer.PropertyId,
+                    TenantId = tenant.Id,
+                    StartDate = leaseOffer.StartDate,
+                    EndDate = leaseOffer.EndDate,
+                    MonthlyRent = leaseOffer.MonthlyRent,
+                    SecurityDeposit = leaseOffer.SecurityDeposit,
+                    Terms = leaseOffer.Terms,
+                    Status = "Active",
+                    CreatedBy = userId,
+                    CreatedOn = DateTime.UtcNow
+                };
+
+                _context.Leases.Add(lease);
+                await _context.SaveChangesAsync(); // Save to get lease ID
+
+                // Update lease offer
+                leaseOffer.Status = "Accepted";
+                leaseOffer.RespondedOn = DateTime.UtcNow;
+                leaseOffer.ConvertedLeaseId = lease.Id;
+                leaseOffer.LastModifiedBy = userId;
+                leaseOffer.LastModifiedOn = DateTime.UtcNow;
+
+                // Update application
+                var application = leaseOffer.RentalApplication;
+                if (application != null)
+                {
+                    application.Status = ApplicationConstants.ApplicationStatuses.LeaseAccepted;
+                    application.LastModifiedBy = userId;
+                    application.LastModifiedOn = DateTime.UtcNow;
+                }
+
+                // Update prospect
+                prospect.Status = ApplicationConstants.ProspectiveStatuses.ConvertedToTenant;
+                prospect.LastModifiedBy = userId;
+                prospect.LastModifiedOn = DateTime.UtcNow;
+
+                // Update property
+                var property = leaseOffer.Property;
+                if (property != null)
+                {
+                    property.Status = ApplicationConstants.PropertyStatuses.Occupied;
+                    property.LastModifiedBy = userId;
+                    property.LastModifiedOn = DateTime.UtcNow;
+                }
+
+                await LogTransitionAsync(
+                    "LeaseOffer",
+                    leaseOfferId,
+                    "Pending",
+                    "Accepted",
+                    "AcceptLeaseOffer");
+
+                await LogTransitionAsync(
+                    "ProspectiveTenant",
+                    prospect.Id,
+                    ApplicationConstants.ProspectiveStatuses.LeaseOffered,
+                    ApplicationConstants.ProspectiveStatuses.ConvertedToTenant,
+                    "AcceptLeaseOffer");
+
+                return WorkflowResult<Lease>.Ok(lease, "Lease offer accepted and tenant created successfully");
+
+            });
+        }
+
+        /// <summary>
+        /// Declines a lease offer.
+        /// Rolls back property status and marks prospect as lease declined.
+        /// </summary>
+        public async Task<WorkflowResult> DeclineLeaseOfferAsync(int leaseOfferId, string declineReason)
+        {
+            return await ExecuteWorkflowAsync(async () =>
+            {
+                if (string.IsNullOrWhiteSpace(declineReason))
+                    return WorkflowResult.Fail("Decline reason is required");
+
+                var orgId = await GetActiveOrganizationIdAsync();
+                var userId = await GetCurrentUserIdAsync();
+
+                var leaseOffer = await _context.LeaseOffers
+                    .Include(lo => lo.RentalApplication)
+                        .ThenInclude(a => a.ProspectiveTenant)
+                    .Include(lo => lo.Property)
+                    .FirstOrDefaultAsync(lo => lo.Id == leaseOfferId &&
+                                              lo.OrganizationId == orgId.ToString() &&
+                                              !lo.IsDeleted);
+
+                if (leaseOffer == null)
+                    return WorkflowResult.Fail("Lease offer not found");
+
+                if (leaseOffer.Status != "Pending")
+                    return WorkflowResult.Fail($"Lease offer status is {leaseOffer.Status}, not Pending");
+
+                // Update lease offer
+                leaseOffer.Status = "Declined";
+                leaseOffer.RespondedOn = DateTime.UtcNow;
+                leaseOffer.ResponseNotes = declineReason;
+                leaseOffer.LastModifiedBy = userId;
+                leaseOffer.LastModifiedOn = DateTime.UtcNow;
+
+                // Update application
+                var application = leaseOffer.RentalApplication;
+                if (application != null)
+                {
+                    application.Status = ApplicationConstants.ApplicationStatuses.LeaseDeclined;
+                    application.LastModifiedBy = userId;
+                    application.LastModifiedOn = DateTime.UtcNow;
+
+                    // Update prospect
+                    if (application.ProspectiveTenant != null)
+                    {
+                        application.ProspectiveTenant.Status = ApplicationConstants.ProspectiveStatuses.LeaseDeclined;
+                        application.ProspectiveTenant.LastModifiedBy = userId;
+                        application.ProspectiveTenant.LastModifiedOn = DateTime.UtcNow;
+                    }
+                }
+
+                // Rollback property status
+                await RollbackPropertyStatusIfNeededAsync(leaseOffer.PropertyId);
+
+                await LogTransitionAsync(
+                    "LeaseOffer",
+                    leaseOfferId,
+                    "Pending",
+                    "Declined",
+                    "DeclineLeaseOffer",
+                    declineReason);
+
+                return WorkflowResult.Ok("Lease offer declined");
+
+            });
+        }
+
+        /// <summary>
+        /// Expires a lease offer (called by scheduled task).
+        /// Similar to decline but automated.
+        /// </summary>
+        public async Task<WorkflowResult> ExpireLeaseOfferAsync(int leaseOfferId)
+        {
+            return await ExecuteWorkflowAsync(async () =>
+            {
+                var orgId = await GetActiveOrganizationIdAsync();
+                var userId = await GetCurrentUserIdAsync();
+
+                var leaseOffer = await _context.LeaseOffers
+                    .Include(lo => lo.RentalApplication)
+                        .ThenInclude(a => a.ProspectiveTenant)
+                    .Include(lo => lo.Property)
+                    .FirstOrDefaultAsync(lo => lo.Id == leaseOfferId &&
+                                              lo.OrganizationId == orgId.ToString() &&
+                                              !lo.IsDeleted);
+
+                if (leaseOffer == null)
+                    return WorkflowResult.Fail("Lease offer not found");
+
+                if (leaseOffer.Status != "Pending")
+                    return WorkflowResult.Fail($"Lease offer status is {leaseOffer.Status}, not Pending");
+
+                if (leaseOffer.ExpiresOn >= DateTime.UtcNow)
+                    return WorkflowResult.Fail("Lease offer has not expired yet");
+
+                // Update lease offer
+                leaseOffer.Status = "Expired";
+                leaseOffer.RespondedOn = DateTime.UtcNow;
+                leaseOffer.LastModifiedBy = userId;
+                leaseOffer.LastModifiedOn = DateTime.UtcNow;
+
+                // Update application
+                var application = leaseOffer.RentalApplication;
+                if (application != null)
+                {
+                    application.Status = ApplicationConstants.ApplicationStatuses.Expired;
+                    application.LastModifiedBy = userId;
+                    application.LastModifiedOn = DateTime.UtcNow;
+
+                    // Update prospect
+                    if (application.ProspectiveTenant != null)
+                    {
+                        application.ProspectiveTenant.Status = ApplicationConstants.ProspectiveStatuses.LeaseDeclined;
+                        application.ProspectiveTenant.LastModifiedBy = userId;
+                        application.ProspectiveTenant.LastModifiedOn = DateTime.UtcNow;
+                    }
+                }
+
+                // Rollback property status
+                await RollbackPropertyStatusIfNeededAsync(leaseOffer.PropertyId);
+
+                await LogTransitionAsync(
+                    "LeaseOffer",
+                    leaseOfferId,
+                    "Pending",
+                    "Expired",
+                    "ExpireLeaseOffer",
+                    "Offer expired after 30 days");
+
+                return WorkflowResult.Ok("Lease offer expired");
+
+            });
+        }
+
         #endregion
 
         #region Helper Methods
@@ -638,5 +1092,34 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         public string? Reference2Name { get; set; }
         public string? Reference2Phone { get; set; }
         public string? Reference2Relationship { get; set; }
+    }
+
+    /// <summary>
+    /// Model for screening results update.
+    /// </summary>
+    public class ScreeningResultModel
+    {
+        public bool? BackgroundCheckPassed { get; set; }
+        public string? BackgroundCheckNotes { get; set; }
+
+        public bool? CreditCheckPassed { get; set; }
+        public int? CreditScore { get; set; }
+        public string? CreditCheckNotes { get; set; }
+
+        public string OverallResult { get; set; } = "Pending"; // Pending, Passed, Failed, ConditionalPass
+        public string? ResultNotes { get; set; }
+    }
+
+    /// <summary>
+    /// Model for lease offer generation.
+    /// </summary>
+    public class LeaseOfferModel
+    {
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public decimal MonthlyRent { get; set; }
+        public decimal SecurityDeposit { get; set; }
+        public string Terms { get; set; } = string.Empty;
+        public string? Notes { get; set; }
     }
 }
