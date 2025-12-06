@@ -115,14 +115,14 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
 
                 // Get organization settings for expiration days
                 var settings = await _context.OrganizationSettings
-                    .FirstOrDefaultAsync(s => s.OrganizationId == orgId.ToString());
+                    .FirstOrDefaultAsync(s => s.OrganizationId == orgId);
                 
                 var expirationDays = settings?.ApplicationExpirationDays ?? 30;
 
                 // Create application
                 var application = new RentalApplication
                 {
-                    OrganizationId = orgId.ToString(),
+                    OrganizationId = orgId,
                     ProspectiveTenantId = prospectId,
                     PropertyId = propertyId,
                     Status = ApplicationConstants.ApplicationStatuses.Submitted,
@@ -158,7 +158,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
 
                 // Update property status if this is first application
                 var property = await _context.Properties
-                    .FirstOrDefaultAsync(p => p.Id == propertyId && p.OrganizationId == orgId.ToString());
+                    .FirstOrDefaultAsync(p => p.Id == propertyId && p.OrganizationId == orgId);
                 
                 if (property != null && property.Status == ApplicationConstants.PropertyStatuses.Available)
                 {
@@ -169,7 +169,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
 
                 // Update prospect status
                 var prospect = await _context.ProspectiveTenants
-                    .FirstOrDefaultAsync(p => p.Id == prospectId && p.OrganizationId == orgId.ToString());
+                    .FirstOrDefaultAsync(p => p.Id == prospectId && p.OrganizationId == orgId);
                 
                 if (prospect != null)
                 {
@@ -282,7 +282,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 // Create screening record
                 var screening = new ApplicationScreening
                 {
-                    OrganizationId = orgId.ToString(),
+                    OrganizationId = orgId,
                     RentalApplicationId = applicationId,
                     BackgroundCheckRequested = requestBackgroundCheck,
                     BackgroundCheckRequestedOn = requestBackgroundCheck ? DateTime.UtcNow : null,
@@ -605,7 +605,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 // Create lease offer
                 var leaseOffer = new LeaseOffer
                 {
-                    OrganizationId = orgId.ToString(),
+                    OrganizationId = orgId,
                     RentalApplicationId = applicationId,
                     PropertyId = property.Id,
                     ProspectiveTenantId = application.ProspectiveTenantId,
@@ -648,7 +648,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 var competingApps = await _context.RentalApplications
                     .Where(a => a.PropertyId == property.Id &&
                                a.Id != applicationId &&
-                               a.OrganizationId == orgId.ToString() &&
+                               a.OrganizationId == orgId &&
                                (a.Status == ApplicationConstants.ApplicationStatuses.Submitted ||
                                 a.Status == ApplicationConstants.ApplicationStatuses.UnderReview ||
                                 a.Status == ApplicationConstants.ApplicationStatuses.Screening ||
@@ -719,7 +719,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                         .ThenInclude(a => a.ProspectiveTenant)
                     .Include(lo => lo.Property)
                     .FirstOrDefaultAsync(lo => lo.Id == leaseOfferId &&
-                                              lo.OrganizationId == orgId.ToString() &&
+                                              lo.OrganizationId == orgId &&
                                               !lo.IsDeleted);
 
                 if (leaseOffer == null)
@@ -738,7 +738,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 // Convert prospect to tenant
                 var tenant = new Tenant
                 {
-                    OrganizationId = orgId.ToString(),
+                    OrganizationId = orgId,
                     FirstName = prospect.FirstName,
                     LastName = prospect.LastName,
                     Email = prospect.Email,
@@ -757,7 +757,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 // Create lease
                 var lease = new Lease
                 {
-                    OrganizationId = orgId.ToString(),
+                    OrganizationId = orgId,
                     PropertyId = leaseOffer.PropertyId,
                     TenantId = tenant.Id,
                     StartDate = leaseOffer.StartDate,
@@ -841,7 +841,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                         .ThenInclude(a => a.ProspectiveTenant)
                     .Include(lo => lo.Property)
                     .FirstOrDefaultAsync(lo => lo.Id == leaseOfferId &&
-                                              lo.OrganizationId == orgId.ToString() &&
+                                              lo.OrganizationId == orgId &&
                                               !lo.IsDeleted);
 
                 if (leaseOffer == null)
@@ -906,7 +906,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                         .ThenInclude(a => a.ProspectiveTenant)
                     .Include(lo => lo.Property)
                     .FirstOrDefaultAsync(lo => lo.Id == leaseOfferId &&
-                                              lo.OrganizationId == orgId.ToString() &&
+                                              lo.OrganizationId == orgId &&
                                               !lo.IsDeleted);
 
                 if (leaseOffer == null)
@@ -970,7 +970,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 .Include(a => a.Screening)
                 .FirstOrDefaultAsync(a =>
                     a.Id == applicationId &&
-                    a.OrganizationId == orgId.ToString() &&
+                    a.OrganizationId == orgId &&
                     !a.IsDeleted);
         }
 
@@ -983,7 +983,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
 
             // Validate prospect exists
             var prospect = await _context.ProspectiveTenants
-                .FirstOrDefaultAsync(p => p.Id == prospectId && p.OrganizationId == orgId.ToString() && !p.IsDeleted);
+                .FirstOrDefaultAsync(p => p.Id == prospectId && p.OrganizationId == orgId && !p.IsDeleted);
             
             if (prospect == null)
                 errors.Add("Prospect not found");
@@ -992,7 +992,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
 
             // Validate property exists and is available
             var property = await _context.Properties
-                .FirstOrDefaultAsync(p => p.Id == propertyId && p.OrganizationId == orgId.ToString() && !p.IsDeleted);
+                .FirstOrDefaultAsync(p => p.Id == propertyId && p.OrganizationId == orgId && !p.IsDeleted);
             
             if (property == null)
                 errors.Add("Property not found");
@@ -1005,7 +1005,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 var existingApp = await _context.RentalApplications
                     .AnyAsync(a =>
                         a.ProspectiveTenantId == prospectId &&
-                        a.OrganizationId == orgId.ToString() &&
+                        a.OrganizationId == orgId &&
                         a.Status != ApplicationConstants.ApplicationStatuses.Denied &&
                         a.Status != ApplicationConstants.ApplicationStatuses.Withdrawn &&
                         a.Status != ApplicationConstants.ApplicationStatuses.Expired &&
@@ -1042,7 +1042,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
             var hasActiveApplications = await _context.RentalApplications
                 .AnyAsync(a =>
                     a.PropertyId == propertyId &&
-                    a.OrganizationId == orgId.ToString() &&
+                    a.OrganizationId == orgId &&
                     activeStates.Contains(a.Status) &&
                     !a.IsDeleted);
 
@@ -1050,7 +1050,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
             if (!hasActiveApplications)
             {
                 var property = await _context.Properties
-                    .FirstOrDefaultAsync(p => p.Id == propertyId && p.OrganizationId == orgId.ToString());
+                    .FirstOrDefaultAsync(p => p.Id == propertyId && p.OrganizationId == orgId);
 
                 if (property != null && property.Status == ApplicationConstants.PropertyStatuses.ApplicationPending)
                 {

@@ -149,7 +149,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
             // Override in derived classes if different validation needed
             var entity = await query
                 .Where(e => EF.Property<int>(e, "Id") == entityId)
-                .Where(e => EF.Property<int>(e, "OrganizationId") == int.Parse(activeOrgId ?? "0"))
+                .Where(e => EF.Property<string>(e, "OrganizationId") == activeOrgId)
                 .Where(e => EF.Property<bool>(e, "IsDeleted") == false)
                 .FirstOrDefaultAsync();
 
@@ -167,10 +167,9 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// <summary>
         /// Gets the active organization ID from the user context.
         /// </summary>
-        protected async Task<int> GetActiveOrganizationIdAsync()
+        protected async Task<string> GetActiveOrganizationIdAsync()
         {
-            var activeOrgId = await _userContext.GetActiveOrganizationIdAsync();
-            return int.Parse(activeOrgId ?? "0");
+            return await _userContext.GetActiveOrganizationIdAsync() ?? string.Empty;
         }
     }
 }
