@@ -42,6 +42,9 @@ namespace Aquiis.SimpleStart.Infrastructure.Data
         // Multi-organization support
         public DbSet<Organization> Organizations { get; set; }
         public DbSet<UserOrganization> UserOrganizations { get; set; }
+        
+        // Workflow audit logging
+        public DbSet<Aquiis.SimpleStart.Application.Services.Workflows.WorkflowAuditLog> WorkflowAuditLogs { get; set; }
 
          protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -502,6 +505,18 @@ namespace Aquiis.SimpleStart.Infrastructure.Data
                 entity.HasIndex(e => e.OrganizationId);
                 entity.HasIndex(e => e.Role);
                 entity.HasIndex(e => e.IsActive);
+            });
+
+            // Configure WorkflowAuditLog entity
+            modelBuilder.Entity<Aquiis.SimpleStart.Application.Services.Workflows.WorkflowAuditLog>(entity =>
+            {
+                entity.HasIndex(e => e.OrganizationId);
+                entity.HasIndex(e => e.EntityType);
+                entity.HasIndex(e => e.EntityId);
+                entity.HasIndex(e => new { e.EntityType, e.EntityId });
+                entity.HasIndex(e => e.Action);
+                entity.HasIndex(e => e.PerformedOn);
+                entity.HasIndex(e => e.PerformedBy);
             });
 
             // Seed System Checklist Templates

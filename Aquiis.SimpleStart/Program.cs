@@ -148,6 +148,9 @@ builder.Services.AddScoped<TenantConversionService>();
 builder.Services.AddScoped<UserContextService>();
 builder.Services.AddScoped<DocumentService>();
 builder.Services.AddScoped<NoteService>();
+
+// Workflow services
+builder.Services.AddScoped<Aquiis.SimpleStart.Application.Services.Workflows.ApplicationWorkflowService>();
 builder.Services.AddScoped<SecurityDepositService>();
 builder.Services.AddScoped<OrganizationService>();
 builder.Services.AddScoped<ElectronPathService>();
