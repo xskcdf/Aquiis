@@ -1122,6 +1122,49 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         }
 
         #endregion
+
+        /// <summary>
+        /// Returns a comprehensive view of the application's workflow state,
+        /// including related prospect, property, screening, lease offers, and audit history.
+        /// </summary>
+        public async Task<ApplicationWorkflowState> GetApplicationWorkflowStateAsync(Guid applicationId)
+        {
+            var orgId = await GetActiveOrganizationIdAsync();
+
+            var application = await _context.RentalApplications
+                .Include(a => a.ProspectiveTenant)
+                .Include(a => a.Property)
+                .Include(a => a.Screening)
+                .FirstOrDefaultAsync(a => a.Id == applicationId && a.OrganizationId == orgId && !a.IsDeleted);
+
+            if (application == null)
+                return new ApplicationWorkflowState
+                {
+                    Application = null,
+                    AuditHistory = new List<WorkflowAuditLog>(),
+                    LeaseOffers = new List<LeaseOffer>()
+                };
+
+            var leaseOffers = await _context.LeaseOffers
+                .Where(lo => lo.RentalApplicationId == applicationId && lo.OrganizationId == orgId && !lo.IsDeleted)
+                .OrderByDescending(lo => lo.OfferedOn)
+                .ToListAsync();
+
+            var auditHistory = await _context.WorkflowAuditLogs
+                .Where(w => w.EntityType == "RentalApplication" && w.EntityId == applicationId && w.OrganizationId == orgId)
+                .OrderByDescending(w => w.PerformedOn)
+                .ToListAsync();
+
+            return new ApplicationWorkflowState
+            {
+                Application = application,
+                Prospect = application.ProspectiveTenant,
+                Property = application.Property,
+                Screening = application.Screening,
+                LeaseOffers = leaseOffers,
+                AuditHistory = auditHistory
+            };
+        }
     }
 
     /// <summary>
@@ -1181,5 +1224,18 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         public decimal SecurityDeposit { get; set; }
         public string Terms { get; set; } = string.Empty;
         public string? Notes { get; set; }
+    }
+
+    /// <summary>
+    /// Aggregated workflow state returned by GetApplicationWorkflowStateAsync.
+    /// </summary>
+    public class ApplicationWorkflowState
+    {
+        public RentalApplication? Application { get; set; }
+        public ProspectiveTenant? Prospect { get; set; }
+        public Property? Property { get; set; }
+        public ApplicationScreening? Screening { get; set; }
+        public List<LeaseOffer> LeaseOffers { get; set; } = new();
+        public List<WorkflowAuditLog> AuditHistory { get; set; } = new();
     }
 }
