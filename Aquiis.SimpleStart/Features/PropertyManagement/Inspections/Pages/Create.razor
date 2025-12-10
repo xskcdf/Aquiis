@@ -1,7 +1,8 @@
 @page "/propertymanagement/inspections/create"
-@page "/propertymanagement/inspections/create/{PropertyId:int}"
+@page "/propertymanagement/inspections/create/{PropertyId:guid}"
 
 @using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Validation
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
@@ -256,10 +257,10 @@ else
 
 @code {
     [Parameter]
-    public int? PropertyId { get; set; }
+    public Guid? PropertyId { get; set; }
 
     [SupplyParameterFromQuery(Name = "propertyId")]
-    public int? PropertyIdFromQuery { get; set; }
+    public Guid? PropertyIdFromQuery { get; set; }
 
     private Property? property;
     private InspectionModel model = new();
@@ -463,10 +464,11 @@ else
 
     public class InspectionModel
     {
-        [Required]
-        public int PropertyId { get; set; }
+        [RequiredGuid]
+        public Guid PropertyId { get; set; }
 
-        public int? LeaseId { get; set; }
+        [OptionalGuid]
+        public Guid? LeaseId { get; set; }
 
         [Required]
         public DateTime CompletedOn { get; set; } = DateTime.Today;

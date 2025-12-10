@@ -178,7 +178,7 @@
     [CascadingParameter]
     private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
 
-    private string? organizationId = string.Empty;
+    private Guid? organizationId = Guid.Empty;
 
     private async Task GenerateReport()
     {
@@ -191,9 +191,9 @@
         {
             organizationId = await UserContextService.GetActiveOrganizationIdAsync();
 
-            if (!string.IsNullOrEmpty(organizationId))
+            if (organizationId.HasValue)
             {
-                rentRollItems = await FinancialReportService.GenerateRentRollAsync(organizationId, asOfDate);
+                rentRollItems = await FinancialReportService.GenerateRentRollAsync(organizationId.Value, asOfDate);
             }
         }
         finally

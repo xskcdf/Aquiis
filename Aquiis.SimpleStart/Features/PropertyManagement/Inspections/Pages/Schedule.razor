@@ -299,12 +299,12 @@ else
         await LoadData();
     }
 
-    private void ViewProperty(int propertyId)
+    private void ViewProperty(Guid propertyId)
     {
         NavigationManager.NavigateTo($"/propertymanagement/properties/view/{propertyId}");
     }
 
-    private void CreateInspection(int propertyId)
+    private void CreateInspection(Guid propertyId)
     {
         NavigationManager.NavigateTo($"/propertymanagement/inspections/create/{propertyId}");
     }

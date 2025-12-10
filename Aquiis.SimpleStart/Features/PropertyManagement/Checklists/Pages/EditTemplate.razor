@@ -1,4 +1,4 @@
-@page "/propertymanagement/checklists/templates/edit/{TemplateId:int}"
+@page "/propertymanagement/checklists/templates/edit/{TemplateId:guid}"
 
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
@@ -219,11 +219,11 @@
 
 @code {
     [Parameter]
-    public int TemplateId { get; set; }
+    public Guid TemplateId { get; set; }
 
     private ChecklistTemplate? template;
     private List<ChecklistTemplateItem> templateItems = new();
-    private List<int> deletedItemIds = new();
+    private List<Guid> deletedItemIds = new();
     
     private bool loading = true;
     private bool isSaving = false;
@@ -278,7 +278,7 @@
     private void RemoveItem(ChecklistTemplateItem item)
     {
         // Track deleted items that exist in database
-        if (item.Id > 0)
+        if (item.Id != Guid.Empty)
         {
             deletedItemIds.Add(item.Id);
         }
@@ -305,8 +305,8 @@
             deletedItemIds.Clear();
 
             // Process items: separate new items from existing ones
-            var existingItems = templateItems.Where(i => i.Id > 0).ToList();
-            var newItems = templateItems.Where(i => i.Id == 0).ToList();
+            var existingItems = templateItems.Where(i => i.Id != Guid.Empty).ToList();
+            var newItems = templateItems.Where(i => i.Id == Guid.Empty).ToList();
 
             // Update existing items
             foreach (var item in existingItems)

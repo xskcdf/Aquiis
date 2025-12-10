@@ -1,5 +1,8 @@
 using Microsoft.Playwright.NUnit;
 using Microsoft.Playwright;
+using NUnit.Framework;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace Aquiis.Tests;
 
@@ -79,6 +82,7 @@ public class AccountManagementTests : PageTest
         await Page.GetByRole(AriaRole.Button, new() { Name = "Log in" }).ClickAsync();
         
         // Wait for login to complete
+        await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
         await Page.WaitForSelectorAsync("h1:has-text('Property Management Dashboard')");
         
         await Page.GetByRole(AriaRole.Link, new() { Name = "Properties" }).ClickAsync();
@@ -105,7 +109,7 @@ public class AccountManagementTests : PageTest
         await Page.GetByRole(AriaRole.Button, new() { Name = "Create Property" }).ClickAsync();
         
         // Verify property was created successfully
-        await Page.WaitForSelectorAsync("h1:has-text('Properties')");
+        await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
         await Expect(Page.GetByText("369 Crescent Drive").First).ToBeVisibleAsync();
 
         await Page.GetByRole(AriaRole.Button, new() { Name = "Add Property" }).ClickAsync();
@@ -131,7 +135,7 @@ public class AccountManagementTests : PageTest
         await Page.GetByRole(AriaRole.Button, new() { Name = "Create Property" }).ClickAsync();
 
         // Verify property was created successfully
-        await Page.WaitForSelectorAsync("h1:has-text('Properties')");
+        await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
         await Expect(Page.GetByText("354 Maple Avenue").First).ToBeVisibleAsync();
     }
 
@@ -164,7 +168,7 @@ public class AccountManagementTests : PageTest
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "e.g., Driver's License #" }).FillAsync("12345678");
         await Page.Locator("select[name=\"newProspect.IdentificationState\"]").SelectOptionAsync(new[] { "LA" });
         await Page.Locator("select[name=\"newProspect.Source\"]").SelectOptionAsync(new[] { "Zillow" });
-        await Page.Locator("select[name=\"newProspect.InterestedPropertyId\"]").SelectOptionAsync(new[] { "1" });
+        await Page.Locator("select[name=\"newProspect.InterestedPropertyId\"]").SelectOptionAsync(new[] { "354 Maple Avenue" });
         await Page.Locator("input[name=\"newProspect.DesiredMoveInDate\"]").FillAsync("2026-01-01");
         await Page.GetByRole(AriaRole.Button, new() { Name = "Save Prospect" }).ClickAsync();
 

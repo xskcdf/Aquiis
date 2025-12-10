@@ -377,7 +377,7 @@ else
     private UserInfo? selectedUserForEdit;
     private RoleEditModel roleEditModel = new();
 
-    private string organizationId = string.Empty;
+    private Guid organizationId = Guid.Empty;
 
     private string organizationName = string.Empty;
 
@@ -386,7 +386,7 @@ else
         try
         {
             // One line instead of 10+!
-            organizationId = await UserContext!.GetActiveOrganizationIdAsync() ?? string.Empty;
+            organizationId = await UserContext!.GetActiveOrganizationIdAsync() ?? Guid.Empty;
             organizationName = (await UserContext!.GetOrganizationByIdAsync(organizationId))?.Name ?? string.Empty;
             await LoadData();
         }

@@ -290,7 +290,7 @@
         try
         {
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(organizationId))
+            if (organizationId.HasValue && organizationId != Guid.Empty)
             {
                 prospects = await PropertyService.GetAllProspectiveTenantsAsync();
                 
@@ -299,6 +299,10 @@
                 // For now, we'll need to inject PropertyManagementService
                 var allProperties = await PropertyService.GetPropertiesAsync();
                 properties = allProperties.Where(p => p.IsAvailable).ToList();
+            }
+            else
+            {
+                ToastService.ShowError("Organization context not available");
             }
         }
         catch (Exception ex)
@@ -330,7 +334,7 @@
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
 
-            if (string.IsNullOrEmpty(organizationId) || string.IsNullOrEmpty(userId))
+            if (!organizationId.HasValue || organizationId == Guid.Empty || string.IsNullOrEmpty(userId))
             {
                 ToastService.ShowError("User context not available");
                 return;
@@ -350,7 +354,7 @@
                 Notes = newProspect.Notes,
                 InterestedPropertyId = newProspect.InterestedPropertyId,
                 DesiredMoveInDate = newProspect.DesiredMoveInDate,
-                OrganizationId = organizationId,
+                OrganizationId = organizationId.Value,
             };
             
             await PropertyService.CreateProspectiveTenantAsync(prospect);
@@ -370,22 +374,22 @@
         filterStatus = status;
     }
 
-    private void ScheduleTour(int prospectId)
+    private void ScheduleTour(Guid prospectId)
     {
         Navigation.NavigateTo($"/PropertyManagement/Tours/Schedule/{prospectId}");
     }
 
-    private void BeginApplication(int prospectId)
+    private void BeginApplication(Guid prospectId)
     {
         Navigation.NavigateTo($"/propertymanagement/prospects/{prospectId}/submit-application");
     }
 
-    private void ViewDetails(int prospectId)
+    private void ViewDetails(Guid prospectId)
     {
         Navigation.NavigateTo($"/PropertyManagement/ProspectiveTenants/{prospectId}");
     }
 
-    private async Task DeleteProspect(int prospectId)
+    private async Task DeleteProspect(Guid prospectId)
     {
         // TODO: Add confirmation dialog in future sprint
         try
@@ -393,11 +397,15 @@
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
             
-            if (!string.IsNullOrEmpty(organizationId) && !string.IsNullOrEmpty(userId))
+            if (organizationId.HasValue && organizationId != Guid.Empty && !string.IsNullOrEmpty(userId))
             {
                 await PropertyService.DeleteProspectiveTenantAsync(prospectId);
                 ToastService.ShowSuccess("Prospect deleted successfully");
                 await LoadData();
+            }
+            else
+            {
+                ToastService.ShowError("User context not available");
             }
         }
         catch (Exception ex)
@@ -458,7 +466,7 @@
         [StringLength(2000)]
         public string? Notes { get; set; }
 
-        public int? InterestedPropertyId { get; set; }
+        public Guid? InterestedPropertyId { get; set; }
 
         public DateTime? DesiredMoveInDate { get; set; }
     }

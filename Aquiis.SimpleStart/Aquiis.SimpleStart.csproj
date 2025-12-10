@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-Aquiis.SimpleStart-c69b6efe-bb20-41de-8cba-044207ebdce1</UserSecretsId>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <MigrationsDirectory>Infrastructure/Data/Migrations</MigrationsDirectory>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,4 +1,4 @@
-@page "/propertymanagement/applications/{ApplicationId:int}/generate-lease-offer"
+@page "/propertymanagement/applications/{ApplicationId:guid}/generate-lease-offer"
 
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
@@ -261,7 +261,7 @@
 
 @code {
     [Parameter]
-    public int ApplicationId { get; set; }
+    public Guid ApplicationId { get; set; }
 
     private RentalApplication? application;
     private LeaseOfferModel leaseModel = new();
@@ -269,14 +269,14 @@
     private bool isSubmitting = false;
     private string errorMessage = string.Empty;
     private string userId = string.Empty;
-    private string organizationId = string.Empty;
+    private Guid organizationId = Guid.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             userId = await UserContext.GetUserIdAsync() ?? string.Empty;
-            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
+            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? Guid.Empty;
 
             await LoadApplication();
         }

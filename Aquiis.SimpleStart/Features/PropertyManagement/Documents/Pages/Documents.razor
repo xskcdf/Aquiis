@@ -122,7 +122,7 @@ else
                 {
                     var property = properties.FirstOrDefault(p => p.Id == propertyGroup.Key);
                     var propertyDocCount = propertyGroup.Count();
-                    var isExpanded = expandedProperties.Contains(propertyGroup.Key);
+                    var isExpanded = expandedProperties.Contains(propertyGroup.Key.GetHashCode());
                     
                     <div class="card mb-3">
                         <div class="card-header" style="cursor: pointer;" @onclick="() => TogglePropertyGroup(propertyGroup.Key)">
@@ -354,14 +354,14 @@ else
     private string sortColumn = nameof(Document.CreatedOn);
     private bool sortAscending = false;
 
-    private IEnumerable<IGrouping<int, Document>> groupedDocuments = Enumerable.Empty<IGrouping<int, Document>>();
+    private IEnumerable<IGrouping<Guid, Document>> groupedDocuments = Enumerable.Empty<IGrouping<Guid, Document>>();
 
     [CascadingParameter]
     private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
 
     [Parameter]
     [SupplyParameterFromQuery]
-    public int? PropertyId { get; set; }
+    public Guid? PropertyId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -438,7 +438,7 @@ else
         if (groupByProperty)
         {
             groupedDocuments = filteredDocuments
-                .Where(d => d.PropertyId.HasValue && d.PropertyId.Value > 0)
+                .Where(d => d.PropertyId.HasValue && d.PropertyId.Value != Guid.Empty)
                 .GroupBy(d => d.PropertyId!.Value)
                 .OrderBy(g => properties.FirstOrDefault(p => p.Id == g.Key)?.Address ?? "");
         }
@@ -507,15 +507,15 @@ else
         ApplyFilters();
     }
 
-    private void TogglePropertyGroup(int propertyId)
+    private void TogglePropertyGroup(Guid propertyId)
     {
-        if (expandedProperties.Contains(propertyId))
+        if (expandedProperties.Contains(propertyId.GetHashCode()))
         {
-            expandedProperties.Remove(propertyId);
+            expandedProperties.Remove(propertyId.GetHashCode());
         }
         else
         {
-            expandedProperties.Add(propertyId);
+            expandedProperties.Add(propertyId.GetHashCode());
         }
     }
 
@@ -534,7 +534,7 @@ else
         await JSRuntime.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(fileData), mimeType);
     }
 
-    private void GoToLease(int leaseId)
+    private void GoToLease(Guid leaseId)
     {
         Navigation.NavigateTo($"/propertymanagement/leases/view/{leaseId}");
     }

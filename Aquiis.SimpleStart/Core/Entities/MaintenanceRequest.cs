@@ -1,21 +1,21 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Aquiis.SimpleStart.Core.Validation;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {
     public class MaintenanceRequest : BaseModel, ISchedulableEntity
     {
-        [Required]
-        [StringLength(100)]
+        [RequiredGuid]
         [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
-        [Required]
-        public int PropertyId { get; set; }
+        [RequiredGuid]
+        public Guid PropertyId { get; set; }
 
-        public int? CalendarEventId { get; set; }
+        public Guid? CalendarEventId { get; set; }
 
-        public int? LeaseId { get; set; }
+        public Guid? LeaseId { get; set; }
 
         [Required]
         [StringLength(100)]
@@ -136,7 +136,7 @@ namespace Aquiis.SimpleStart.Core.Entities
         
         public string GetEventType() => CalendarEventTypes.Maintenance;
         
-        public int? GetPropertyId() => PropertyId;
+        public Guid? GetPropertyId() => PropertyId;
         
         public string GetEventDescription() => $"{Property?.Address ?? "Property"} - {Priority} Priority";
         

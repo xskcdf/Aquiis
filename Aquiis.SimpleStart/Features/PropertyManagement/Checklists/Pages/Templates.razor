@@ -241,12 +241,12 @@
         NavigationManager.NavigateTo("/propertymanagement/checklists/create");
     }
 
-    private void NavigateToCreateWithTemplate(int templateId)
+    private void NavigateToCreateWithTemplate(Guid templateId)
     {
         NavigationManager.NavigateTo($"/propertymanagement/checklists/create?templateId={templateId}");
     }
 
-    private void NavigateToEditTemplate(int templateId)
+    private void NavigateToEditTemplate(Guid templateId)
     {
         NavigationManager.NavigateTo($"/propertymanagement/checklists/templates/edit/{templateId}");
     }

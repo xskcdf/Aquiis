@@ -312,17 +312,17 @@
         NavigationManager.NavigateTo("/property-management/security-deposits/record-performance");
     }
 
-    private void ViewPoolDetails(int poolId)
+    private void ViewPoolDetails(Guid poolId)
     {
         NavigationManager.NavigateTo($"/property-management/security-deposits/investment-pool/{poolId}");
     }
 
-    private void CalculateDividends(int poolId)
+    private void CalculateDividends(Guid poolId)
     {
         NavigationManager.NavigateTo($"/property-management/security-deposits/calculate-dividends/{poolId}");
     }
 
-    private async Task ClosePool(int poolId, int year)
+    private async Task ClosePool(Guid poolId, int year)
     {
         try
         {

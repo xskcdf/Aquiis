@@ -275,8 +275,8 @@ else
     protected override async Task OnInitializedAsync()
     {
         // Get organization and role context
-        var org = await UserContext.GetActiveOrganizationAsync();
-        organizationName = org?.Name ?? "Unknown Organization";
+        var organization = await UserContext.GetActiveOrganizationAsync();
+        organizationName = organization?.Name ?? "Unknown Organization";
         userRole = await UserContext.GetCurrentOrganizationRoleAsync() ?? "User";
         canEdit = userRole != "User"; // User role is read-only
         
@@ -288,10 +288,10 @@ else
         loading = true;
         try
         {
-            var orgId = await UserContext.GetActiveOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(orgId))
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            if (organizationId.HasValue)
             {
-                settings = await SettingsService.GetSettingsAsync(orgId);
+                settings = await SettingsService.GetSettingsAsync(organizationId.Value);
             }
         }
         catch (Exception ex)

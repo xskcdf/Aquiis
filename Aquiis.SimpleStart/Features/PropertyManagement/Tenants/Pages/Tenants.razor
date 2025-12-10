@@ -348,17 +348,17 @@ else
         Navigation.NavigateTo("/propertymanagement/prospectivetenants");
     }
 
-    private void ViewTenant(int id)
+    private void ViewTenant(Guid id)
     {
         Navigation.NavigateTo($"/propertymanagement/tenants/view/{id}");
     }
 
-    private void EditTenant(int id)
+    private void EditTenant(Guid id)
     {
         Navigation.NavigateTo($"/propertymanagement/tenants/edit/{id}");
     }
 
-    private async Task DeleteTenant(int id)
+    private async Task DeleteTenant(Guid id)
     {
         var authState = await AuthenticationStateTask;
         var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;

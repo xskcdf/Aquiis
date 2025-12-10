@@ -364,55 +364,69 @@
 
     private async Task LoadDashboardData()
     {
-        var userId = await UserContextService.GetUserIdAsync();
-        var organizationId = await UserContextService.GetActiveOrganizationIdAsync();
-        
-        if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId))
-            return;
+        try
+        {
+            // Check authentication first
+            if (!await UserContextService.IsAuthenticatedAsync())
+                return;
+                
+            var userId = await UserContextService.GetUserIdAsync();
+            if (string.IsNullOrEmpty(userId))
+                return;
+                
+            var organizationId = await UserContextService.GetActiveOrganizationIdAsync();
+            if (!organizationId.HasValue)
+                return;
 
-        // Load summary counts
-        var allProperties = await PropertyManagementService.GetPropertiesAsync();
-        properties = allProperties.Where(p => !p.IsDeleted).ToList();
-        totalProperties = properties.Count;
-        availableProperties = properties.Count(p => p.IsAvailable);
+            // Load summary counts
+            var allProperties = await PropertyManagementService.GetPropertiesAsync();
+            properties = allProperties.Where(p => !p.IsDeleted).ToList();
+            totalProperties = properties.Count;
+            availableProperties = properties.Count(p => p.IsAvailable);
     
-        var allTenants = await PropertyManagementService.GetTenantsAsync();
-        tenants = allTenants.Where(t => !t.IsDeleted).ToList();
-        totalTenants = tenants.Count;
+            var allTenants = await PropertyManagementService.GetTenantsAsync();
+            tenants = allTenants.Where(t => !t.IsDeleted).ToList();
+            totalTenants = tenants.Count;
 
-        var allLeases = await PropertyManagementService.GetLeasesAsync();
-        leases = allLeases.Where(l => !l.IsDeleted).ToList();
-        activeLeases = leases.Count(l => l.Status == "Active");
+            var allLeases = await PropertyManagementService.GetLeasesAsync();
+            leases = allLeases.Where(l => !l.IsDeleted).ToList();
+            activeLeases = leases.Count(l => l.Status == "Active");
 
-        // Load available properties and pending leases
-        availablePropertiesList = properties
-            .Where(p => p.OrganizationId == organizationId && p.IsAvailable)
-            .OrderByDescending(p => p.CreatedOn)
-            .Take(5)
-            .ToList();
+            // Load available properties and pending leases
+            availablePropertiesList = properties
+                .Where(p => p.OrganizationId == organizationId && p.IsAvailable)
+                .OrderByDescending(p => p.CreatedOn)
+                .Take(5)
+                .ToList();
 
-        pendingLeases = leases
-            .Where(l => l.OrganizationId == organizationId && l.Status == "Pending")
-            .OrderByDescending(l => l.CreatedOn)
-            .Take(5)
-            .ToList();
+            pendingLeases = leases
+                .Where(l => l.OrganizationId == organizationId && l.Status == "Pending")
+                .OrderByDescending(l => l.CreatedOn)
+                .Take(5)
+                .ToList();
 
-        // Load open maintenance requests
-        var allMaintenanceRequests = await PropertyManagementService.GetMaintenanceRequestsAsync();
-        openMaintenanceRequests = allMaintenanceRequests
-            .Where(m => m.OrganizationId == organizationId && m.Status != "Completed" && m.Status != "Cancelled")
-            .OrderByDescending(m => m.Priority == "Urgent" ? 1 : m.Priority == "High" ? 2 : 3)
-            .ThenByDescending(m => m.RequestedOn)
-            .Take(5)
-            .ToList();
+            // Load open maintenance requests
+            var allMaintenanceRequests = await PropertyManagementService.GetMaintenanceRequestsAsync();
+            openMaintenanceRequests = allMaintenanceRequests
+                .Where(m => m.OrganizationId == organizationId && m.Status != "Completed" && m.Status != "Cancelled")
+                .OrderByDescending(m => m.Priority == "Urgent" ? 1 : m.Priority == "High" ? 2 : 3)
+                .ThenByDescending(m => m.RequestedOn)
+                .Take(5)
+                .ToList();
 
-        // Load recent invoices
-        var allInvoices = await PropertyManagementService.GetInvoicesAsync();
-        recentInvoices = allInvoices
-            .Where(i => i.Status != "Paid" && i.Status != "Cancelled")
-            .OrderByDescending(i => i.InvoicedOn)
-            .Take(5)
-            .ToList();
+            // Load recent invoices
+            var allInvoices = await PropertyManagementService.GetInvoicesAsync();
+            recentInvoices = allInvoices
+                .Where(i => i.Status != "Paid" && i.Status != "Cancelled")
+                .OrderByDescending(i => i.InvoicedOn)
+                .Take(5)
+                .ToList();
+        }
+        catch (InvalidOperationException)
+        {
+            // UserContext not yet initialized - silent return
+            return;
+        }
     }
 
     private string GetInvoiceStatusBadgeClass(string status)

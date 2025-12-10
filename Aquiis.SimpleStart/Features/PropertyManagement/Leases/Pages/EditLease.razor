@@ -1,4 +1,4 @@
-@page "/propertymanagement/leases/edit/{Id:int}"
+@page "/propertymanagement/leases/edit/{Id:guid}"
 
 @using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Components.Authorization
@@ -118,9 +118,7 @@ else
 
                         <div class="row">
                             <div class="col-md-12 mb-3">
-                                <label class="form-label">Notes</label>
-                                <InputTextArea @bind-Value="leaseModel.Notes" class="form-control" rows="3" placeholder="Additional notes" />
-                                <ValidationMessage For="() => leaseModel.Notes" class="text-danger" />
+                                <NotesTimeline EntityType="Lease" EntityId="@lease.Id" />
                             </div>
                         </div>
 
@@ -192,7 +190,7 @@ else
 }
 
 @code {
-    [Parameter] public int Id { get; set; }
+    [Parameter] public Guid Id { get; set; }
     
     private Lease? lease;
     private LeaseModel leaseModel = new();
@@ -229,7 +227,6 @@ else
             SecurityDeposit = lease.SecurityDeposit,
             Status = lease.Status,
             Terms = lease.Terms,
-            Notes = lease.Notes
         };
     }
 
@@ -250,7 +247,6 @@ else
             lease.SecurityDeposit = leaseModel.SecurityDeposit;
             lease.Status = leaseModel.Status;
             lease.Terms = leaseModel.Terms;
-            lease.Notes = leaseModel.Notes;
             
             // Update property availability based on lease status change
             if (lease.Property != null && oldStatus != leaseModel.Status)
@@ -354,10 +350,8 @@ else
         [StringLength(50)]
         public string Status { get; set; } = "Active";
 
-        [StringLength(1000, ErrorMessage = "Terms cannot exceed 1000 characters")]
+        [StringLength(5000, ErrorMessage = "Terms cannot exceed 2000 characters")]
         public string Terms { get; set; } = string.Empty;
 
-        [StringLength(500, ErrorMessage = "Notes cannot exceed 500 characters")]
-        public string Notes { get; set; } = string.Empty;
     }
 }

@@ -118,7 +118,7 @@ else
                     var propertyInvoiceCount = propertyGroup.Count();
                     var propertyTotal = propertyGroup.Sum(i => i.Amount);
                     var propertyBalance = propertyGroup.Sum(i => i.BalanceDue);
-                    var isExpanded = expandedProperties.Contains(propertyGroup.Key);
+                    var isExpanded = expandedProperties.Contains(propertyGroup.Key.GetHashCode());
                     
                     <div class="card mb-3">
                         <div class="card-header" style="cursor: pointer;" @onclick="() => TogglePropertyGroup(propertyGroup.Key)">
@@ -372,7 +372,7 @@ else
     private List<Invoice>? invoices;
     private List<Invoice> filteredInvoices = new();
     private List<Invoice> pagedInvoices = new();
-    private IEnumerable<IGrouping<int, Invoice>> groupedInvoices = Enumerable.Empty<IGrouping<int, Invoice>>();
+    private IEnumerable<IGrouping<Guid, Invoice>> groupedInvoices = Enumerable.Empty<IGrouping<Guid, Invoice>>();
     private HashSet<int> expandedProperties = new();
     private string searchTerm = string.Empty;
     private string selectedStatus = string.Empty;
@@ -398,7 +398,7 @@ else
 
     [Parameter]
     [SupplyParameterFromQuery]
-    public int? LeaseId { get; set; }
+    public Guid? LeaseId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -445,7 +445,7 @@ else
         if (groupByProperty)
         {
             groupedInvoices = filteredInvoices
-                .Where(i => i.Lease?.PropertyId != null && i.Lease.PropertyId > 0)
+                .Where(i => i.Lease?.PropertyId != null)
                 .GroupBy(i => i.Lease!.PropertyId)
                 .OrderBy(g => g.First().Lease?.Property?.Address)
                 .ToList();
@@ -456,15 +456,15 @@ else
         }
     }
     
-    private void TogglePropertyGroup(int propertyId)
+    private void TogglePropertyGroup(Guid propertyId)
     {
-        if (expandedProperties.Contains(propertyId))
+        if (expandedProperties.Contains(propertyId.GetHashCode()))
         {
-            expandedProperties.Remove(propertyId);
+            expandedProperties.Remove(propertyId.GetHashCode());
         }
         else
         {
-            expandedProperties.Add(propertyId);
+            expandedProperties.Add(propertyId.GetHashCode());
         }
     }
 
@@ -571,12 +571,12 @@ else
         Navigation.NavigateTo("/propertymanagement/invoices/create");
     }
 
-    private void ViewInvoice(int id)
+    private void ViewInvoice(Guid id)
     {
         Navigation.NavigateTo($"/propertymanagement/invoices/view/{id}");
     }
 
-    private void EditInvoice(int id)
+    private void EditInvoice(Guid id)
     {
         Navigation.NavigateTo($"/propertymanagement/invoices/edit/{id}");
     }

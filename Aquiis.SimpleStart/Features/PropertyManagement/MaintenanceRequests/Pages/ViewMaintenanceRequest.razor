@@ -1,4 +1,4 @@
-@page "/propertymanagement/maintenance/view/{Id:int}"
+@page "/propertymanagement/maintenance/view/{Id:guid}"
 
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
@@ -256,7 +256,7 @@ else
 
 @code {
     [Parameter]
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     private MaintenanceRequest? maintenanceRequest;
     private bool isLoading = true;

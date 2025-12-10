@@ -424,17 +424,17 @@ else
         Navigation.NavigateTo("/propertymanagement/properties/create");
     }
 
-    private void ViewProperty(int propertyId)
+    private void ViewProperty(Guid propertyId)
     {
         Navigation.NavigateTo($"/propertymanagement/properties/view/{propertyId}");
     }
 
-   private void EditProperty(int propertyId)
+   private void EditProperty(Guid propertyId)
    {
        Navigation.NavigateTo($"/propertymanagement/properties/edit/{propertyId}");
    }
 
-   private async Task DeleteProperty(int propertyId)
+   private async Task DeleteProperty(Guid propertyId)
    {
        var authState = await AuthenticationStateTask;
         var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;

@@ -9,6 +9,8 @@
 @inject ToastService ToastService
 @inject IJSRuntime JSRuntime
 
+@rendermode InteractiveServer
+
 <div class="notes-timeline">
     <div class="mb-3">
         <label class="form-label"><i class="bi bi-chat-left-text"></i> Add Note</label>
@@ -113,7 +115,7 @@
     public string EntityType { get; set; } = string.Empty;
 
     [Parameter, EditorRequired]
-    public int EntityId { get; set; }
+    public Guid EntityId { get; set; }
 
     [Parameter]
     public bool CanDelete { get; set; } = true;
@@ -136,7 +138,7 @@
     protected override async Task OnParametersSetAsync()
     {
         // Reload notes when EntityId changes
-        if (EntityId > 0)
+        if (EntityId != Guid.Empty)
         {
             await LoadNotes();
         }
@@ -147,8 +149,7 @@
         isLoading = true;
         try
         {
-            var organizationId = await UserContext.GetOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(organizationId) && EntityId > 0)
+            if (EntityId != Guid.Empty)
             {
                 notes = await NoteService.GetNotesAsync(EntityType, EntityId);
             }
@@ -194,26 +195,22 @@
         }
     }
 
-    private async Task DeleteNote(int noteId)
+    private async Task DeleteNote(Guid noteId)
     {
         if (!await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this note?"))
             return;
 
         try
         {
-            var organizationId = await UserContext.GetOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(organizationId))
+            var success = await NoteService.DeleteNoteAsync(noteId);
+            if (success)
             {
-                var success = await NoteService.DeleteNoteAsync(noteId);
-                if (success)
-                {
-                    notes.RemoveAll(n => n.Id == noteId);
-                    ToastService.ShowSuccess("Note deleted successfully");
-                }
-                else
-                {
-                    ToastService.ShowError("Note not found or already deleted");
-                }
+                notes.RemoveAll(n => n.Id == noteId);
+                ToastService.ShowSuccess("Note deleted successfully");
+            }
+            else
+            {
+                ToastService.ShowError("Note not found or already deleted");
             }
         }
         catch (Exception ex)

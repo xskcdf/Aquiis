@@ -1,6 +1,7 @@
 
 
 using System.ComponentModel.DataAnnotations;
+using Aquiis.SimpleStart.Core.Validation;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {
@@ -10,10 +11,9 @@ namespace Aquiis.SimpleStart.Core.Entities
     public class UserOrganization
     {
 
-        [Required]
-        [StringLength(100)]
+        [RequiredGuid]
         [Display(Name = "UserOrganization ID")]
-        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         /// <summary>
         /// The user being granted access
@@ -23,7 +23,8 @@ namespace Aquiis.SimpleStart.Core.Entities
         /// <summary>
         /// The organization they're being granted access to
         /// </summary>
-        public string OrganizationId { get; set; } = string.Empty;
+        [RequiredGuid]
+        public Guid OrganizationId { get; set; } = Guid.Empty;
         
         /// <summary>
         /// Role within this organization: "Owner", "Administrator", "PropertyManager", "User"

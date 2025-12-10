@@ -1,6 +1,7 @@
-@page "/propertymanagement/prospects/{ProspectId:int}/submit-application"
+@page "/propertymanagement/prospects/{ProspectId:guid}/submit-application"
 
 @using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Validation
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
@@ -362,7 +363,7 @@
 
 @code {
     [Parameter]
-    public int ProspectId { get; set; }
+    public Guid ProspectId { get; set; }
 
     private ProspectiveTenant? prospect;
     private RentalApplication? existingApplication;
@@ -375,7 +376,7 @@
     private decimal applicationFee = 50.00m;
     private string errorMessage = string.Empty;
     private string userId = string.Empty;
-    private string organizationId = string.Empty;
+    private Guid organizationId = Guid.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -383,7 +384,7 @@
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
+            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? Guid.Empty;
 
             await LoadData();
         }
@@ -431,7 +432,7 @@
 
     private void UpdateSelectedProperty()
     {
-        if (applicationModel.PropertyId > 0)
+        if (applicationModel.PropertyId != Guid.Empty)
         {
             selectedProperty = availableProperties.FirstOrDefault(p => p.Id == applicationModel.PropertyId);
         }
@@ -443,14 +444,14 @@
 
     private async Task OnPropertyChanged(ChangeEventArgs e)
     {
-        if (int.TryParse(e.Value?.ToString(), out int propertyId) && propertyId > 0)
+        if (Guid.TryParse(e.Value?.ToString(), out Guid propertyId) && propertyId != Guid.Empty)
         {
             applicationModel.PropertyId = propertyId;
             selectedProperty = availableProperties.FirstOrDefault(p => p.Id == propertyId);
         }
         else
         {
-            applicationModel.PropertyId = 0;
+            applicationModel.PropertyId = Guid.Empty;
             selectedProperty = null;
         }
         StateHasChanged();
@@ -541,9 +542,8 @@
 
     public class ApplicationSubmissionModel
     {
-        [Required(ErrorMessage = "Please select a property")]
-        [Range(1, int.MaxValue, ErrorMessage = "Please select a property")]
-        public int PropertyId { get; set; }
+        [RequiredGuid(ErrorMessage = "Please select a property")]
+        public Guid PropertyId { get; set; }
 
         [Required]
         [StringLength(200)]

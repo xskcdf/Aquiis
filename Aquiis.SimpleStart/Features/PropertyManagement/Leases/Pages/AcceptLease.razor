@@ -1,4 +1,4 @@
-@page "/propertymanagement/leases/{LeaseId:int}/accept"
+@page "/propertymanagement/leases/{LeaseId:guid}/accept"
 
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
@@ -323,7 +323,7 @@
 
 @code {
     [Parameter]
-    public int LeaseId { get; set; }
+    public Guid LeaseId { get; set; }
 
     private Lease? lease;
     private ProspectiveTenant? prospectiveTenant;
@@ -337,7 +337,7 @@
     private string successMessage = string.Empty;
     private string declineReason = string.Empty;
     private string userId = string.Empty;
-    private string organizationId = string.Empty;
+    private Guid organizationId = Guid.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -345,7 +345,7 @@
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
+            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? Guid.Empty;
 
             await LoadLease();
         }
@@ -430,7 +430,7 @@
                 return;
             }
 
-            if(securityDeposit == null || securityDeposit.Id == 0)
+            if(securityDeposit == null || securityDeposit.Id == Guid.Empty)
             {
                 errorMessage = "CRITICAL ERROR: Security deposit record not created. Lease acceptance aborted.";
                 isSubmitting = false;

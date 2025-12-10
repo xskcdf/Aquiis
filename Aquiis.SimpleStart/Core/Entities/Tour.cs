@@ -1,22 +1,22 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Aquiis.SimpleStart.Core.Validation;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {
     public class Tour : BaseModel, ISchedulableEntity
     {
-        [Required]
-        [StringLength(100)]
+        [RequiredGuid]
         [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
+        public Guid OrganizationId { get; set; } = Guid.Empty;
         
-        [Required]
+        [RequiredGuid]
         [Display(Name = "Prospective Tenant")]
-        public int ProspectiveTenantId { get; set; }
+        public Guid ProspectiveTenantId { get; set; }
 
-        [Required]
+        [RequiredGuid]
         [Display(Name = "Property")]
-        public int PropertyId { get; set; }
+        public Guid PropertyId { get; set; }
 
         [Required]
         [Display(Name = "Scheduled Date & Time")]
@@ -42,10 +42,10 @@ namespace Aquiis.SimpleStart.Core.Entities
         public string? ConductedBy { get; set; } = string.Empty; // UserId of property manager
 
         [Display(Name = "Property Tour Checklist")]
-        public int? ChecklistId { get; set; } // Links to property tour checklist
+        public Guid? ChecklistId { get; set; } // Links to property tour checklist
 
         [Display(Name = "Calendar Event")]
-        public int? CalendarEventId { get; set; }
+        public Guid? CalendarEventId { get; set; }
 
         // Navigation properties
         [ForeignKey(nameof(ProspectiveTenantId))]
@@ -66,7 +66,7 @@ namespace Aquiis.SimpleStart.Core.Entities
         
         public string GetEventType() => CalendarEventTypes.Tour;
         
-        public int? GetPropertyId() => PropertyId;
+        public Guid? GetPropertyId() => PropertyId;
         
         public string GetEventDescription() => Property?.Address ?? string.Empty;
         

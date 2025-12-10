@@ -1,4 +1,4 @@
-@page "/propertymanagement/tenants/edit/{Id:int}"
+@page "/propertymanagement/tenants/edit/{Id:guid}"
 @using Aquiis.SimpleStart.Core.Entities
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authorization
@@ -174,7 +174,7 @@ else
 }
 
 @code {
-    [Parameter] public int Id { get; set; }
+    [Parameter] public Guid Id { get; set; }
     
     private Tenant? tenant;
     private TenantModel tenantModel = new();

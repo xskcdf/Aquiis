@@ -527,52 +527,58 @@ namespace Aquiis.SimpleStart.Infrastructure.Data
         {
             var systemTimestamp = DateTime.Parse("2025-11-30T00:00:00Z").ToUniversalTime();
             
+            // Fixed GUIDs for system templates (consistent across deployments)
+            var propertyTourTemplateId = Guid.Parse("00000000-0000-0000-0001-000000000001");
+            var moveInTemplateId = Guid.Parse("00000000-0000-0000-0001-000000000002");
+            var moveOutTemplateId = Guid.Parse("00000000-0000-0000-0001-000000000003");
+            var openHouseTemplateId = Guid.Parse("00000000-0000-0000-0001-000000000004");
+            
             // Seed ChecklistTemplates
             modelBuilder.Entity<ChecklistTemplate>().HasData(
                 new ChecklistTemplate
                 {
-                    Id = 1,
+                    Id = propertyTourTemplateId,
                     Name = "Property Tour",
                     Description = "Standard property showing checklist",
                     Category = "Tour",
                     IsSystemTemplate = true,
-                    OrganizationId = string.Empty,
+                    OrganizationId = Guid.Empty,
                     CreatedOn = systemTimestamp,
                     CreatedBy = string.Empty,
                     IsDeleted = false
                 },
                 new ChecklistTemplate
                 {
-                    Id = 2,
+                    Id = moveInTemplateId,
                     Name = "Move-In",
                     Description = "Move-in inspection checklist",
                     Category = "MoveIn",
                     IsSystemTemplate = true,
-                    OrganizationId = string.Empty,
+                    OrganizationId = Guid.Empty,
                     CreatedOn = systemTimestamp,
                     CreatedBy = string.Empty,
                     IsDeleted = false
                 },
                 new ChecklistTemplate
                 {
-                    Id = 3,
+                    Id = moveOutTemplateId,
                     Name = "Move-Out",
                     Description = "Move-out inspection checklist",
                     Category = "MoveOut",
                     IsSystemTemplate = true,
-                    OrganizationId = string.Empty,
+                    OrganizationId = Guid.Empty,
                     CreatedOn = systemTimestamp,
                     CreatedBy = string.Empty,
                     IsDeleted = false
                 },
                 new ChecklistTemplate
                 {
-                    Id = 4,
+                    Id = openHouseTemplateId,
                     Name = "Open House",
                     Description = "Open house event checklist",
                     Category = "Tour",
                     IsSystemTemplate = true,
-                    OrganizationId = string.Empty,
+                    OrganizationId = Guid.Empty,
                     CreatedOn = systemTimestamp,
                     CreatedBy = string.Empty,
                     IsDeleted = false
@@ -582,52 +588,52 @@ namespace Aquiis.SimpleStart.Infrastructure.Data
             // Seed Property Tour Checklist Items
             modelBuilder.Entity<ChecklistTemplateItem>().HasData(
                 // Arrival & Introduction (Section 1)
-                new ChecklistTemplateItem { Id = 1, ChecklistTemplateId = 1, ItemText = "Greeted prospect and verified appointment", ItemOrder = 1, CategorySection = "Arrival & Introduction", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 2, ChecklistTemplateId = 1, ItemText = "Reviewed property exterior and curb appeal", ItemOrder = 2, CategorySection = "Arrival & Introduction", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 3, ChecklistTemplateId = 1, ItemText = "Showed parking area/garage", ItemOrder = 3, CategorySection = "Arrival & Introduction", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000001"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Greeted prospect and verified appointment", ItemOrder = 1, CategorySection = "Arrival & Introduction", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000002"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Reviewed property exterior and curb appeal", ItemOrder = 2, CategorySection = "Arrival & Introduction", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000003"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Showed parking area/garage", ItemOrder = 3, CategorySection = "Arrival & Introduction", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
 
                 // Interior Tour (Section 2)
-                new ChecklistTemplateItem { Id = 4, ChecklistTemplateId = 1, ItemText = "Toured living room/common areas", ItemOrder = 4, CategorySection = "Interior Tour", SectionOrder = 2, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 5, ChecklistTemplateId = 1, ItemText = "Showed all bedrooms", ItemOrder = 5, CategorySection = "Interior Tour", SectionOrder = 2, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 6, ChecklistTemplateId = 1, ItemText = "Showed all bathrooms", ItemOrder = 6, CategorySection = "Interior Tour", SectionOrder = 2, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000004"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Toured living room/common areas", ItemOrder = 4, CategorySection = "Interior Tour", SectionOrder = 2, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000005"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Showed all bedrooms", ItemOrder = 5, CategorySection = "Interior Tour", SectionOrder = 2, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000006"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Showed all bathrooms", ItemOrder = 6, CategorySection = "Interior Tour", SectionOrder = 2, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
 
                 // Kitchen & Appliances (Section 3)
-                new ChecklistTemplateItem { Id = 7, ChecklistTemplateId = 1, ItemText = "Toured kitchen and demonstrated appliances", ItemOrder = 7, CategorySection = "Kitchen & Appliances", SectionOrder = 3, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 8, ChecklistTemplateId = 1, ItemText = "Explained which appliances are included", ItemOrder = 8, CategorySection = "Kitchen & Appliances", SectionOrder = 3, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000007"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Toured kitchen and demonstrated appliances", ItemOrder = 7, CategorySection = "Kitchen & Appliances", SectionOrder = 3, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000008"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Explained which appliances are included", ItemOrder = 8, CategorySection = "Kitchen & Appliances", SectionOrder = 3, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
                 // Utilities & Systems (Section 4)
-                new ChecklistTemplateItem { Id = 9, ChecklistTemplateId = 1, ItemText = "Explained HVAC system and thermostat controls", ItemOrder = 9, CategorySection = "Utilities & Systems", SectionOrder = 4, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 10, ChecklistTemplateId = 1, ItemText = "Reviewed utility responsibilities (tenant vs landlord)", ItemOrder = 10, CategorySection = "Utilities & Systems", SectionOrder = 4, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 11, ChecklistTemplateId = 1, ItemText = "Showed water heater location", ItemOrder = 11, CategorySection = "Utilities & Systems", SectionOrder = 4, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000009"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Explained HVAC system and thermostat controls", ItemOrder = 9, CategorySection = "Utilities & Systems", SectionOrder = 4, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000010"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Reviewed utility responsibilities (tenant vs landlord)", ItemOrder = 10, CategorySection = "Utilities & Systems", SectionOrder = 4, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000011"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Showed water heater location", ItemOrder = 11, CategorySection = "Utilities & Systems", SectionOrder = 4, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
                 // Storage & Amenities (Section 5)
-                new ChecklistTemplateItem { Id = 12, ChecklistTemplateId = 1, ItemText = "Showed storage areas (closets, attic, basement)", ItemOrder = 12, CategorySection = "Storage & Amenities", SectionOrder = 5, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 13, ChecklistTemplateId = 1, ItemText = "Showed laundry facilities", ItemOrder = 13, CategorySection = "Storage & Amenities", SectionOrder = 5, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 14, ChecklistTemplateId = 1, ItemText = "Showed outdoor space (yard, patio, balcony)", ItemOrder = 14, CategorySection = "Storage & Amenities", SectionOrder = 5, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000012"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Showed storage areas (closets, attic, basement)", ItemOrder = 12, CategorySection = "Storage & Amenities", SectionOrder = 5, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000013"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Showed laundry facilities", ItemOrder = 13, CategorySection = "Storage & Amenities", SectionOrder = 5, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000014"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Showed outdoor space (yard, patio, balcony)", ItemOrder = 14, CategorySection = "Storage & Amenities", SectionOrder = 5, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
                 // Lease Terms (Section 6)
-                new ChecklistTemplateItem { Id = 15, ChecklistTemplateId = 1, ItemText = "Discussed monthly rent amount", ItemOrder = 15, CategorySection = "Lease Terms", SectionOrder = 6, IsRequired = true, RequiresValue = true, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 16, ChecklistTemplateId = 1, ItemText = "Explained security deposit and move-in costs", ItemOrder = 16, CategorySection = "Lease Terms", SectionOrder = 6, IsRequired = true, RequiresValue = true, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 17, ChecklistTemplateId = 1, ItemText = "Reviewed lease term length and start date", ItemOrder = 17, CategorySection = "Lease Terms", SectionOrder = 6, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 18, ChecklistTemplateId = 1, ItemText = "Explained pet policy", ItemOrder = 18, CategorySection = "Lease Terms", SectionOrder = 6, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000015"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Discussed monthly rent amount", ItemOrder = 15, CategorySection = "Lease Terms", SectionOrder = 6, IsRequired = true, RequiresValue = true, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000016"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Explained security deposit and move-in costs", ItemOrder = 16, CategorySection = "Lease Terms", SectionOrder = 6, IsRequired = true, RequiresValue = true, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000017"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Reviewed lease term length and start date", ItemOrder = 17, CategorySection = "Lease Terms", SectionOrder = 6, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000018"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Explained pet policy", ItemOrder = 18, CategorySection = "Lease Terms", SectionOrder = 6, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
 
                 // Next Steps (Section 7)
-                new ChecklistTemplateItem { Id = 19, ChecklistTemplateId = 1, ItemText = "Explained application process and requirements", ItemOrder = 19, CategorySection = "Next Steps", SectionOrder = 7, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 20, ChecklistTemplateId = 1, ItemText = "Reviewed screening process (background, credit check)", ItemOrder = 20, CategorySection = "Next Steps", SectionOrder = 7, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 21, ChecklistTemplateId = 1, ItemText = "Answered all prospect questions", ItemOrder = 21, CategorySection = "Next Steps", SectionOrder = 7, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000019"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Explained application process and requirements", ItemOrder = 19, CategorySection = "Next Steps", SectionOrder = 7, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000020"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Reviewed screening process (background, credit check)", ItemOrder = 20, CategorySection = "Next Steps", SectionOrder = 7, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000021"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Answered all prospect questions", ItemOrder = 21, CategorySection = "Next Steps", SectionOrder = 7, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
 
                 // Assessment (Section 8)
-                new ChecklistTemplateItem { Id = 22, ChecklistTemplateId = 1, ItemText = "Prospect Interest Level", ItemOrder = 22, CategorySection = "Assessment", SectionOrder = 8, IsRequired = true, RequiresValue = true, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 23, ChecklistTemplateId = 1, ItemText = "Overall showing feedback and notes", ItemOrder = 23, CategorySection = "Assessment", SectionOrder = 8, IsRequired = true, RequiresValue = true, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000022"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Prospect Interest Level", ItemOrder = 22, CategorySection = "Assessment", SectionOrder = 8, IsRequired = true, RequiresValue = true, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000023"), ChecklistTemplateId = propertyTourTemplateId, ItemText = "Overall showing feedback and notes", ItemOrder = 23, CategorySection = "Assessment", SectionOrder = 8, IsRequired = true, RequiresValue = true, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
                 // Move-In Checklist Items (Placeholders)
-                new ChecklistTemplateItem { Id = 24, ChecklistTemplateId = 2, ItemText = "Document property condition", ItemOrder = 1, CategorySection = "General", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 25, ChecklistTemplateId = 2, ItemText = "Collect keys and access codes", ItemOrder = 2, CategorySection = "General", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 26, ChecklistTemplateId = 2, ItemText = "Review lease terms with tenant", ItemOrder = 3, CategorySection = "General", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000024"), ChecklistTemplateId = moveInTemplateId, ItemText = "Document property condition", ItemOrder = 1, CategorySection = "General", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000025"), ChecklistTemplateId = moveInTemplateId, ItemText = "Collect keys and access codes", ItemOrder = 2, CategorySection = "General", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000026"), ChecklistTemplateId = moveInTemplateId, ItemText = "Review lease terms with tenant", ItemOrder = 3, CategorySection = "General", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
                 // Move-Out Checklist Items (Placeholders)
-                new ChecklistTemplateItem { Id = 27, ChecklistTemplateId = 3, ItemText = "Inspect property condition", ItemOrder = 1, CategorySection = "General", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 28, ChecklistTemplateId = 3, ItemText = "Collect all keys and access devices", ItemOrder = 2, CategorySection = "General", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 29, ChecklistTemplateId = 3, ItemText = "Document damages and needed repairs", ItemOrder = 3, CategorySection = "General", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000027"), ChecklistTemplateId = moveOutTemplateId, ItemText = "Inspect property condition", ItemOrder = 1, CategorySection = "General", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000028"), ChecklistTemplateId = moveOutTemplateId, ItemText = "Collect all keys and access devices", ItemOrder = 2, CategorySection = "General", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000029"), ChecklistTemplateId = moveOutTemplateId, ItemText = "Document damages and needed repairs", ItemOrder = 3, CategorySection = "General", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
                 // Open House Checklist Items (Placeholders)
-                new ChecklistTemplateItem { Id = 30, ChecklistTemplateId = 4, ItemText = "Set up signage and directional markers", ItemOrder = 1, CategorySection = "Preparation", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 31, ChecklistTemplateId = 4, ItemText = "Prepare information packets", ItemOrder = 2, CategorySection = "Preparation", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
-                new ChecklistTemplateItem { Id = 32, ChecklistTemplateId = 4, ItemText = "Set up visitor sign-in sheet", ItemOrder = 3, CategorySection = "Preparation", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = string.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false }
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000030"), ChecklistTemplateId = openHouseTemplateId, ItemText = "Set up signage and directional markers", ItemOrder = 1, CategorySection = "Preparation", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000031"), ChecklistTemplateId = openHouseTemplateId, ItemText = "Prepare information packets", ItemOrder = 2, CategorySection = "Preparation", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false },
+                new ChecklistTemplateItem { Id = Guid.Parse("00000000-0000-0000-0002-000000000032"), ChecklistTemplateId = openHouseTemplateId, ItemText = "Set up visitor sign-in sheet", ItemOrder = 3, CategorySection = "Preparation", SectionOrder = 1, IsRequired = true, RequiresValue = false, AllowsNotes = true, OrganizationId = Guid.Empty, CreatedOn = systemTimestamp, CreatedBy = string.Empty, IsDeleted = false }
             );
         }
 

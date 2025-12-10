@@ -643,9 +643,9 @@
     {
         // Load filter defaults from settings
         var organizationId = await UserContext.GetActiveOrganizationIdAsync();
-        if (!string.IsNullOrEmpty(organizationId))
+        if (organizationId.HasValue)
         {
-            var settings = await CalendarSettingsService.GetSettingsAsync(organizationId);
+            var settings = await CalendarSettingsService.GetSettingsAsync(organizationId.Value);
             selectedEventTypes = settings
                 .Where(s => s.ShowOnCalendar)
                 .Select(s => s.EntityType)
@@ -667,7 +667,7 @@
         try
         {
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(organizationId))
+            if (organizationId.HasValue)
             {
                 // Get date range based on current view
                 var (startDate, endDate) = viewMode switch
@@ -741,7 +741,7 @@
             Icon = "bi-calendar-event",
             EventType = CalendarEventTypes.Custom,
             Status = "Scheduled",
-            OrganizationId = !string.IsNullOrEmpty(organizationId) ? organizationId : string.Empty,
+            OrganizationId = organizationId.HasValue ? organizationId.Value : Guid.Empty,
             CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty,
             CreatedOn = DateTime.UtcNow
         };
@@ -1211,7 +1211,7 @@
         try
         {
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
-            if (string.IsNullOrEmpty(organizationId)) return;
+            if (!organizationId.HasValue) return;
 
             switch (calendarEvent.EventType)
             {
@@ -1248,7 +1248,7 @@
         }
     }
 
-    private async Task ShowTourDetailById(int tourId)
+    private async Task ShowTourDetailById(Guid tourId)
     {
         var tour = await PropertyService.GetTourByIdAsync(tourId);
         if (tour != null)
@@ -1261,7 +1261,7 @@
         }
     }
 
-    private async Task ShowInspectionDetailById(int inspectionId)
+    private async Task ShowInspectionDetailById(Guid inspectionId)
     {
         var inspection = await PropertyService.GetInspectionByIdAsync(inspectionId);
         if (inspection != null)
@@ -1274,7 +1274,7 @@
         }
     }
 
-    private async Task ShowMaintenanceRequestDetailById(int maintenanceId)
+    private async Task ShowMaintenanceRequestDetailById(Guid maintenanceId)
     {
         var maintenanceRequest = await PropertyService.GetMaintenanceRequestByIdAsync(maintenanceId);
         if (maintenanceRequest != null)
@@ -1336,12 +1336,12 @@
         Navigation.NavigateTo($"/PropertyManagement/Properties/View/{property.Id}");
     }
 
-    private async Task CompleteTour(int tourId)
+    private async Task CompleteTour(Guid tourId)
     {
         try
         {
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(organizationId))
+            if (organizationId.HasValue)
             {
                 var tour = await PropertyService.GetTourByIdAsync(tourId);
                 if (tour != null)
@@ -1364,14 +1364,14 @@
         }
     }
 
-    private async Task CancelTour(int tourId)
+    private async Task CancelTour(Guid tourId)
     {
         try
         {
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
             
-            if (!string.IsNullOrEmpty(organizationId) && !string.IsNullOrEmpty(userId))
+            if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
             {
                 await PropertyService.CancelTourAsync(tourId);
                 ToastService.ShowSuccess("Tour cancelled successfully");
@@ -1385,14 +1385,14 @@
         }
     }
 
-    private async Task MarkTourAsNoShow(int tourId)
+    private async Task MarkTourAsNoShow(Guid tourId)
     {
         try
         {
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
             
-            if (!string.IsNullOrEmpty(organizationId) && !string.IsNullOrEmpty(userId))
+            if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
             {
                 await PropertyService.MarkTourAsNoShowAsync(tourId);
                 ToastService.ShowSuccess("Tour marked as No Show");
@@ -1406,14 +1406,14 @@
         }
     }
 
-    private async Task StartWork(int maintenanceRequestId)
+    private async Task StartWork(Guid maintenanceRequestId)
     {
         try
         {
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
             
-            if (!string.IsNullOrEmpty(organizationId) && !string.IsNullOrEmpty(userId))
+            if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
             {
                 var request = await PropertyService.GetMaintenanceRequestByIdAsync(maintenanceRequestId);
                 if (request != null)
@@ -1436,14 +1436,14 @@
         }
     }
 
-    private async Task CompleteMaintenanceRequest(int maintenanceRequestId)
+    private async Task CompleteMaintenanceRequest(Guid maintenanceRequestId)
     {
         try
         {
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
             
-            if (!string.IsNullOrEmpty(organizationId) && !string.IsNullOrEmpty(userId))
+            if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
             {
                 var request = await PropertyService.GetMaintenanceRequestByIdAsync(maintenanceRequestId);
                 if (request != null)
@@ -1465,14 +1465,14 @@
         }
     }
 
-    private async Task CancelMaintenanceRequest(int maintenanceRequestId)
+    private async Task CancelMaintenanceRequest(Guid maintenanceRequestId)
     {
         try
         {
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
             
-            if (!string.IsNullOrEmpty(organizationId) && !string.IsNullOrEmpty(userId))
+            if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
             {
                 var request = await PropertyService.GetMaintenanceRequestByIdAsync(maintenanceRequestId);
                 if (request != null)
@@ -1492,14 +1492,14 @@
         }
     }
 
-    private async Task UpdateCustomEventStatus(int eventId, string newStatus)
+    private async Task UpdateCustomEventStatus(Guid eventId, string newStatus)
     {
         try
         {
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
             
-            if (string.IsNullOrEmpty(organizationId) || string.IsNullOrEmpty(userId))
+            if (!organizationId.HasValue || string.IsNullOrEmpty(userId))
             {
                 ToastService.ShowError("Unable to identify user or organization");
                 return;
@@ -1542,7 +1542,7 @@
         Navigation.NavigateTo("/PropertyManagement/Calendar/ListView");
     }
 
-    private void CompleteRoutineInspection(int propertyId)
+    private void CompleteRoutineInspection(Guid propertyId)
     {
         // Navigate to create new inspection form with the property pre-selected
         Navigation.NavigateTo($"/PropertyManagement/Inspections/Create?propertyId={propertyId}");

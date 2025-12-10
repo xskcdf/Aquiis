@@ -1,4 +1,4 @@
-@page "/propertymanagement/properties/edit/{PropertyId:int}"
+@page "/propertymanagement/properties/edit/{PropertyId:guid}"
 
 @using System.ComponentModel.DataAnnotations
 @using Aquiis.SimpleStart.Core.Entities
@@ -226,7 +226,7 @@ else
 
 @code {
     [Parameter]
-    public int PropertyId { get; set; }
+    public Guid PropertyId { get; set; }
 
     private string currentUserId = string.Empty;
     private string errorMessage = string.Empty;

@@ -20,8 +20,8 @@ namespace Aquiis.SimpleStart.Shared.Services
 
         // Cached values
         private string? _userId;
-        private string? _organizationId;
-        private string? _activeOrganizationId;
+        private Guid? _organizationId;
+        private Guid? _activeOrganizationId;
         private ApplicationUser? _currentUser;
         private bool _isInitialized = false;
 
@@ -53,7 +53,7 @@ namespace Aquiis.SimpleStart.Shared.Services
         /// Gets the current user's OrganizationId. Cached after first access.
         /// DEPRECATED: Use GetActiveOrganizationIdAsync() for multi-org support
         /// </summary>
-        public async Task<string?> GetOrganizationIdAsync()
+        public async Task<Guid?> GetOrganizationIdAsync()
         {
             await EnsureInitializedAsync();
             return _organizationId;
@@ -63,11 +63,11 @@ namespace Aquiis.SimpleStart.Shared.Services
         /// Gets the current user's active organization ID (new multi-org support).
         /// Throws InvalidOperationException if user has no active organization.
         /// </summary>
-        public async Task<string?> GetActiveOrganizationIdAsync()
+        public async Task<Guid?> GetActiveOrganizationIdAsync()
         {
             await EnsureInitializedAsync();
             
-            if (string.IsNullOrEmpty(_activeOrganizationId))
+            if (!_activeOrganizationId.HasValue || _activeOrganizationId == Guid.Empty)
             {
                 throw new InvalidOperationException("User does not have an active organization. This is a critical security issue.");
             }
@@ -147,11 +147,11 @@ namespace Aquiis.SimpleStart.Shared.Services
             var userId = await GetUserIdAsync();
             var activeOrganizationId = await GetActiveOrganizationIdAsync();
 
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(activeOrganizationId))
+            if (string.IsNullOrEmpty(userId) || !activeOrganizationId.HasValue || activeOrganizationId == Guid.Empty)
                 return null;
 
             var organizationService = await _organizationServiceFactory();
-            return await organizationService.GetUserRoleForOrganizationAsync(userId, activeOrganizationId);
+            return await organizationService.GetUserRoleForOrganizationAsync(userId, activeOrganizationId.Value);
         }
 
         /// <summary>
@@ -160,19 +160,19 @@ namespace Aquiis.SimpleStart.Shared.Services
         public async Task<Organization?> GetActiveOrganizationAsync()
         {
             var activeOrganizationId = await GetActiveOrganizationIdAsync();
-            if (string.IsNullOrEmpty(activeOrganizationId))
+            if (!activeOrganizationId.HasValue || activeOrganizationId == Guid.Empty)
                 return null;
 
             var organizationService = await _organizationServiceFactory();
-            return await organizationService.GetOrganizationByIdAsync(activeOrganizationId);
+            return await organizationService.GetOrganizationByIdAsync(activeOrganizationId.Value);
         }
 
         /// <summary>
         /// Get the organization entity by ID
         /// </summary>
-        public async Task<Organization?> GetOrganizationByIdAsync(string organizationId)
+        public async Task<Organization?> GetOrganizationByIdAsync(Guid organizationId)
         {
-            if (string.IsNullOrEmpty(organizationId))
+            if (organizationId == Guid.Empty)
                 return null;
 
             var organizationService = await _organizationServiceFactory();
@@ -182,7 +182,7 @@ namespace Aquiis.SimpleStart.Shared.Services
         /// <summary>
         /// Switch the user's active organization
         /// </summary>
-        public async Task<bool> SwitchOrganizationAsync(string organizationId)
+        public async Task<bool> SwitchOrganizationAsync(Guid organizationId)
         {
             var userId = await GetUserIdAsync();
             if (string.IsNullOrEmpty(userId))

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
 
-namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
+namespace Aquiis.SimpleStart.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -32,8 +32,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "TEXT", nullable: false),
-                    ActiveOrganizationId = table.Column<string>(type: "TEXT", nullable: false),
-                    OrganizationId = table.Column<string>(type: "TEXT", nullable: false),
+                    ActiveOrganizationId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", nullable: false),
                     FirstName = table.Column<string>(type: "TEXT", nullable: false),
                     LastName = table.Column<string>(type: "TEXT", nullable: false),
                     LastLoginDate = table.Column<DateTime>(type: "TEXT", nullable: true),
@@ -64,9 +64,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "CalendarSettings",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
                     EntityType = table.Column<string>(type: "TEXT", nullable: false),
                     AutoCreateEvents = table.Column<bool>(type: "INTEGER", nullable: false),
                     ShowOnCalendar = table.Column<bool>(type: "INTEGER", nullable: false),
@@ -88,9 +87,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "ChecklistTemplates",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
                     Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
                     Category = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
@@ -110,8 +108,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "OrganizationSettings",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
                     LateFeeEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
@@ -163,9 +160,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "SecurityDepositInvestmentPools",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", nullable: false),
                     Year = table.Column<int>(type: "INTEGER", nullable: false),
                     StartingBalance = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     EndingBalance = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
@@ -189,6 +185,32 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_SecurityDepositInvestmentPools", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkflowAuditLogs",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    EntityType = table.Column<string>(type: "TEXT", nullable: false),
+                    EntityId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    FromStatus = table.Column<string>(type: "TEXT", nullable: true),
+                    ToStatus = table.Column<string>(type: "TEXT", nullable: false),
+                    Action = table.Column<string>(type: "TEXT", nullable: false),
+                    Reason = table.Column<string>(type: "TEXT", nullable: true),
+                    PerformedBy = table.Column<string>(type: "TEXT", nullable: false),
+                    PerformedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Metadata = table.Column<string>(type: "TEXT", nullable: true),
+                    CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    LastModifiedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    IsDeleted = table.Column<bool>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkflowAuditLogs", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -301,12 +323,11 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "Notes",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
                     Content = table.Column<string>(type: "TEXT", maxLength: 5000, nullable: false),
                     EntityType = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    EntityId = table.Column<int>(type: "INTEGER", nullable: false),
+                    EntityId = table.Column<Guid>(type: "TEXT", nullable: false),
                     UserFullName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
@@ -329,7 +350,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "Organizations",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
                     OwnerId = table.Column<string>(type: "TEXT", nullable: false),
                     Name = table.Column<string>(type: "TEXT", nullable: false),
                     DisplayName = table.Column<string>(type: "TEXT", nullable: true),
@@ -356,10 +377,9 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "ChecklistTemplateItems",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    ChecklistTemplateId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
+                    ChecklistTemplateId = table.Column<Guid>(type: "TEXT", nullable: false),
                     ItemText = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
                     ItemOrder = table.Column<int>(type: "INTEGER", nullable: false),
                     CategorySection = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
@@ -388,9 +408,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "Properties",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
                     Address = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     UnitNumber = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
                     City = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
@@ -427,9 +446,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "Tenants",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", nullable: false),
                     FirstName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     LastName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     IdentificationNumber = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
@@ -440,7 +458,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     EmergencyContactName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     EmergencyContactPhone = table.Column<string>(type: "TEXT", maxLength: 20, nullable: true),
                     Notes = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
-                    ProspectiveTenantId = table.Column<int>(type: "INTEGER", nullable: true),
+                    ProspectiveTenantId = table.Column<Guid>(type: "TEXT", nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     LastModifiedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
@@ -461,9 +479,9 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "UserOrganizations",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
                     UserId = table.Column<string>(type: "TEXT", nullable: false),
-                    OrganizationId = table.Column<string>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", nullable: false),
                     Role = table.Column<string>(type: "TEXT", nullable: false),
                     GrantedBy = table.Column<string>(type: "TEXT", nullable: false),
                     GrantedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
@@ -502,9 +520,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "CalendarEvents",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
                     Title = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     StartOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     EndOn = table.Column<DateTime>(type: "TEXT", nullable: true),
@@ -512,11 +529,11 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     EventType = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     Description = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
-                    PropertyId = table.Column<int>(type: "INTEGER", nullable: true),
+                    PropertyId = table.Column<Guid>(type: "TEXT", nullable: true),
                     Location = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
                     Color = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
                     Icon = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    SourceEntityId = table.Column<int>(type: "INTEGER", nullable: true),
+                    SourceEntityId = table.Column<Guid>(type: "TEXT", nullable: true),
                     SourceEntityType = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
@@ -539,9 +556,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "ProspectiveTenants",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
                     FirstName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     LastName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     Email = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
@@ -552,7 +568,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     Source = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     Notes = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
-                    InterestedPropertyId = table.Column<int>(type: "INTEGER", nullable: true),
+                    InterestedPropertyId = table.Column<Guid>(type: "TEXT", nullable: true),
                     DesiredMoveInDate = table.Column<DateTime>(type: "TEXT", nullable: true),
                     FirstContactedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
@@ -576,11 +592,10 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "RentalApplications",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    ProspectiveTenantId = table.Column<int>(type: "INTEGER", nullable: false),
-                    PropertyId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
+                    ProspectiveTenantId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PropertyId = table.Column<Guid>(type: "TEXT", nullable: false),
                     AppliedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     CurrentAddress = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
@@ -635,10 +650,9 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "ApplicationScreenings",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    RentalApplicationId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
+                    RentalApplicationId = table.Column<Guid>(type: "TEXT", nullable: false),
                     BackgroundCheckRequested = table.Column<bool>(type: "INTEGER", nullable: false),
                     BackgroundCheckRequestedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
                     BackgroundCheckPassed = table.Column<bool>(type: "INTEGER", nullable: true),
@@ -673,12 +687,11 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "LeaseOffers",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    RentalApplicationId = table.Column<int>(type: "INTEGER", nullable: false),
-                    PropertyId = table.Column<int>(type: "INTEGER", nullable: false),
-                    ProspectiveTenantId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
+                    RentalApplicationId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PropertyId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ProspectiveTenantId = table.Column<Guid>(type: "TEXT", nullable: false),
                     StartDate = table.Column<DateTime>(type: "TEXT", nullable: false),
                     EndDate = table.Column<DateTime>(type: "TEXT", nullable: false),
                     MonthlyRent = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
@@ -690,7 +703,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     RespondedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
                     ResponseNotes = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    ConvertedLeaseId = table.Column<int>(type: "INTEGER", nullable: true),
+                    ConvertedLeaseId = table.Column<Guid>(type: "TEXT", nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     LastModifiedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
@@ -724,10 +737,9 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "ChecklistItems",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    ChecklistId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
+                    ChecklistId = table.Column<Guid>(type: "TEXT", nullable: false),
                     ItemText = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
                     ItemOrder = table.Column<int>(type: "INTEGER", nullable: false),
                     CategorySection = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
@@ -752,18 +764,17 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "Checklists",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    PropertyId = table.Column<int>(type: "INTEGER", nullable: true),
-                    LeaseId = table.Column<int>(type: "INTEGER", nullable: true),
-                    ChecklistTemplateId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
+                    PropertyId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    LeaseId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    ChecklistTemplateId = table.Column<Guid>(type: "TEXT", nullable: false),
                     Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     ChecklistType = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     CompletedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     CompletedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    DocumentId = table.Column<int>(type: "INTEGER", nullable: true),
+                    DocumentId = table.Column<Guid>(type: "TEXT", nullable: true),
                     GeneralNotes = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
@@ -792,19 +803,18 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "Tours",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    ProspectiveTenantId = table.Column<int>(type: "INTEGER", nullable: false),
-                    PropertyId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
+                    ProspectiveTenantId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PropertyId = table.Column<Guid>(type: "TEXT", nullable: false),
                     ScheduledOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     DurationMinutes = table.Column<int>(type: "INTEGER", nullable: false),
                     Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     Feedback = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
                     InterestLevel = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
                     ConductedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    ChecklistId = table.Column<int>(type: "INTEGER", nullable: true),
-                    CalendarEventId = table.Column<int>(type: "INTEGER", nullable: true),
+                    ChecklistId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CalendarEventId = table.Column<Guid>(type: "TEXT", nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     LastModifiedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
@@ -837,9 +847,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "Documents",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
                     FileName = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
                     FileExtension = table.Column<string>(type: "TEXT", maxLength: 10, nullable: false),
                     FileData = table.Column<byte[]>(type: "BLOB", nullable: false),
@@ -849,11 +858,11 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     FileSize = table.Column<long>(type: "INTEGER", nullable: false),
                     DocumentType = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
-                    PropertyId = table.Column<int>(type: "INTEGER", nullable: true),
-                    TenantId = table.Column<int>(type: "INTEGER", nullable: true),
-                    LeaseId = table.Column<int>(type: "INTEGER", nullable: true),
-                    InvoiceId = table.Column<int>(type: "INTEGER", nullable: true),
-                    PaymentId = table.Column<int>(type: "INTEGER", nullable: true),
+                    PropertyId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    TenantId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    LeaseId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    InvoiceId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    PaymentId = table.Column<Guid>(type: "TEXT", nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     LastModifiedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
@@ -887,12 +896,11 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "Leases",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    PropertyId = table.Column<int>(type: "INTEGER", nullable: false),
-                    TenantId = table.Column<int>(type: "INTEGER", nullable: false),
-                    LeaseOfferId = table.Column<int>(type: "INTEGER", nullable: true),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
+                    PropertyId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    TenantId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    LeaseOfferId = table.Column<Guid>(type: "TEXT", nullable: true),
                     StartDate = table.Column<DateTime>(type: "TEXT", nullable: false),
                     EndDate = table.Column<DateTime>(type: "TEXT", nullable: false),
                     MonthlyRent = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
@@ -912,8 +920,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     RenewalResponseOn = table.Column<DateTime>(type: "TEXT", nullable: true),
                     ProposedRenewalRent = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     RenewalNotes = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
-                    PreviousLeaseId = table.Column<int>(type: "INTEGER", nullable: true),
-                    DocumentId = table.Column<int>(type: "INTEGER", nullable: true),
+                    PreviousLeaseId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    DocumentId = table.Column<Guid>(type: "TEXT", nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     LastModifiedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
@@ -953,12 +961,11 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "Inspections",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    PropertyId = table.Column<int>(type: "INTEGER", nullable: false),
-                    CalendarEventId = table.Column<int>(type: "INTEGER", nullable: true),
-                    LeaseId = table.Column<int>(type: "INTEGER", nullable: true),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
+                    PropertyId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CalendarEventId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    LeaseId = table.Column<Guid>(type: "TEXT", nullable: true),
                     CompletedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     InspectionType = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     InspectedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
@@ -1015,7 +1022,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     OverallCondition = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
                     GeneralNotes = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
                     ActionItemsRequired = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
-                    DocumentId = table.Column<int>(type: "INTEGER", nullable: true),
+                    DocumentId = table.Column<Guid>(type: "TEXT", nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     LastModifiedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
@@ -1049,10 +1056,9 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "Invoices",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    LeaseId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
+                    LeaseId = table.Column<Guid>(type: "TEXT", nullable: false),
                     InvoiceNumber = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     InvoicedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     DueOn = table.Column<DateTime>(type: "TEXT", nullable: false),
@@ -1067,7 +1073,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     LateFeeAppliedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
                     ReminderSent = table.Column<bool>(type: "INTEGER", nullable: true),
                     ReminderSentOn = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    DocumentId = table.Column<int>(type: "INTEGER", nullable: true),
+                    DocumentId = table.Column<Guid>(type: "TEXT", nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     LastModifiedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
@@ -1101,12 +1107,11 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "MaintenanceRequests",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    PropertyId = table.Column<int>(type: "INTEGER", nullable: false),
-                    CalendarEventId = table.Column<int>(type: "INTEGER", nullable: true),
-                    LeaseId = table.Column<int>(type: "INTEGER", nullable: true),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
+                    PropertyId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CalendarEventId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    LeaseId = table.Column<Guid>(type: "TEXT", nullable: true),
                     Title = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: false),
                     RequestType = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
@@ -1149,11 +1154,10 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "SecurityDeposits",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    LeaseId = table.Column<int>(type: "INTEGER", nullable: false),
-                    TenantId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
+                    LeaseId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    TenantId = table.Column<Guid>(type: "TEXT", nullable: false),
                     Amount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     DateReceived = table.Column<DateTime>(type: "TEXT", nullable: false),
                     PaymentMethod = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
@@ -1196,15 +1200,14 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "Payments",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    InvoiceId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
+                    InvoiceId = table.Column<Guid>(type: "TEXT", nullable: false),
                     PaidOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Amount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     PaymentMethod = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     Notes = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: false),
-                    DocumentId = table.Column<int>(type: "INTEGER", nullable: true),
+                    DocumentId = table.Column<Guid>(type: "TEXT", nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     LastModifiedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
@@ -1238,13 +1241,12 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 name: "SecurityDepositDividends",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrganizationId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    SecurityDepositId = table.Column<int>(type: "INTEGER", nullable: false),
-                    InvestmentPoolId = table.Column<int>(type: "INTEGER", nullable: false),
-                    LeaseId = table.Column<int>(type: "INTEGER", nullable: false),
-                    TenantId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
+                    SecurityDepositId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    InvestmentPoolId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    LeaseId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    TenantId = table.Column<Guid>(type: "TEXT", nullable: false),
                     Year = table.Column<int>(type: "INTEGER", nullable: false),
                     BaseDividendAmount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     ProrationFactor = table.Column<decimal>(type: "decimal(18,6)", precision: 18, scale: 6, nullable: false),
@@ -1297,10 +1299,10 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 columns: new[] { "Id", "Category", "CreatedBy", "CreatedOn", "Description", "IsDeleted", "IsSystemTemplate", "LastModifiedBy", "LastModifiedOn", "Name", "OrganizationId" },
                 values: new object[,]
                 {
-                    { 1, "Tour", "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), "Standard property showing checklist", false, true, "", null, "Property Tour", "" },
-                    { 2, "MoveIn", "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), "Move-in inspection checklist", false, true, "", null, "Move-In", "" },
-                    { 3, "MoveOut", "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), "Move-out inspection checklist", false, true, "", null, "Move-Out", "" },
-                    { 4, "Tour", "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), "Open house event checklist", false, true, "", null, "Open House", "" }
+                    { new Guid("00000000-0000-0000-0001-000000000001"), "Tour", "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), "Standard property showing checklist", false, true, "", null, "Property Tour", new Guid("00000000-0000-0000-0000-000000000000") },
+                    { new Guid("00000000-0000-0000-0001-000000000002"), "MoveIn", "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), "Move-in inspection checklist", false, true, "", null, "Move-In", new Guid("00000000-0000-0000-0000-000000000000") },
+                    { new Guid("00000000-0000-0000-0001-000000000003"), "MoveOut", "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), "Move-out inspection checklist", false, true, "", null, "Move-Out", new Guid("00000000-0000-0000-0000-000000000000") },
+                    { new Guid("00000000-0000-0000-0001-000000000004"), "Tour", "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), "Open house event checklist", false, true, "", null, "Open House", new Guid("00000000-0000-0000-0000-000000000000") }
                 });
 
             migrationBuilder.InsertData(
@@ -1308,38 +1310,38 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 columns: new[] { "Id", "AllowsNotes", "CategorySection", "ChecklistTemplateId", "CreatedBy", "CreatedOn", "IsDeleted", "IsRequired", "ItemOrder", "ItemText", "LastModifiedBy", "LastModifiedOn", "OrganizationId", "RequiresValue", "SectionOrder" },
                 values: new object[,]
                 {
-                    { 1, true, "Arrival & Introduction", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 1, "Greeted prospect and verified appointment", "", null, "", false, 1 },
-                    { 2, true, "Arrival & Introduction", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 2, "Reviewed property exterior and curb appeal", "", null, "", false, 1 },
-                    { 3, true, "Arrival & Introduction", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 3, "Showed parking area/garage", "", null, "", false, 1 },
-                    { 4, true, "Interior Tour", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 4, "Toured living room/common areas", "", null, "", false, 2 },
-                    { 5, true, "Interior Tour", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 5, "Showed all bedrooms", "", null, "", false, 2 },
-                    { 6, true, "Interior Tour", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 6, "Showed all bathrooms", "", null, "", false, 2 },
-                    { 7, true, "Kitchen & Appliances", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 7, "Toured kitchen and demonstrated appliances", "", null, "", false, 3 },
-                    { 8, true, "Kitchen & Appliances", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 8, "Explained which appliances are included", "", null, "", false, 3 },
-                    { 9, true, "Utilities & Systems", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 9, "Explained HVAC system and thermostat controls", "", null, "", false, 4 },
-                    { 10, true, "Utilities & Systems", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 10, "Reviewed utility responsibilities (tenant vs landlord)", "", null, "", false, 4 },
-                    { 11, true, "Utilities & Systems", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 11, "Showed water heater location", "", null, "", false, 4 },
-                    { 12, true, "Storage & Amenities", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 12, "Showed storage areas (closets, attic, basement)", "", null, "", false, 5 },
-                    { 13, true, "Storage & Amenities", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 13, "Showed laundry facilities", "", null, "", false, 5 },
-                    { 14, true, "Storage & Amenities", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 14, "Showed outdoor space (yard, patio, balcony)", "", null, "", false, 5 },
-                    { 15, true, "Lease Terms", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 15, "Discussed monthly rent amount", "", null, "", true, 6 },
-                    { 16, true, "Lease Terms", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 16, "Explained security deposit and move-in costs", "", null, "", true, 6 },
-                    { 17, true, "Lease Terms", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 17, "Reviewed lease term length and start date", "", null, "", false, 6 },
-                    { 18, true, "Lease Terms", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 18, "Explained pet policy", "", null, "", false, 6 },
-                    { 19, true, "Next Steps", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 19, "Explained application process and requirements", "", null, "", false, 7 },
-                    { 20, true, "Next Steps", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 20, "Reviewed screening process (background, credit check)", "", null, "", false, 7 },
-                    { 21, true, "Next Steps", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 21, "Answered all prospect questions", "", null, "", false, 7 },
-                    { 22, true, "Assessment", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 22, "Prospect Interest Level", "", null, "", true, 8 },
-                    { 23, true, "Assessment", 1, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 23, "Overall showing feedback and notes", "", null, "", true, 8 },
-                    { 24, true, "General", 2, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 1, "Document property condition", "", null, "", false, 1 },
-                    { 25, true, "General", 2, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 2, "Collect keys and access codes", "", null, "", false, 1 },
-                    { 26, true, "General", 2, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 3, "Review lease terms with tenant", "", null, "", false, 1 },
-                    { 27, true, "General", 3, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 1, "Inspect property condition", "", null, "", false, 1 },
-                    { 28, true, "General", 3, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 2, "Collect all keys and access devices", "", null, "", false, 1 },
-                    { 29, true, "General", 3, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 3, "Document damages and needed repairs", "", null, "", false, 1 },
-                    { 30, true, "Preparation", 4, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 1, "Set up signage and directional markers", "", null, "", false, 1 },
-                    { 31, true, "Preparation", 4, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 2, "Prepare information packets", "", null, "", false, 1 },
-                    { 32, true, "Preparation", 4, "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 3, "Set up visitor sign-in sheet", "", null, "", false, 1 }
+                    { new Guid("00000000-0000-0000-0002-000000000001"), true, "Arrival & Introduction", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 1, "Greeted prospect and verified appointment", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 1 },
+                    { new Guid("00000000-0000-0000-0002-000000000002"), true, "Arrival & Introduction", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 2, "Reviewed property exterior and curb appeal", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 1 },
+                    { new Guid("00000000-0000-0000-0002-000000000003"), true, "Arrival & Introduction", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 3, "Showed parking area/garage", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 1 },
+                    { new Guid("00000000-0000-0000-0002-000000000004"), true, "Interior Tour", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 4, "Toured living room/common areas", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 2 },
+                    { new Guid("00000000-0000-0000-0002-000000000005"), true, "Interior Tour", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 5, "Showed all bedrooms", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 2 },
+                    { new Guid("00000000-0000-0000-0002-000000000006"), true, "Interior Tour", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 6, "Showed all bathrooms", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 2 },
+                    { new Guid("00000000-0000-0000-0002-000000000007"), true, "Kitchen & Appliances", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 7, "Toured kitchen and demonstrated appliances", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 3 },
+                    { new Guid("00000000-0000-0000-0002-000000000008"), true, "Kitchen & Appliances", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 8, "Explained which appliances are included", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 3 },
+                    { new Guid("00000000-0000-0000-0002-000000000009"), true, "Utilities & Systems", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 9, "Explained HVAC system and thermostat controls", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 4 },
+                    { new Guid("00000000-0000-0000-0002-000000000010"), true, "Utilities & Systems", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 10, "Reviewed utility responsibilities (tenant vs landlord)", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 4 },
+                    { new Guid("00000000-0000-0000-0002-000000000011"), true, "Utilities & Systems", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 11, "Showed water heater location", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 4 },
+                    { new Guid("00000000-0000-0000-0002-000000000012"), true, "Storage & Amenities", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 12, "Showed storage areas (closets, attic, basement)", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 5 },
+                    { new Guid("00000000-0000-0000-0002-000000000013"), true, "Storage & Amenities", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 13, "Showed laundry facilities", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 5 },
+                    { new Guid("00000000-0000-0000-0002-000000000014"), true, "Storage & Amenities", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 14, "Showed outdoor space (yard, patio, balcony)", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 5 },
+                    { new Guid("00000000-0000-0000-0002-000000000015"), true, "Lease Terms", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 15, "Discussed monthly rent amount", "", null, new Guid("00000000-0000-0000-0000-000000000000"), true, 6 },
+                    { new Guid("00000000-0000-0000-0002-000000000016"), true, "Lease Terms", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 16, "Explained security deposit and move-in costs", "", null, new Guid("00000000-0000-0000-0000-000000000000"), true, 6 },
+                    { new Guid("00000000-0000-0000-0002-000000000017"), true, "Lease Terms", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 17, "Reviewed lease term length and start date", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 6 },
+                    { new Guid("00000000-0000-0000-0002-000000000018"), true, "Lease Terms", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 18, "Explained pet policy", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 6 },
+                    { new Guid("00000000-0000-0000-0002-000000000019"), true, "Next Steps", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 19, "Explained application process and requirements", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 7 },
+                    { new Guid("00000000-0000-0000-0002-000000000020"), true, "Next Steps", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 20, "Reviewed screening process (background, credit check)", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 7 },
+                    { new Guid("00000000-0000-0000-0002-000000000021"), true, "Next Steps", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 21, "Answered all prospect questions", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 7 },
+                    { new Guid("00000000-0000-0000-0002-000000000022"), true, "Assessment", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 22, "Prospect Interest Level", "", null, new Guid("00000000-0000-0000-0000-000000000000"), true, 8 },
+                    { new Guid("00000000-0000-0000-0002-000000000023"), true, "Assessment", new Guid("00000000-0000-0000-0001-000000000001"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 23, "Overall showing feedback and notes", "", null, new Guid("00000000-0000-0000-0000-000000000000"), true, 8 },
+                    { new Guid("00000000-0000-0000-0002-000000000024"), true, "General", new Guid("00000000-0000-0000-0001-000000000002"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 1, "Document property condition", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 1 },
+                    { new Guid("00000000-0000-0000-0002-000000000025"), true, "General", new Guid("00000000-0000-0000-0001-000000000002"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 2, "Collect keys and access codes", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 1 },
+                    { new Guid("00000000-0000-0000-0002-000000000026"), true, "General", new Guid("00000000-0000-0000-0001-000000000002"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 3, "Review lease terms with tenant", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 1 },
+                    { new Guid("00000000-0000-0000-0002-000000000027"), true, "General", new Guid("00000000-0000-0000-0001-000000000003"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 1, "Inspect property condition", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 1 },
+                    { new Guid("00000000-0000-0000-0002-000000000028"), true, "General", new Guid("00000000-0000-0000-0001-000000000003"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 2, "Collect all keys and access devices", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 1 },
+                    { new Guid("00000000-0000-0000-0002-000000000029"), true, "General", new Guid("00000000-0000-0000-0001-000000000003"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 3, "Document damages and needed repairs", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 1 },
+                    { new Guid("00000000-0000-0000-0002-000000000030"), true, "Preparation", new Guid("00000000-0000-0000-0001-000000000004"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 1, "Set up signage and directional markers", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 1 },
+                    { new Guid("00000000-0000-0000-0002-000000000031"), true, "Preparation", new Guid("00000000-0000-0000-0001-000000000004"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 2, "Prepare information packets", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 1 },
+                    { new Guid("00000000-0000-0000-0002-000000000032"), true, "Preparation", new Guid("00000000-0000-0000-0001-000000000004"), "", new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc), false, true, 3, "Set up visitor sign-in sheet", "", null, new Guid("00000000-0000-0000-0000-000000000000"), false, 1 }
                 });
 
             migrationBuilder.CreateIndex(
@@ -1854,6 +1856,41 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                 columns: new[] { "UserId", "OrganizationId" },
                 unique: true);
 
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowAuditLogs_Action",
+                table: "WorkflowAuditLogs",
+                column: "Action");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowAuditLogs_EntityId",
+                table: "WorkflowAuditLogs",
+                column: "EntityId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowAuditLogs_EntityType",
+                table: "WorkflowAuditLogs",
+                column: "EntityType");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowAuditLogs_EntityType_EntityId",
+                table: "WorkflowAuditLogs",
+                columns: new[] { "EntityType", "EntityId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowAuditLogs_OrganizationId",
+                table: "WorkflowAuditLogs",
+                column: "OrganizationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowAuditLogs_PerformedBy",
+                table: "WorkflowAuditLogs",
+                column: "PerformedBy");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowAuditLogs_PerformedOn",
+                table: "WorkflowAuditLogs",
+                column: "PerformedOn");
+
             migrationBuilder.AddForeignKey(
                 name: "FK_ChecklistItems_Checklists_ChecklistId",
                 table: "ChecklistItems",
@@ -1986,6 +2023,9 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "UserOrganizations");
+
+            migrationBuilder.DropTable(
+                name: "WorkflowAuditLogs");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

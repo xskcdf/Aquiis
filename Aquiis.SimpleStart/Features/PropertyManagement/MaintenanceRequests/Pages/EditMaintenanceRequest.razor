@@ -1,4 +1,4 @@
-@page "/propertymanagement/maintenance/edit/{Id:int}"
+@page "/propertymanagement/maintenance/edit/{Id:guid}"
 @inject PropertyManagementService PropertyManagementService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
@@ -219,7 +219,7 @@
 
 @code {
     [Parameter]
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     private MaintenanceRequest? maintenanceRequest;
     private List<Property> properties = new();
@@ -253,7 +253,7 @@
 
     private async Task OnPropertyChanged(ChangeEventArgs e)
     {
-        if (int.TryParse(e.Value?.ToString(), out int propertyId) && propertyId > 0)
+        if (Guid.TryParse(e.Value?.ToString(), out Guid propertyId) && propertyId != Guid.Empty)
         {
             await LoadLeasesForProperty(propertyId);
         }
@@ -263,7 +263,7 @@
         }
     }
 
-    private async Task LoadLeasesForProperty(int propertyId)
+    private async Task LoadLeasesForProperty(Guid propertyId)
     {
         var allLeases = await PropertyManagementService.GetLeasesByPropertyIdAsync(propertyId);
         availableLeases = allLeases.Where(l => l.Status == "Active" || l.Status == "Pending").ToList();

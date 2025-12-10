@@ -1,4 +1,4 @@
-@page "/propertymanagement/invoices/view/{Id:int}"
+@page "/propertymanagement/invoices/view/{Id:guid}"
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
@@ -272,7 +272,7 @@ else
 
 @code {
     [Parameter]
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     private Invoice? invoice;
     private bool isGenerating = false;

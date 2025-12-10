@@ -1,7 +1,8 @@
-@page "/propertymanagement/invoices/edit/{Id:int}"
+@page "/propertymanagement/invoices/edit/{Id:guid}"
 
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Validation
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Forms
@@ -224,7 +225,7 @@ else
 
 @code {
     [Parameter]
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     private Invoice? invoice;
     private InvoiceModel invoiceModel = new InvoiceModel();
@@ -358,8 +359,8 @@ else
 
     public class InvoiceModel
     {
-        [Required(ErrorMessage = "Lease is required")]
-        public int LeaseId { get; set; }
+        [RequiredGuid(ErrorMessage = "Lease is required")]
+        public Guid LeaseId { get; set; }
 
         [Required(ErrorMessage = "Invoice number is required")]
         [StringLength(50, ErrorMessage = "Invoice number cannot exceed 50 characters")]

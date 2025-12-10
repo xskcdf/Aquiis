@@ -11,15 +11,15 @@ namespace Aquiis.SimpleStart.Core.Entities
         [StringLength(100)]
         [DataType(DataType.Text)]
         [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
         [Required]
         [Display(Name = "Prospective Tenant")]
-        public int ProspectiveTenantId { get; set; }
+        public Guid ProspectiveTenantId { get; set; }
 
         [Required]
         [Display(Name = "Property")]
-        public int PropertyId { get; set; }
+        public Guid PropertyId { get; set; }
 
         [Required]
         [Display(Name = "Applied On")]

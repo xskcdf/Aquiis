@@ -1,4 +1,4 @@
-@page "/propertymanagement/properties/view/{PropertyId:int}"
+@page "/propertymanagement/properties/view/{PropertyId:guid}"
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Core.Constants
 @using Aquiis.SimpleStart.Core.Entities
@@ -432,9 +432,9 @@ else
 }
 @code {
     [Parameter]
-    public int PropertyId { get; set; }
+    public Guid PropertyId { get; set; }
 
-    public int LeaseId { get; set; }
+    public Guid LeaseId { get; set; }
 
     List<Lease> activeLeases = new();
     List<Document> propertyDocuments = new();
@@ -529,7 +529,7 @@ else
         NavigationManager.NavigateTo($"/propertymanagement/maintenance/create?PropertyId={PropertyId}");
     }
 
-    private void ViewMaintenanceRequest(int requestId)
+    private void ViewMaintenanceRequest(Guid requestId)
     {
         NavigationManager.NavigateTo($"/propertymanagement/maintenance/view/{requestId}");
     }
@@ -612,12 +612,12 @@ else
         NavigationManager.NavigateTo("/propertymanagement/checklists");
     }
 
-    private void ViewChecklist(int checklistId)
+    private void ViewChecklist(Guid checklistId)
     {
         NavigationManager.NavigateTo($"/propertymanagement/checklists/view/{checklistId}");
     }
 
-    private void CompleteChecklist(int checklistId)
+    private void CompleteChecklist(Guid checklistId)
     {
         NavigationManager.NavigateTo($"/propertymanagement/checklists/complete/{checklistId}");
     }

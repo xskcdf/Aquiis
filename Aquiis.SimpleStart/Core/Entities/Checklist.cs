@@ -1,24 +1,24 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Aquiis.SimpleStart.Core.Validation;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {
     public class Checklist : BaseModel
     {
-        [Required]
-        [StringLength(100)]
+        [RequiredGuid]
         [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
         [Display(Name = "Property ID")]
-        public int? PropertyId { get; set; }
+        public Guid? PropertyId { get; set; }
 
         [Display(Name = "Lease ID")]
-        public int? LeaseId { get; set; }
+        public Guid? LeaseId { get; set; }
 
-        [Required]
+        [RequiredGuid]
         [Display(Name = "Checklist Template ID")]
-        public int ChecklistTemplateId { get; set; }
+        public Guid ChecklistTemplateId { get; set; }
 
         [Required]
         [StringLength(200)]
@@ -43,7 +43,7 @@ namespace Aquiis.SimpleStart.Core.Entities
         public DateTime? CompletedOn { get; set; }
 
         [Display(Name = "Document ID")]
-        public int? DocumentId { get; set; }
+        public Guid? DocumentId { get; set; }
 
         [StringLength(2000)]
         [Display(Name = "General Notes")]

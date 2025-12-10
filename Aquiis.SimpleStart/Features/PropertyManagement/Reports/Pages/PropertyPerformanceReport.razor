@@ -10,6 +10,8 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 @inject UserContextService UserContextService
+
+@inject ToastService ToastService
 @inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
@@ -206,10 +208,13 @@
             var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var organizationId = await UserContextService.GetActiveOrganizationIdAsync();
 
-            if (!string.IsNullOrEmpty(organizationId))
+            if (organizationId.HasValue)
             {
                 performanceItems = await FinancialReportService.GeneratePropertyPerformanceAsync(
-                    organizationId, startDate, endDate);
+                    organizationId.Value, startDate, endDate);
+            }
+            else {
+                ToastService.ShowError("Unable to determine active organization.");
             }
         }
         finally

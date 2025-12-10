@@ -1,24 +1,24 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Aquiis.SimpleStart.Core.Validation;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {
     
     public class Lease : BaseModel
     {
-        [Required]
-        [StringLength(100)]
+        [RequiredGuid]
         [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
-        [Required]
-        public int PropertyId { get; set; }
+        [RequiredGuid]
+        public Guid PropertyId { get; set; }
 
-        [Required]
-        public int TenantId { get; set; }
+        [RequiredGuid]
+        public Guid TenantId { get; set; }
 
         // Reference to the lease offer if this lease was created from an accepted offer
-        public int? LeaseOfferId { get; set; }
+        public Guid? LeaseOfferId { get; set; }
 
         [Required]
         [DataType(DataType.Date)]
@@ -74,10 +74,10 @@ namespace Aquiis.SimpleStart.Core.Entities
         public string? RenewalNotes { get; set; }
 
         // Lease Chain Tracking
-        public int? PreviousLeaseId { get; set; }
+        public Guid? PreviousLeaseId { get; set; }
 
         // Document Tracking
-        public int? DocumentId { get; set; }
+        public Guid? DocumentId { get; set; }
 
         // Navigation properties
         [ForeignKey("PropertyId")]

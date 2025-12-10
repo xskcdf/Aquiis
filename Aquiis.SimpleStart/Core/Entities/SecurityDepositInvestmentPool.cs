@@ -10,7 +10,7 @@ namespace Aquiis.SimpleStart.Core.Entities
     public class SecurityDepositInvestmentPool : BaseModel
     {
         [Required]
-        public string OrganizationId { get; set; } = string.Empty;
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
         [Required]
         public int Year { get; set; }

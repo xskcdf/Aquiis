@@ -205,8 +205,8 @@
             runningTask = taskType;
             taskResults.Clear();
 
-            var organizationId = await GetActiveOrganizationIdAsync();
-            if (organizationId == null)
+            Guid? organizationId = await GetActiveOrganizationIdAsync();
+            if (!organizationId.HasValue)
             {
                 ToastService.ShowError("Could not determine organization ID");
                 return;
@@ -215,16 +215,16 @@
             switch (taskType)
             {
                 case TaskType.ApplyLateFees:
-                    await ApplyLateFees(organizationId);
+                    await ApplyLateFees(organizationId.Value);
                     break;
                 case TaskType.UpdateInvoiceStatuses:
-                    await UpdateInvoiceStatuses(organizationId);
+                    await UpdateInvoiceStatuses(organizationId.Value);
                     break;
                 case TaskType.SendPaymentReminders:
-                    await SendPaymentReminders(organizationId);
+                    await SendPaymentReminders(organizationId.Value);
                     break;
                 case TaskType.CheckLeaseRenewals:
-                    await CheckLeaseRenewals(organizationId);
+                    await CheckLeaseRenewals(organizationId.Value);
                     break;
             }
 
@@ -258,10 +258,10 @@
                 return;
             }
 
-            await ApplyLateFees(organizationId);
-            await UpdateInvoiceStatuses(organizationId);
-            await SendPaymentReminders(organizationId);
-            await CheckLeaseRenewals(organizationId);
+            await ApplyLateFees(organizationId.Value);
+            await UpdateInvoiceStatuses(organizationId.Value);
+            await SendPaymentReminders(organizationId.Value);
+            await CheckLeaseRenewals(organizationId.Value);
 
             lastRunTime = DateTime.Now;
             ToastService.ShowSuccess("All tasks completed successfully");
@@ -278,13 +278,13 @@
         }
     }
 
-    private async Task<string?> GetActiveOrganizationIdAsync()
+    private async Task<Guid?> GetActiveOrganizationIdAsync()
     {
         // Get organization ID from UserContext
         return await UserContext.GetActiveOrganizationIdAsync();
     }
 
-    private async Task ApplyLateFees(string organizationId)
+    private async Task ApplyLateFees(Guid organizationId)
     {
         var settings = await PropertyService.GetOrganizationSettingsByOrgIdAsync(organizationId);
         
@@ -330,7 +330,7 @@
         taskResults[TaskType.ApplyLateFees] = $"Applied late fees to {overdueInvoices.Count} invoice(s)";
     }
 
-    private async Task UpdateInvoiceStatuses(string organizationId)
+    private async Task UpdateInvoiceStatuses(Guid organizationId)
     {
         var today = DateTime.Today;
         var newlyOverdueInvoices = await DbContext.Invoices
@@ -356,7 +356,7 @@
         taskResults[TaskType.UpdateInvoiceStatuses] = $"Updated {newlyOverdueInvoices.Count} invoice(s) to Overdue status";
     }
 
-    private async Task SendPaymentReminders(string organizationId)
+    private async Task SendPaymentReminders(Guid organizationId)
     {
         var settings = await PropertyService.GetOrganizationSettingsByOrgIdAsync(organizationId);
         if (settings == null || !settings.PaymentReminderEnabled)
@@ -396,7 +396,7 @@
         taskResults[TaskType.SendPaymentReminders] = $"Marked {upcomingInvoices.Count} invoice(s) for payment reminders";
     }
 
-    private async Task CheckLeaseRenewals(string organizationId)
+    private async Task CheckLeaseRenewals(Guid organizationId)
     {
         var today = DateTime.Today;
         int totalProcessed = 0;

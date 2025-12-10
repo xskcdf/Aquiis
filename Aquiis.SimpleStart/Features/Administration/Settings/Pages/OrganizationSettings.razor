@@ -369,7 +369,7 @@
     private bool isSubmitting = false;
     private string errorMessage = string.Empty;
     private string successMessage = string.Empty;
-    private string organizationId = string.Empty;
+    private Guid organizationId = Guid.Empty;
     private string organizationName = string.Empty;
     private string userRole = string.Empty;
     private bool canEdit = true;
@@ -379,7 +379,7 @@
     {
         try
         {
-            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
+            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? Guid.Empty;
             await LoadSettings();
         }
         catch (Exception ex)
@@ -426,6 +426,7 @@
         {
             settings = new OrganizationSettingsEntity
             {
+                Id = Guid.NewGuid(),
                 OrganizationId = organizationId,
                 Name = "My Organization",
                 ApplicationFeeEnabled = true,

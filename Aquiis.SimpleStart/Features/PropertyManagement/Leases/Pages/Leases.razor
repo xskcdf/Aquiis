@@ -178,7 +178,7 @@ else
                     var property = propertyGroup.First().Property;
                     var propertyLeaseCount = propertyGroup.Count();
                     var activeLeaseCount = propertyGroup.Count(l => l.Status == "Active");
-                    var isExpanded = expandedProperties.Contains(propertyGroup.Key);
+                    var isExpanded = expandedProperties.Contains(propertyGroup.Key.GetHashCode());
                     
                     <div class="card mb-3">
                         <div class="card-header" style="cursor: pointer;" @onclick="() => TogglePropertyGroup(propertyGroup.Key)">
@@ -496,11 +496,11 @@ else
     private List<Lease>? leases;
     private List<Lease> filteredLeases = new();
     private List<Lease> pagedLeases = new();
-    private IEnumerable<IGrouping<int, Lease>> groupedLeases = Enumerable.Empty<IGrouping<int, Lease>>();
+    private IEnumerable<IGrouping<Guid, Lease>> groupedLeases = Enumerable.Empty<IGrouping<Guid, Lease>>();
     private HashSet<int> expandedProperties = new();
     private string searchTerm = string.Empty;
     private string selectedLeaseStatus = string.Empty;
-    private int? selectedTenantId;
+    private Guid? selectedTenantId;
     private List<Tenant>? availableTenants;
     private int activeCount = 0;
     private int expiringSoonCount = 0;
@@ -521,11 +521,11 @@ else
 
     [Parameter]
     [SupplyParameterFromQuery]
-    public int? TenantId { get; set; }
+    public Guid? TenantId { get; set; }
 
     [Parameter]
     [SupplyParameterFromQuery]
-    public int? PropertyId { get; set; }
+    public Guid? PropertyId { get; set; }
 
     [Parameter]
     [SupplyParameterFromQuery]
@@ -640,7 +640,7 @@ else
         if (groupByProperty)
         {
             groupedLeases = filteredLeases
-                .Where(l => l.PropertyId > 0)
+                .Where(l => l.PropertyId != Guid.Empty)
                 .GroupBy(l => l.PropertyId)
                 .OrderBy(g => g.First().Property?.Address)
                 .ToList();
@@ -661,15 +661,15 @@ else
         CalculateMetrics();
     }
     
-    private void TogglePropertyGroup(int propertyId)
+    private void TogglePropertyGroup(Guid propertyId)
     {
-        if (expandedProperties.Contains(propertyId))
+        if (expandedProperties.Contains(propertyId.GetHashCode()))
         {
-            expandedProperties.Remove(propertyId);
+            expandedProperties.Remove(propertyId.GetHashCode());
         }
         else
         {
-            expandedProperties.Add(propertyId);
+            expandedProperties.Add(propertyId.GetHashCode());
         }
     }
     
@@ -806,17 +806,17 @@ else
         NavigationManager.NavigateTo("/propertymanagement/leases", forceLoad: true);
     }
 
-    private void ViewLease(int id)
+    private void ViewLease(Guid id)
     {
         NavigationManager.NavigateTo($"/propertymanagement/leases/view/{id}");
     }
 
-    private void EditLease(int id)
+    private void EditLease(Guid id)
     {
         NavigationManager.NavigateTo($"/propertymanagement/leases/edit/{id}");
     }
 
-    private async Task DeleteLease(int id)
+    private async Task DeleteLease(Guid id)
     {
         var authState = await AuthenticationStateTask;
         var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;

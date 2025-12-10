@@ -200,7 +200,7 @@
             var currentUserId = await UserContext.GetUserIdAsync();
             var currentOrganizationId = await UserContext.GetActiveOrganizationIdAsync();
             
-            if (string.IsNullOrEmpty(currentUserId) || string.IsNullOrEmpty(currentOrganizationId))
+            if (string.IsNullOrEmpty(currentUserId) || !currentOrganizationId.HasValue)
             {
                 errorMessage = "User not authenticated or no active organization.";
                 return;
@@ -223,8 +223,8 @@
                 PhoneNumber = userModel.PhoneNumber,
                 FirstName = userModel.FirstName,
                 LastName = userModel.LastName,
-                OrganizationId = currentOrganizationId,
-                ActiveOrganizationId = currentOrganizationId
+                OrganizationId = currentOrganizationId.Value,
+                ActiveOrganizationId = currentOrganizationId.Value
             };
 
             var createResult = await UserManager.CreateAsync(newUser, userModel.Password);
@@ -238,7 +238,7 @@
             // Grant organization access with the selected role
             var grantResult = await OrganizationService.GrantOrganizationAccessAsync(
                 newUser.Id, 
-                currentOrganizationId, 
+                currentOrganizationId.Value, 
                 userModel.SelectedRole, 
                 currentUserId);
 

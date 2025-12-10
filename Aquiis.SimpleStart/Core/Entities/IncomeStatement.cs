@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Aquiis.SimpleStart.Core.Validation;
 
 namespace Aquiis.SimpleStart.Core.Entities;
 
@@ -7,14 +8,13 @@ namespace Aquiis.SimpleStart.Core.Entities;
 /// </summary>
 public class IncomeStatement
 {
-    [Required]
-    [StringLength(100)]
+    [RequiredGuid]
     [Display(Name = "Organization ID")]
-    public string OrganizationId { get; set; } = string.Empty;
+    public Guid OrganizationId { get; set; } = Guid.Empty;
         
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-    public int? PropertyId { get; set; }
+    public Guid? PropertyId { get; set; }
     public string? PropertyName { get; set; }
 
     // Income
@@ -42,10 +42,11 @@ public class IncomeStatement
 /// </summary>
 public class RentRollItem
 {
-    public int PropertyId { get; set; }
+    [RequiredGuid]
+    public Guid PropertyId { get; set; }
     public string PropertyName { get; set; } = string.Empty;
     public string PropertyAddress { get; set; } = string.Empty;
-    public int? TenantId { get; set; }
+    public Guid? TenantId { get; set; }
     public string? TenantName { get; set; }
     public string LeaseStatus { get; set; } = string.Empty;
     public DateTime? LeaseStartDate { get; set; }
@@ -63,7 +64,8 @@ public class RentRollItem
 /// </summary>
 public class PropertyPerformance
 {
-    public int PropertyId { get; set; }
+    [RequiredGuid]
+    public Guid PropertyId { get; set; }
     public string PropertyName { get; set; } = string.Empty;
     public string PropertyAddress { get; set; } = string.Empty;
     public decimal TotalIncome { get; set; }
@@ -81,7 +83,7 @@ public class PropertyPerformance
 public class TaxReportData
 {
     public int Year { get; set; }
-    public int? PropertyId { get; set; }
+    public Guid? PropertyId { get; set; }
     public string? PropertyName { get; set; }
     public decimal TotalRentIncome { get; set; }
     public decimal TotalExpenses { get; set; }

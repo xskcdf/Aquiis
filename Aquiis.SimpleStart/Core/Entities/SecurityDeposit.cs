@@ -14,15 +14,15 @@ namespace Aquiis.SimpleStart.Core.Entities
         [JsonInclude]
         [StringLength(100)]
         [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
         [Required]
         [JsonInclude]
-        public int LeaseId { get; set; }
+        public Guid LeaseId { get; set; }
 
         [Required]
         [JsonInclude]
-        public int TenantId { get; set; }
+        public Guid TenantId { get; set; }
 
         [Required]
         [Column(TypeName = "decimal(18,2)")]

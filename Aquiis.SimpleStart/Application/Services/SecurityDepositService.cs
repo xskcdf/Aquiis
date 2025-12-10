@@ -27,15 +27,15 @@ namespace Aquiis.SimpleStart.Application.Services
         /// Collects a security deposit for a lease.
         /// </summary>
         public async Task<SecurityDeposit> CollectSecurityDepositAsync(
-            int leaseId,
+            Guid leaseId,
             decimal amount,
             string paymentMethod,
             string? transactionReference,
-            int? tenantId = null)
+            Guid? tenantId = null)
         {
             var userId = await _userContext.GetUserIdAsync();
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
-            if (string.IsNullOrEmpty(organizationId))
+            if (!organizationId.HasValue)
                 throw new InvalidOperationException("Organization context is required");
 
             var lease = await _context.Leases
@@ -53,12 +53,12 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new InvalidOperationException($"Security deposit already exists for lease {leaseId}");
 
             // Use provided tenantId or fall back to lease.TenantId
-            int depositTenantId;
+            Guid depositTenantId;
             if (tenantId.HasValue)
             {
                 depositTenantId = tenantId.Value;
             }
-            else if (lease.TenantId > 0)
+            else if (lease.TenantId != Guid.Empty)
             {
                 depositTenantId = lease.TenantId;
             }
@@ -69,7 +69,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
             var deposit = new SecurityDeposit
             {
-                OrganizationId = organizationId,
+                OrganizationId = organizationId.Value,
                 LeaseId = leaseId,
                 TenantId = depositTenantId,
                 Amount = amount,
@@ -91,7 +91,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Adds a security deposit to the investment pool when lease becomes active.
         /// </summary>
-        public async Task<bool> AddToInvestmentPoolAsync(int securityDepositId)
+        public async Task<bool> AddToInvestmentPoolAsync(Guid securityDepositId)
         {
             var userId = await _userContext.GetUserIdAsync();
             
@@ -128,7 +128,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Removes a security deposit from the investment pool when lease ends.
         /// </summary>
-        public async Task<bool> RemoveFromInvestmentPoolAsync(int securityDepositId)
+        public async Task<bool> RemoveFromInvestmentPoolAsync(Guid securityDepositId)
         {
             var userId = await _userContext.GetUserIdAsync();
             
@@ -164,7 +164,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Gets security deposit by lease ID.
         /// </summary>
-        public async Task<SecurityDeposit?> GetSecurityDepositByLeaseIdAsync(int leaseId)
+        public async Task<SecurityDeposit?> GetSecurityDepositByLeaseIdAsync(Guid leaseId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
@@ -242,7 +242,7 @@ namespace Aquiis.SimpleStart.Application.Services
         {
             var userId = await _userContext.GetUserIdAsync();
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
-            if (string.IsNullOrEmpty(organizationId))
+            if (!organizationId.HasValue)
                 throw new InvalidOperationException("Organization context is required");
 
             var pool = await _context.SecurityDepositInvestmentPools
@@ -259,7 +259,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
             pool = new SecurityDepositInvestmentPool
             {
-                OrganizationId = organizationId,
+                OrganizationId = organizationId.Value,
                 Year = year,
                 StartingBalance = 0,
                 EndingBalance = 0,
@@ -411,7 +411,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
                 var dividend = new SecurityDepositDividend
                 {
-                    OrganizationId = organizationId,
+                    OrganizationId = organizationId.Value,
                     SecurityDepositId = deposit.Id,
                     InvestmentPoolId = pool.Id,
                     LeaseId = deposit.LeaseId,
@@ -457,7 +457,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Gets an investment pool by ID.
         /// </summary>
-        public async Task<SecurityDepositInvestmentPool?> GetInvestmentPoolByIdAsync(int poolId)
+        public async Task<SecurityDepositInvestmentPool?> GetInvestmentPoolByIdAsync(Guid poolId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
@@ -490,7 +490,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// Records tenant's payment method choice for dividend.
         /// </summary>
         public async Task<bool> RecordDividendChoiceAsync(
-            int dividendId,
+            Guid dividendId,
             string paymentMethod,
             string? mailingAddress)
         {
@@ -528,7 +528,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// Processes dividend payment (applies as credit or marks as paid).
         /// </summary>
         public async Task<bool> ProcessDividendPaymentAsync(
-            int dividendId,
+            Guid dividendId,
             string? paymentReference)
         {
             var userId = await _userContext.GetUserIdAsync();
@@ -566,7 +566,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Gets dividends for a specific tenant.
         /// </summary>
-        public async Task<List<SecurityDepositDividend>> GetTenantDividendsAsync(int tenantId)
+        public async Task<List<SecurityDepositDividend>> GetTenantDividendsAsync(Guid tenantId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
@@ -610,7 +610,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// Calculates total refund amount (deposit + dividends - deductions).
         /// </summary>
         public async Task<decimal> CalculateRefundAmountAsync(
-            int securityDepositId,
+            Guid securityDepositId,
             decimal deductionsAmount)
         {
             var deposit = await _context.SecurityDeposits
@@ -632,7 +632,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// Processes security deposit refund.
         /// </summary>
         public async Task<SecurityDeposit> ProcessRefundAsync(
-            int securityDepositId,
+            Guid securityDepositId,
             decimal deductionsAmount,
             string? deductionsReason,
             string refundMethod,
@@ -707,7 +707,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Closes an investment pool, marking it as complete.
         /// </summary>
-        public async Task<SecurityDepositInvestmentPool> CloseInvestmentPoolAsync(int poolId)
+        public async Task<SecurityDepositInvestmentPool> CloseInvestmentPoolAsync(Guid poolId)
         {
             var userId = await _userContext.GetUserIdAsync();
             

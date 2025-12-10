@@ -9,10 +9,10 @@ namespace Aquiis.SimpleStart.Core.Entities
         [Required]
         [StringLength(100)]
         [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
         [Required]
-        public int LeaseId { get; set; }
+        public Guid LeaseId { get; set; }
 
         [Required]
         [StringLength(50)]
@@ -59,7 +59,7 @@ namespace Aquiis.SimpleStart.Core.Entities
         public DateTime? ReminderSentOn { get; set; }
 
     // Document Tracking
-    public int? DocumentId { get; set; }
+    public Guid? DocumentId { get; set; }
 
         // Navigation properties
     [ForeignKey("LeaseId")]

@@ -205,12 +205,11 @@
 @code {
     [Parameter]
     [SupplyParameterFromQuery]
-    public int? PropertyId { get; set; }
+    public Guid? PropertyId { get; set; }
 
     [Parameter]
     [SupplyParameterFromQuery]
-    public int? LeaseId { get; set; }
-
+    public Guid? LeaseId { get; set; }
     private MaintenanceRequestModel maintenanceRequest = new();
     private List<Property> properties = new();
     private Lease? currentLease = null;
@@ -224,7 +223,7 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        if (PropertyId.HasValue && PropertyId.Value > 0 && maintenanceRequest.PropertyId != PropertyId.Value)
+        if (PropertyId.HasValue && PropertyId.Value != Guid.Empty && maintenanceRequest.PropertyId != PropertyId.Value)
         {
             maintenanceRequest.PropertyId = PropertyId.Value;
             if (properties.Any())
@@ -232,7 +231,7 @@
                 await LoadLeaseForProperty(PropertyId.Value);
             }
         }
-        if (LeaseId.HasValue && LeaseId.Value > 0 && maintenanceRequest.LeaseId != LeaseId.Value)
+        if (LeaseId.HasValue && LeaseId.Value != Guid.Empty && maintenanceRequest.LeaseId != LeaseId.Value)
         {
             maintenanceRequest.LeaseId = LeaseId.Value;
         }
@@ -245,12 +244,12 @@
         {
             properties = await PropertyManagementService.GetPropertiesAsync();
             
-            if (PropertyId.HasValue && PropertyId.Value > 0)
+            if (PropertyId.HasValue && PropertyId.Value != Guid.Empty)
             {
                 maintenanceRequest.PropertyId = PropertyId.Value;
                 await LoadLeaseForProperty(PropertyId.Value);
             }
-            if (LeaseId.HasValue && LeaseId.Value > 0)
+            if (LeaseId.HasValue && LeaseId.Value != Guid.Empty)
             {
                 maintenanceRequest.LeaseId = LeaseId.Value;
             }
@@ -263,7 +262,7 @@
 
     private async Task OnPropertyChangedAsync()
     {
-        if (maintenanceRequest.PropertyId > 0)
+        if (maintenanceRequest.PropertyId != Guid.Empty)
         {
             await LoadLeaseForProperty(maintenanceRequest.PropertyId);
         }
@@ -274,7 +273,7 @@
         }
     }
 
-    private async Task LoadLeaseForProperty(int propertyId)
+    private async Task LoadLeaseForProperty(Guid propertyId)
     {
         var leases = await PropertyManagementService.GetCurrentAndUpcomingLeasesByPropertyIdAsync(propertyId);
         currentLease = leases.FirstOrDefault();
@@ -320,10 +319,9 @@
     public class MaintenanceRequestModel
     {
         [Required(ErrorMessage = "Property is required")]
-        [Range(1, int.MaxValue, ErrorMessage = "Please select a property")]
-        public int PropertyId { get; set; }
+        public Guid PropertyId { get; set; }
 
-        public int? LeaseId { get; set; }
+        public Guid? LeaseId { get; set; }
 
         [Required(ErrorMessage = "Title is required")]
         [StringLength(100, ErrorMessage = "Title cannot exceed 100 characters")]

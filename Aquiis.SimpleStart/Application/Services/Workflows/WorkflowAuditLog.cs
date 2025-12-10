@@ -16,10 +16,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// <summary>
         /// ID of the entity that transitioned
         /// </summary>
-        public required int EntityId { get; set; }
-
-        /// <summary>
-        /// Previous status (null for initial creation)
+        public required Guid EntityId { get; set; }
         /// </summary>
         public string? FromStatus { get; set; }
 
@@ -51,7 +48,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// <summary>
         /// Organization context for the workflow action
         /// </summary>
-        public required string OrganizationId { get; set; }
+        public required Guid OrganizationId { get; set; }
 
         /// <summary>
         /// Additional context data (JSON serialized)

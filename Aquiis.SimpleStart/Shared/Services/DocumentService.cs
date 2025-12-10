@@ -22,7 +22,7 @@ namespace Aquiis.SimpleStart.Shared.Services
             return document;
         }
 
-        public async Task DeleteDocumentAsync(int documentId)
+        public async Task DeleteDocumentAsync(Guid documentId)
         {
             var document = await _dbContext.Documents.FindAsync(documentId);
             if (document != null)
@@ -32,7 +32,7 @@ namespace Aquiis.SimpleStart.Shared.Services
             }
         }
 
-        public async Task<Document?> GetDocumentByIdAsync(int documentId)
+        public async Task<Document?> GetDocumentByIdAsync(Guid documentId)
         {
             return await _dbContext.Documents.FindAsync(documentId);
         }

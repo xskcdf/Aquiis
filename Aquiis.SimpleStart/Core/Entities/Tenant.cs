@@ -1,12 +1,13 @@
 using System.ComponentModel.DataAnnotations;
+using Aquiis.SimpleStart.Core.Validation;
 
 namespace Aquiis.SimpleStart.Core.Entities {
 
     public class Tenant : BaseModel
     {
 
-        [Required]
-        public string OrganizationId { get; set; } = string.Empty;
+        [RequiredGuid]
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
         [Required]
         [StringLength(100)]
@@ -45,7 +46,7 @@ namespace Aquiis.SimpleStart.Core.Entities {
         public string Notes { get; set; } = string.Empty;
 
         // Link back to prospect for audit trail
-        public int? ProspectiveTenantId { get; set; }
+        public Guid? ProspectiveTenantId { get; set; }
 
         // Navigation properties
         public virtual ICollection<Lease> Leases { get; set; } = new List<Lease>();

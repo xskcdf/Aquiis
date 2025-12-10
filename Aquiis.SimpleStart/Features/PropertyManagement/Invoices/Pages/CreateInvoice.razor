@@ -1,6 +1,7 @@
 @page "/propertymanagement/invoices/create"
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Validation
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Forms
@@ -190,7 +191,7 @@
 
     [Parameter]
     [SupplyParameterFromQuery]
-    public int? LeaseId { get; set; }
+    public Guid? LeaseId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -213,7 +214,7 @@
 
     private void OnLeaseSelected()
     {
-        if (invoiceModel.LeaseId > 0)
+        if (invoiceModel.LeaseId != Guid.Empty)
         {
             var selectedLease = leases?.FirstOrDefault(l => l.Id == invoiceModel.LeaseId);
             if (selectedLease != null)
@@ -279,9 +280,8 @@
 
     public class InvoiceModel
     {
-        [Required(ErrorMessage = "Lease is required")]
-        [Range(1, int.MaxValue, ErrorMessage = "Please select a lease")]
-        public int LeaseId { get; set; }
+        [RequiredGuid(ErrorMessage = "Lease is required")]
+        public Guid LeaseId { get; set; }
 
         [Required(ErrorMessage = "Invoice number is required")]
         [StringLength(50, ErrorMessage = "Invoice number cannot exceed 50 characters")]

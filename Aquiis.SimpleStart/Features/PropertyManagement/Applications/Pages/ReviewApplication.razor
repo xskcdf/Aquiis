@@ -1,4 +1,4 @@
-@page "/propertymanagement/applications/{ApplicationId:int}/review"
+@page "/propertymanagement/applications/{ApplicationId:guid}/review"
 
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
@@ -766,7 +766,7 @@
 
 @code {
     [Parameter]
-    public int ApplicationId { get; set; }
+    public Guid ApplicationId { get; set; }
 
     private RentalApplication? application;
     private ApplicationScreening? screening;
@@ -786,7 +786,7 @@
     private string denyReason = string.Empty;
     private string withdrawReason = string.Empty;
     private string userId = string.Empty;
-    private string organizationId = string.Empty;
+    private Guid organizationId = Guid.Empty;
     private FeePaymentModel feePaymentModel = new();
     private ScreeningDispositionModel backgroundCheckModel = new();
     private ScreeningDispositionModel creditCheckModel = new();
@@ -797,7 +797,7 @@
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
+            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? Guid.Empty;
 
             await LoadApplication();
         }

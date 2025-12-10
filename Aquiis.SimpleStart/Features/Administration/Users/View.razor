@@ -326,7 +326,7 @@ else
 
             // Check permissions
             var currentOrgId = await UserContext.GetActiveOrganizationIdAsync();
-            var currentUserRole = await OrganizationService.GetUserRoleForOrganizationAsync(currentUser.Id, currentOrgId ?? string.Empty);
+            var currentUserRole = await OrganizationService.GetUserRoleForOrganizationAsync(currentUser.Id, currentOrgId.Value);
             isCurrentUserAdmin = currentUserRole == ApplicationConstants.OrganizationRoles.Owner || 
                                 currentUserRole == ApplicationConstants.OrganizationRoles.Administrator;
             isViewingOwnAccount = currentUser.Id == viewedUser.Id;
@@ -339,7 +339,7 @@ else
             canEditAccount = isViewingOwnAccount;
 
             // Load user's organization role
-            var viewedUserRole = await OrganizationService.GetUserRoleForOrganizationAsync(viewedUser.Id, currentOrgId ?? string.Empty);
+            var viewedUserRole = await OrganizationService.GetUserRoleForOrganizationAsync(viewedUser.Id, currentOrgId.Value);
             userRoles = viewedUserRole != null ? new List<string> { viewedUserRole } : new List<string>();
             currentUserRole = viewedUserRole ?? "No Role";
             selectedRole = currentUserRole;
@@ -394,14 +394,14 @@ else
             var currentOrgId = await UserContext.GetActiveOrganizationIdAsync();
             var currentUserId = await UserContext.GetUserIdAsync();
             
-            if (string.IsNullOrEmpty(currentOrgId) || string.IsNullOrEmpty(currentUserId))
+            if (!currentOrgId.HasValue || string.IsNullOrEmpty(currentUserId))
             {
                 errorMessage = "Unable to determine current organization context.";
                 return;
             }
 
             // Check if user already has an organization assignment
-            var existingRole = await OrganizationService.GetUserRoleForOrganizationAsync(viewedUser.Id, currentOrgId);
+            var existingRole = await OrganizationService.GetUserRoleForOrganizationAsync(viewedUser.Id, currentOrgId.Value);
             
             bool updateResult;
             if (existingRole != null)
@@ -409,7 +409,7 @@ else
                 // Update existing role
                 updateResult = await OrganizationService.UpdateUserRoleAsync(
                     viewedUser.Id, 
-                    currentOrgId, 
+                    currentOrgId.Value, 
                     selectedRole, 
                     currentUserId);
             }
@@ -418,7 +418,7 @@ else
                 // Grant new organization access with the selected role
                 updateResult = await OrganizationService.GrantOrganizationAccessAsync(
                     viewedUser.Id,
-                    currentOrgId,
+                    currentOrgId.Value,
                     selectedRole,
                     currentUserId);
             }

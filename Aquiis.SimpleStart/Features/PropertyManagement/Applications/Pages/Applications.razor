@@ -187,13 +187,13 @@
     private List<RentalApplication> deniedApplications = new();
     private string currentFilter = "Pending";
     private bool isLoading = true;
-    private string organizationId = string.Empty;
+    private Guid organizationId = Guid.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
+            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? Guid.Empty;
             await LoadApplications();
         }
         catch (Exception ex)
@@ -241,7 +241,7 @@
         };
     }
 
-    private void ViewApplication(int applicationId)
+    private void ViewApplication(Guid applicationId)
     {
         Navigation.NavigateTo($"/propertymanagement/applications/{applicationId}/review");
     }

@@ -1,4 +1,4 @@
-@page "/propertymanagement/tenants/view/{Id:int}"
+@page "/propertymanagement/tenants/view/{Id:guid}"
 @using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @inject NavigationManager NavigationManager
@@ -175,7 +175,8 @@ else
 }
 
 @code {
-    [Parameter] public int Id { get; set; }
+    [Parameter]
+    public Guid Id { get; set; }
     
     private Tenant? tenant;
     private List<Lease> tenantLeases = new();

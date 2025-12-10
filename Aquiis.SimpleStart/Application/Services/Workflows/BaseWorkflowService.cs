@@ -122,7 +122,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// </summary>
         protected async Task LogTransitionAsync(
             string entityType,
-            int entityId,
+            Guid entityId,
             string? fromStatus,
             string toStatus,
             string action,
@@ -134,6 +134,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
             
             var auditLog = new WorkflowAuditLog
             {
+                Id = Guid.NewGuid(),
                 EntityType = entityType,
                 EntityId = entityId,
                 FromStatus = fromStatus,
@@ -142,7 +143,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 Reason = reason,
                 PerformedBy = userId,
                 PerformedOn = DateTime.UtcNow,
-                OrganizationId = activeOrgId ?? string.Empty,
+                OrganizationId = activeOrgId.HasValue ? activeOrgId.Value : Guid.Empty,
                 Metadata = metadata != null ? JsonSerializer.Serialize(metadata) : null,
                 CreatedOn = DateTime.UtcNow,
                 CreatedBy = userId
@@ -157,7 +158,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// </summary>
         public async Task<List<WorkflowAuditLog>> GetAuditHistoryAsync(
             string entityType,
-            int entityId)
+            Guid entityId)
         {
             var activeOrgId = await _userContext.GetActiveOrganizationIdAsync();
             
@@ -173,15 +174,15 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// </summary>
         protected async Task<bool> ValidateOrganizationOwnershipAsync<TEntity>(
             IQueryable<TEntity> query,
-            int entityId) where TEntity : class
+            Guid entityId) where TEntity : class
         {
             var activeOrgId = await _userContext.GetActiveOrganizationIdAsync();
             
             // This assumes entities have OrganizationId property
             // Override in derived classes if different validation needed
             var entity = await query
-                .Where(e => EF.Property<int>(e, "Id") == entityId)
-                .Where(e => EF.Property<string>(e, "OrganizationId") == activeOrgId)
+                .Where(e => EF.Property<Guid>(e, "Id") == entityId)
+                .Where(e => EF.Property<Guid>(e, "OrganizationId") == activeOrgId)
                 .Where(e => EF.Property<bool>(e, "IsDeleted") == false)
                 .FirstOrDefaultAsync();
 
@@ -199,9 +200,9 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// <summary>
         /// Gets the active organization ID from the user context.
         /// </summary>
-        protected async Task<string> GetActiveOrganizationIdAsync()
+        protected async Task<Guid> GetActiveOrganizationIdAsync()
         {
-            return await _userContext.GetActiveOrganizationIdAsync() ?? string.Empty;
+            return await _userContext.GetActiveOrganizationIdAsync() ?? Guid.Empty;
         }
     }
 }

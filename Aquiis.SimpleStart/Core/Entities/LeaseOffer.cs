@@ -8,16 +8,16 @@ namespace Aquiis.SimpleStart.Core.Entities
         [Required]
         [StringLength(100)]
         [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
         [Required]
-        public int RentalApplicationId { get; set; }
+        public Guid RentalApplicationId { get; set; }
 
         [Required]
-        public int PropertyId { get; set; }
+        public Guid PropertyId { get; set; }
 
         [Required]
-        public int ProspectiveTenantId { get; set; }
+        public Guid ProspectiveTenantId { get; set; }
 
         [Required]
         [DataType(DataType.Date)]
@@ -56,7 +56,7 @@ namespace Aquiis.SimpleStart.Core.Entities
         [StringLength(500)]
         public string? ResponseNotes { get; set; }
 
-        public int? ConvertedLeaseId { get; set; } // Set when offer is accepted and converted to lease
+        public Guid? ConvertedLeaseId { get; set; } // Set when offer is accepted and converted to lease
 
         // Navigation properties
         [ForeignKey("RentalApplicationId")]

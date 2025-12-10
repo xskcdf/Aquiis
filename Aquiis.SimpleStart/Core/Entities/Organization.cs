@@ -1,13 +1,13 @@
 using System.ComponentModel.DataAnnotations;
+using Aquiis.SimpleStart.Core.Validation;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {
     public class Organization
     {
-        [Required]
-        [StringLength(100)]
+        [RequiredGuid]
         [Display(Name = "Organization ID")]
-        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public Guid Id { get; set; } = Guid.Empty;
         
         /// <summary>
         /// UserId of the account owner who created this organization

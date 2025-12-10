@@ -1,4 +1,4 @@
-@page "/propertymanagement/inspections/view/{InspectionId:int}"
+@page "/propertymanagement/inspections/view/{InspectionId:guid}"
 
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Features.PropertyManagement
@@ -222,7 +222,7 @@ else
 
 @code {
     [Parameter]
-    public int InspectionId { get; set; }
+    public Guid InspectionId { get; set; }
 
     private Inspection? inspection;
     private string? successMessage;
@@ -359,7 +359,7 @@ else
                 DocumentType = "Inspection Report",
                 PropertyId = inspection.PropertyId,
                 LeaseId = inspection.LeaseId,
-                OrganizationId = organizationId!,
+                OrganizationId = organizationId!.Value,
                 CreatedOn = DateTime.UtcNow,
                 CreatedBy = userId!,
                 Description = $"{inspection.InspectionType} Inspection - {inspection.CompletedOn:MMM dd, yyyy}"

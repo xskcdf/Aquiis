@@ -88,7 +88,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Delete a calendar event
         /// </summary>
-        public async Task DeleteEventAsync(int? calendarEventId)
+        public async Task DeleteEventAsync(Guid? calendarEventId)
         {
             if (!calendarEventId.HasValue) return;
 
@@ -127,7 +127,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Get a specific calendar event by ID
         /// </summary>
-        public async Task<CalendarEvent?> GetEventByIdAsync(int eventId)
+        public async Task<CalendarEvent?> GetEventByIdAsync(Guid eventId)
         {
             var organizationId = await _userContextService.GetActiveOrganizationIdAsync();
             return await _context.CalendarEvents
@@ -187,7 +187,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Get all calendar events for a specific property
         /// </summary>
-        public async Task<List<CalendarEvent>> GetEventsByPropertyIdAsync(int propertyId)
+        public async Task<List<CalendarEvent>> GetEventsByPropertyIdAsync(Guid propertyId)
         {
             var organizationId = await _userContextService.GetActiveOrganizationIdAsync();
             return await _context.CalendarEvents
@@ -221,6 +221,7 @@ namespace Aquiis.SimpleStart.Application.Services
             
             return new CalendarEvent
             {
+                Id = Guid.NewGuid(),
                 Title = entity.GetEventTitle(),
                 StartOn = entity.GetEventStart(),
                 DurationMinutes = entity.GetEventDuration(),

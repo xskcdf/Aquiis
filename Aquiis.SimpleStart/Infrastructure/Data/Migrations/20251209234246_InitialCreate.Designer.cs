@@ -8,11 +8,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
+namespace Aquiis.SimpleStart.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251206163651_AddWorkflowAuditLog")]
-    partial class AddWorkflowAuditLog
+    [Migration("20251209234246_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -22,9 +22,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Application.Services.Workflows.WorkflowAuditLog", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Action")
                         .IsRequired()
@@ -38,8 +37,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("EntityId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("EntityType")
                         .IsRequired()
@@ -61,8 +60,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<string>("Metadata")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("OrganizationId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("PerformedBy")
                         .IsRequired()
@@ -99,9 +98,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.ApplicationScreening", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("BackgroundCheckCompletedOn")
                         .HasColumnType("TEXT");
@@ -156,8 +154,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -166,8 +163,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("RentalApplicationId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("RentalApplicationId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("ResultNotes")
                         .HasMaxLength(2000)
@@ -187,9 +184,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.CalendarEvent", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Color")
                         .IsRequired()
@@ -238,16 +234,15 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("PropertyId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("PropertyId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int?>("SourceEntityId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("SourceEntityId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("SourceEntityType")
                         .HasMaxLength(100)
@@ -285,9 +280,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.CalendarSettings", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("AutoCreateEvents")
                         .HasColumnType("INTEGER");
@@ -323,8 +317,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -343,12 +336,11 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.Checklist", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("ChecklistTemplateId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("ChecklistTemplateId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("ChecklistType")
                         .IsRequired()
@@ -370,8 +362,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("DocumentId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("GeneralNotes")
                         .HasMaxLength(2000)
@@ -387,21 +379,20 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("LeaseId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("LeaseId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("PropertyId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("PropertyId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -429,16 +420,15 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.ChecklistItem", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CategorySection")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("ChecklistId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("ChecklistId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
                         .IsRequired()
@@ -473,8 +463,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -501,9 +490,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.ChecklistTemplate", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Category")
                         .IsRequired()
@@ -540,8 +528,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -556,7 +543,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = 1,
+                            Id = new Guid("00000000-0000-0000-0001-000000000001"),
                             Category = "Tour",
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -565,11 +552,11 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             IsSystemTemplate = true,
                             LastModifiedBy = "",
                             Name = "Property Tour",
-                            OrganizationId = ""
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000")
                         },
                         new
                         {
-                            Id = 2,
+                            Id = new Guid("00000000-0000-0000-0001-000000000002"),
                             Category = "MoveIn",
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -578,11 +565,11 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             IsSystemTemplate = true,
                             LastModifiedBy = "",
                             Name = "Move-In",
-                            OrganizationId = ""
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000")
                         },
                         new
                         {
-                            Id = 3,
+                            Id = new Guid("00000000-0000-0000-0001-000000000003"),
                             Category = "MoveOut",
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -591,11 +578,11 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             IsSystemTemplate = true,
                             LastModifiedBy = "",
                             Name = "Move-Out",
-                            OrganizationId = ""
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000")
                         },
                         new
                         {
-                            Id = 4,
+                            Id = new Guid("00000000-0000-0000-0001-000000000004"),
                             Category = "Tour",
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -604,15 +591,14 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             IsSystemTemplate = true,
                             LastModifiedBy = "",
                             Name = "Open House",
-                            OrganizationId = ""
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000")
                         });
                 });
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.ChecklistTemplateItem", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("AllowsNotes")
                         .HasColumnType("INTEGER");
@@ -621,8 +607,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("ChecklistTemplateId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("ChecklistTemplateId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
                         .IsRequired()
@@ -653,8 +639,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -673,10 +658,10 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = 1,
+                            Id = new Guid("00000000-0000-0000-0002-000000000001"),
                             AllowsNotes = true,
                             CategorySection = "Arrival & Introduction",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -684,16 +669,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 1,
                             ItemText = "Greeted prospect and verified appointment",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 1
                         },
                         new
                         {
-                            Id = 2,
+                            Id = new Guid("00000000-0000-0000-0002-000000000002"),
                             AllowsNotes = true,
                             CategorySection = "Arrival & Introduction",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -701,16 +686,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 2,
                             ItemText = "Reviewed property exterior and curb appeal",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 1
                         },
                         new
                         {
-                            Id = 3,
+                            Id = new Guid("00000000-0000-0000-0002-000000000003"),
                             AllowsNotes = true,
                             CategorySection = "Arrival & Introduction",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -718,16 +703,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 3,
                             ItemText = "Showed parking area/garage",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 1
                         },
                         new
                         {
-                            Id = 4,
+                            Id = new Guid("00000000-0000-0000-0002-000000000004"),
                             AllowsNotes = true,
                             CategorySection = "Interior Tour",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -735,16 +720,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 4,
                             ItemText = "Toured living room/common areas",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 2
                         },
                         new
                         {
-                            Id = 5,
+                            Id = new Guid("00000000-0000-0000-0002-000000000005"),
                             AllowsNotes = true,
                             CategorySection = "Interior Tour",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -752,16 +737,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 5,
                             ItemText = "Showed all bedrooms",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 2
                         },
                         new
                         {
-                            Id = 6,
+                            Id = new Guid("00000000-0000-0000-0002-000000000006"),
                             AllowsNotes = true,
                             CategorySection = "Interior Tour",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -769,16 +754,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 6,
                             ItemText = "Showed all bathrooms",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 2
                         },
                         new
                         {
-                            Id = 7,
+                            Id = new Guid("00000000-0000-0000-0002-000000000007"),
                             AllowsNotes = true,
                             CategorySection = "Kitchen & Appliances",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -786,16 +771,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 7,
                             ItemText = "Toured kitchen and demonstrated appliances",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 3
                         },
                         new
                         {
-                            Id = 8,
+                            Id = new Guid("00000000-0000-0000-0002-000000000008"),
                             AllowsNotes = true,
                             CategorySection = "Kitchen & Appliances",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -803,16 +788,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 8,
                             ItemText = "Explained which appliances are included",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 3
                         },
                         new
                         {
-                            Id = 9,
+                            Id = new Guid("00000000-0000-0000-0002-000000000009"),
                             AllowsNotes = true,
                             CategorySection = "Utilities & Systems",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -820,16 +805,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 9,
                             ItemText = "Explained HVAC system and thermostat controls",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 4
                         },
                         new
                         {
-                            Id = 10,
+                            Id = new Guid("00000000-0000-0000-0002-000000000010"),
                             AllowsNotes = true,
                             CategorySection = "Utilities & Systems",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -837,16 +822,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 10,
                             ItemText = "Reviewed utility responsibilities (tenant vs landlord)",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 4
                         },
                         new
                         {
-                            Id = 11,
+                            Id = new Guid("00000000-0000-0000-0002-000000000011"),
                             AllowsNotes = true,
                             CategorySection = "Utilities & Systems",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -854,16 +839,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 11,
                             ItemText = "Showed water heater location",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 4
                         },
                         new
                         {
-                            Id = 12,
+                            Id = new Guid("00000000-0000-0000-0002-000000000012"),
                             AllowsNotes = true,
                             CategorySection = "Storage & Amenities",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -871,16 +856,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 12,
                             ItemText = "Showed storage areas (closets, attic, basement)",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 5
                         },
                         new
                         {
-                            Id = 13,
+                            Id = new Guid("00000000-0000-0000-0002-000000000013"),
                             AllowsNotes = true,
                             CategorySection = "Storage & Amenities",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -888,16 +873,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 13,
                             ItemText = "Showed laundry facilities",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 5
                         },
                         new
                         {
-                            Id = 14,
+                            Id = new Guid("00000000-0000-0000-0002-000000000014"),
                             AllowsNotes = true,
                             CategorySection = "Storage & Amenities",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -905,16 +890,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 14,
                             ItemText = "Showed outdoor space (yard, patio, balcony)",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 5
                         },
                         new
                         {
-                            Id = 15,
+                            Id = new Guid("00000000-0000-0000-0002-000000000015"),
                             AllowsNotes = true,
                             CategorySection = "Lease Terms",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -922,16 +907,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 15,
                             ItemText = "Discussed monthly rent amount",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = true,
                             SectionOrder = 6
                         },
                         new
                         {
-                            Id = 16,
+                            Id = new Guid("00000000-0000-0000-0002-000000000016"),
                             AllowsNotes = true,
                             CategorySection = "Lease Terms",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -939,16 +924,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 16,
                             ItemText = "Explained security deposit and move-in costs",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = true,
                             SectionOrder = 6
                         },
                         new
                         {
-                            Id = 17,
+                            Id = new Guid("00000000-0000-0000-0002-000000000017"),
                             AllowsNotes = true,
                             CategorySection = "Lease Terms",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -956,16 +941,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 17,
                             ItemText = "Reviewed lease term length and start date",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 6
                         },
                         new
                         {
-                            Id = 18,
+                            Id = new Guid("00000000-0000-0000-0002-000000000018"),
                             AllowsNotes = true,
                             CategorySection = "Lease Terms",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -973,16 +958,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 18,
                             ItemText = "Explained pet policy",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 6
                         },
                         new
                         {
-                            Id = 19,
+                            Id = new Guid("00000000-0000-0000-0002-000000000019"),
                             AllowsNotes = true,
                             CategorySection = "Next Steps",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -990,16 +975,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 19,
                             ItemText = "Explained application process and requirements",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 7
                         },
                         new
                         {
-                            Id = 20,
+                            Id = new Guid("00000000-0000-0000-0002-000000000020"),
                             AllowsNotes = true,
                             CategorySection = "Next Steps",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -1007,16 +992,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 20,
                             ItemText = "Reviewed screening process (background, credit check)",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 7
                         },
                         new
                         {
-                            Id = 21,
+                            Id = new Guid("00000000-0000-0000-0002-000000000021"),
                             AllowsNotes = true,
                             CategorySection = "Next Steps",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -1024,16 +1009,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 21,
                             ItemText = "Answered all prospect questions",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 7
                         },
                         new
                         {
-                            Id = 22,
+                            Id = new Guid("00000000-0000-0000-0002-000000000022"),
                             AllowsNotes = true,
                             CategorySection = "Assessment",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -1041,16 +1026,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 22,
                             ItemText = "Prospect Interest Level",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = true,
                             SectionOrder = 8
                         },
                         new
                         {
-                            Id = 23,
+                            Id = new Guid("00000000-0000-0000-0002-000000000023"),
                             AllowsNotes = true,
                             CategorySection = "Assessment",
-                            ChecklistTemplateId = 1,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000001"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -1058,16 +1043,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 23,
                             ItemText = "Overall showing feedback and notes",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = true,
                             SectionOrder = 8
                         },
                         new
                         {
-                            Id = 24,
+                            Id = new Guid("00000000-0000-0000-0002-000000000024"),
                             AllowsNotes = true,
                             CategorySection = "General",
-                            ChecklistTemplateId = 2,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000002"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -1075,16 +1060,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 1,
                             ItemText = "Document property condition",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 1
                         },
                         new
                         {
-                            Id = 25,
+                            Id = new Guid("00000000-0000-0000-0002-000000000025"),
                             AllowsNotes = true,
                             CategorySection = "General",
-                            ChecklistTemplateId = 2,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000002"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -1092,16 +1077,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 2,
                             ItemText = "Collect keys and access codes",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 1
                         },
                         new
                         {
-                            Id = 26,
+                            Id = new Guid("00000000-0000-0000-0002-000000000026"),
                             AllowsNotes = true,
                             CategorySection = "General",
-                            ChecklistTemplateId = 2,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000002"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -1109,16 +1094,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 3,
                             ItemText = "Review lease terms with tenant",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 1
                         },
                         new
                         {
-                            Id = 27,
+                            Id = new Guid("00000000-0000-0000-0002-000000000027"),
                             AllowsNotes = true,
                             CategorySection = "General",
-                            ChecklistTemplateId = 3,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000003"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -1126,16 +1111,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 1,
                             ItemText = "Inspect property condition",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 1
                         },
                         new
                         {
-                            Id = 28,
+                            Id = new Guid("00000000-0000-0000-0002-000000000028"),
                             AllowsNotes = true,
                             CategorySection = "General",
-                            ChecklistTemplateId = 3,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000003"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -1143,16 +1128,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 2,
                             ItemText = "Collect all keys and access devices",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 1
                         },
                         new
                         {
-                            Id = 29,
+                            Id = new Guid("00000000-0000-0000-0002-000000000029"),
                             AllowsNotes = true,
                             CategorySection = "General",
-                            ChecklistTemplateId = 3,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000003"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -1160,16 +1145,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 3,
                             ItemText = "Document damages and needed repairs",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 1
                         },
                         new
                         {
-                            Id = 30,
+                            Id = new Guid("00000000-0000-0000-0002-000000000030"),
                             AllowsNotes = true,
                             CategorySection = "Preparation",
-                            ChecklistTemplateId = 4,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000004"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -1177,16 +1162,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 1,
                             ItemText = "Set up signage and directional markers",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 1
                         },
                         new
                         {
-                            Id = 31,
+                            Id = new Guid("00000000-0000-0000-0002-000000000031"),
                             AllowsNotes = true,
                             CategorySection = "Preparation",
-                            ChecklistTemplateId = 4,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000004"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -1194,16 +1179,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 2,
                             ItemText = "Prepare information packets",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 1
                         },
                         new
                         {
-                            Id = 32,
+                            Id = new Guid("00000000-0000-0000-0002-000000000032"),
                             AllowsNotes = true,
                             CategorySection = "Preparation",
-                            ChecklistTemplateId = 4,
+                            ChecklistTemplateId = new Guid("00000000-0000-0000-0001-000000000004"),
                             CreatedBy = "",
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -1211,7 +1196,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                             ItemOrder = 3,
                             ItemText = "Set up visitor sign-in sheet",
                             LastModifiedBy = "",
-                            OrganizationId = "",
+                            OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 1
                         });
@@ -1219,9 +1204,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.Document", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("ContentType")
                         .IsRequired()
@@ -1273,8 +1257,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("InvoiceId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("InvoiceId")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
@@ -1286,22 +1270,21 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("LeaseId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("LeaseId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("PaymentId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("PaymentId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int?>("PropertyId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("PropertyId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int?>("TenantId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -1322,9 +1305,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.Inspection", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("ActionItemsRequired")
                         .HasMaxLength(2000)
@@ -1354,8 +1336,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<string>("BathroomVentilationNotes")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("CalendarEventId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("CalendarEventId")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("CarbonMonoxideDetectorsGood")
                         .HasColumnType("INTEGER");
@@ -1374,8 +1356,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("DocumentId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("ElectricalSystemGood")
                         .HasColumnType("INTEGER");
@@ -1508,11 +1490,10 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("LeaseId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("LeaseId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -1527,8 +1508,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<string>("PlumbingSystemNotes")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("PropertyId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("PropertyId")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("SmokeDetectorsGood")
                         .HasColumnType("INTEGER");
@@ -1551,9 +1532,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.Invoice", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("Amount")
                         .HasPrecision(18, 2)
@@ -1576,8 +1556,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("DocumentId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DueOn")
                         .HasColumnType("TEXT");
@@ -1609,16 +1589,15 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("LateFeeAppliedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("LeaseId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("LeaseId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Notes")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -1652,9 +1631,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.Lease", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
                         .IsRequired()
@@ -1667,8 +1645,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("DeclinedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("DocumentId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("TEXT");
@@ -1686,8 +1664,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("LeaseOfferId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("LeaseOfferId")
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("MonthlyRent")
                         .HasPrecision(18, 2)
@@ -1701,16 +1679,15 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("OfferedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("PreviousLeaseId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("PreviousLeaseId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("PropertyId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("PropertyId")
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal?>("ProposedRenewalRent")
                         .HasColumnType("decimal(18,2)");
@@ -1753,8 +1730,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("TenantId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Terms")
                         .IsRequired()
@@ -1776,12 +1753,11 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.LeaseOffer", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int?>("ConvertedLeaseId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("ConvertedLeaseId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
                         .IsRequired()
@@ -1818,19 +1794,18 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime>("OfferedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("PropertyId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("PropertyId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("ProspectiveTenantId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("ProspectiveTenantId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("RentalApplicationId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("RentalApplicationId")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("RespondedOn")
                         .HasColumnType("TEXT");
@@ -1868,9 +1843,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.MaintenanceRequest", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("ActualCost")
                         .HasPrecision(18, 2)
@@ -1881,8 +1855,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("CalendarEventId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("CalendarEventId")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("CompletedOn")
                         .HasColumnType("TEXT");
@@ -1914,11 +1888,10 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("LeaseId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("LeaseId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -1927,8 +1900,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("PropertyId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("PropertyId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("RequestType")
                         .IsRequired()
@@ -1988,9 +1961,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.Note", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -2005,8 +1977,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("EntityId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("EntityType")
                         .IsRequired()
@@ -2023,8 +1995,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -2041,7 +2012,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.Organization", b =>
                 {
-                    b.Property<string>("Id")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -2089,9 +2061,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.OrganizationSettings", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("AllowTenantDividendChoice")
                         .HasColumnType("INTEGER");
@@ -2194,9 +2165,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.Payment", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("Amount")
                         .HasPrecision(18, 2)
@@ -2210,11 +2180,11 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("DocumentId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("InvoiceId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("InvoiceId")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
@@ -2231,8 +2201,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -2257,9 +2226,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.Property", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Address")
                         .IsRequired()
@@ -2315,8 +2283,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("NextRoutineInspectionDueDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -2362,9 +2329,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.ProspectiveTenant", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
                         .IsRequired()
@@ -2401,8 +2367,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(2)
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("InterestedPropertyId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("InterestedPropertyId")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
@@ -2423,8 +2389,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -2457,9 +2422,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.RentalApplication", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("ApplicationFee")
                         .HasPrecision(18, 2)
@@ -2561,16 +2525,15 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("PropertyId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("PropertyId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("ProspectiveTenantId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("ProspectiveTenantId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Reference1Name")
                         .IsRequired()
@@ -2646,9 +2609,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.SecurityDeposit", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("Amount")
                         .HasPrecision(18, 2)
@@ -2686,15 +2648,14 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("LeaseId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("LeaseId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -2729,8 +2690,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("TenantId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("TransactionReference")
                         .HasMaxLength(100)
@@ -2752,9 +2713,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.SecurityDepositDividend", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("BaseDividendAmount")
                         .HasPrecision(18, 2)
@@ -2775,8 +2735,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("InvestmentPoolId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("InvestmentPoolId")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
@@ -2788,8 +2748,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("LeaseId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("LeaseId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("MailingAddress")
                         .HasMaxLength(500)
@@ -2802,8 +2762,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -2823,16 +2782,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasPrecision(18, 6)
                         .HasColumnType("decimal(18,6)");
 
-                    b.Property<int>("SecurityDepositId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("SecurityDepositId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("TenantId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Year")
                         .HasColumnType("INTEGER");
@@ -2856,9 +2815,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.SecurityDepositInvestmentPool", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("ActiveLeaseCount")
                         .HasColumnType("INTEGER");
@@ -2899,8 +2857,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("OrganizationShare")
@@ -2949,9 +2906,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.Tenant", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
                         .IsRequired()
@@ -3011,8 +2967,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PhoneNumber")
@@ -3020,8 +2975,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("ProspectiveTenantId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("ProspectiveTenantId")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -3038,15 +2993,14 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.Tour", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int?>("CalendarEventId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("CalendarEventId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int?>("ChecklistId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("ChecklistId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("ConductedBy")
                         .HasMaxLength(100)
@@ -3081,16 +3035,15 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("PropertyId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("PropertyId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("ProspectiveTenantId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("ProspectiveTenantId")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("ScheduledOn")
                         .HasColumnType("TEXT");
@@ -3119,7 +3072,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.UserOrganization", b =>
                 {
-                    b.Property<string>("Id")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -3149,8 +3103,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("RevokedOn")
@@ -3188,8 +3141,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("ActiveOrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("ActiveOrganizationId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ConcurrencyStamp")
@@ -3234,8 +3186,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Data.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("OrganizationId")
-                        .IsRequired()
+                    b.Property<Guid>("OrganizationId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PasswordHash")

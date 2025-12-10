@@ -1,4 +1,4 @@
-@page "/PropertyManagement/Tours/Schedule/{ProspectId:int}"
+@page "/PropertyManagement/Tours/Schedule/{ProspectId:guid}"
 
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
@@ -182,7 +182,7 @@
 
 @code {
     [Parameter]
-    public int ProspectId { get; set; }
+    public Guid ProspectId { get; set; }
 
     private ProspectiveTenant? prospect;
     private List<Aquiis.SimpleStart.Core.Entities.Property> availableProperties = new();
@@ -202,7 +202,7 @@
         try
         {
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(organizationId))
+            if (organizationId.HasValue)
             {
                 prospect = await PropertyService.GetProspectiveTenantByIdAsync(ProspectId);
                 
@@ -233,10 +233,10 @@
                     newTour = new TourViewModel
                     {
                         ProspectiveTenantId = ProspectId,
-                        PropertyId = prospect.InterestedPropertyId ?? 0,
+                        PropertyId = prospect.InterestedPropertyId ?? Guid.Empty,
                         ScheduledOn = DateTime.Now.AddDays(1).Date.AddHours(10), // Default to tomorrow at 10 AM
                         DurationMinutes = 30,
-                        ChecklistTemplateId = tourTemplates.FirstOrDefault(t => t.IsSystemTemplate && t.Name == "Property Tour")?.Id ?? tourTemplates.FirstOrDefault()?.Id ?? 0
+                        ChecklistTemplateId = tourTemplates.FirstOrDefault(t => t.IsSystemTemplate && t.Name == "Property Tour")?.Id ?? tourTemplates.FirstOrDefault()?.Id
                     };
                 }
             }
@@ -255,13 +255,13 @@
     {
         try
         {
-            if (newTour.PropertyId == 0)
+            if (newTour.PropertyId == Guid.Empty)
             {
                 ToastService.ShowError("Please select a property");
                 return;
             }
 
-            if (newTour.ChecklistTemplateId == 0)
+            if (!newTour.ChecklistTemplateId.HasValue || newTour.ChecklistTemplateId.Value == Guid.Empty)
             {
                 ToastService.ShowError("Please select a checklist template");
                 return;
@@ -270,7 +270,7 @@
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             var userId = await UserContext.GetUserIdAsync();
 
-            if (string.IsNullOrEmpty(organizationId) || string.IsNullOrEmpty(userId))
+            if (!organizationId.HasValue || string.IsNullOrEmpty(userId))
             {
                 ToastService.ShowError("User context not available");
                 return;
@@ -283,7 +283,7 @@
                 PropertyId = newTour.PropertyId,
                 ScheduledOn = newTour.ScheduledOn,
                 DurationMinutes = newTour.DurationMinutes,
-                OrganizationId = organizationId,
+                OrganizationId = organizationId.Value,
                 CreatedBy = userId
             };
             
@@ -306,10 +306,10 @@
     public class TourViewModel
     {
         [Required]
-        public int ProspectiveTenantId { get; set; }
+        public Guid ProspectiveTenantId { get; set; }
 
         [Required(ErrorMessage = "Property is required")]
-        public int PropertyId { get; set; }
+        public Guid PropertyId { get; set; }
 
         [Required(ErrorMessage = "Date and time is required")]
         public DateTime ScheduledOn { get; set; }
@@ -319,6 +319,6 @@
         public int DurationMinutes { get; set; }
 
         [Required(ErrorMessage = "Checklist template is required")]
-        public int ChecklistTemplateId { get; set; }
+        public Guid? ChecklistTemplateId { get; set; }
     }
 }

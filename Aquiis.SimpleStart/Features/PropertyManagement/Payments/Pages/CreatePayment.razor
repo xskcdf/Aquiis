@@ -201,7 +201,7 @@
 
     [Parameter]
     [SupplyParameterFromQuery]
-    public int? InvoiceId { get; set; }
+    public Guid? InvoiceId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -226,7 +226,7 @@
 
     private async Task OnInvoiceSelected()
     {
-        if (paymentModel.InvoiceId > 0)
+        if (paymentModel.InvoiceId != Guid.Empty)
         {
             selectedInvoice = invoices?.FirstOrDefault(i => i.Id == paymentModel.InvoiceId);
             if (selectedInvoice != null)
@@ -266,8 +266,7 @@
     public class PaymentModel
     {
         [Required(ErrorMessage = "Please select an invoice.")]
-        [Range(1, int.MaxValue, ErrorMessage = "Please select an invoice.")]
-        public int InvoiceId { get; set; }
+        public Guid InvoiceId { get; set; }
 
         [Required(ErrorMessage = "Payment date is required.")]
         public DateTime PaidOn { get; set; } = DateTime.Now;

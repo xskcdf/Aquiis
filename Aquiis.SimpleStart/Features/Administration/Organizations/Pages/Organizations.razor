@@ -197,17 +197,17 @@
         Navigation.NavigateTo("/administration/organizations/create");
     }
 
-    private void NavigateToView(string organizationId)
+    private void NavigateToView(Guid organizationId)
     {
         Navigation.NavigateTo($"/administration/organizations/view/{organizationId}");
     }
 
-    private void NavigateToEdit(string organizationId)
+    private void NavigateToEdit(Guid organizationId)
     {
         Navigation.NavigateTo($"/administration/organizations/edit/{organizationId}");
     }
 
-    private void NavigateToManageUsers(string organizationId)
+    private void NavigateToManageUsers(Guid organizationId)
     {
         Navigation.NavigateTo($"/administration/organizations/{organizationId}/users");
     }

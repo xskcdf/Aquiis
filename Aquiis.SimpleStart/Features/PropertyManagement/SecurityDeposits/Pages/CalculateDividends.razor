@@ -1,4 +1,4 @@
-@page "/property-management/security-deposits/calculate-dividends/{PoolId:int}"
+@page "/property-management/security-deposits/calculate-dividends/{PoolId:guid}"
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
@@ -235,7 +235,7 @@
 
 @code {
     [Parameter]
-    public int PoolId { get; set; }
+    public Guid PoolId { get; set; }
 
     private SecurityDepositInvestmentPool? pool;
     private List<DividendCalculation> calculationPreview = new();
@@ -325,8 +325,8 @@
 
     private class DividendCalculation
     {
-        public int TenantId { get; set; }
-        public int LeaseId { get; set; }
+        public Guid TenantId { get; set; }
+        public Guid LeaseId { get; set; }
         public DateTime LeaseStartDate { get; set; }
         public DateTime? LeaseEndDate { get; set; }
         public int MonthsInPool { get; set; }

@@ -2,6 +2,7 @@
 
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Core.Constants
+@using Aquiis.SimpleStart.Core.Validation
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
@@ -175,11 +176,11 @@
 @code {
     [Parameter]
     [SupplyParameterFromQuery]
-    public int? PropertyId { get; set; }
+    public Guid? PropertyId { get; set; }
 
     [Parameter]
     [SupplyParameterFromQuery]
-    public int? TenantId { get; set; }
+    public Guid? TenantId { get; set; }
 
     private LeaseModel leaseModel = new();
     private List<Property> availableProperties = new();
@@ -238,7 +239,7 @@
 
     private async Task OnPropertyChanged()
     {
-        if (leaseModel.PropertyId > 0)
+        if (leaseModel.PropertyId != Guid.Empty)
         {
             selectedProperty = availableProperties.FirstOrDefault(p => p.Id == leaseModel.PropertyId);
             if (selectedProperty != null)
@@ -345,15 +346,13 @@
 
     public class LeaseModel
     {
-        [Required(ErrorMessage = "Property is required")]
-        [Range(1, int.MaxValue, ErrorMessage = "Please select a property")]
-        public int PropertyId { get; set; }
+        [RequiredGuid(ErrorMessage = "Property is required")]
+        public Guid PropertyId { get; set; }
 
         public string PropertyAddress { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Tenant is required")]
-        [Range(1, int.MaxValue, ErrorMessage = "Please select a tenant")]
-        public int TenantId { get; set; }
+        [RequiredGuid(ErrorMessage = "Tenant is required")]
+        public Guid TenantId { get; set; }
 
         [Required(ErrorMessage = "Start date is required")]
         public DateTime StartDate { get; set; } = DateTime.Today;

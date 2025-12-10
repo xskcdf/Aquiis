@@ -30,11 +30,15 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
     /// </summary>
     public class ApplicationWorkflowService : BaseWorkflowService, IWorkflowState<ApplicationStatus>
     {
+        private readonly NoteService _noteService;
+
         public ApplicationWorkflowService(
             ApplicationDbContext context,
-            UserContextService userContext)
+            UserContextService userContext,
+            NoteService noteService)
             : base(context, userContext)
         {
+            _noteService = noteService;
         }
 
         #region State Machine Implementation
@@ -99,8 +103,8 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// Creates application, updates property status if first app, and updates prospect status.
         /// </summary>
         public async Task<WorkflowResult<RentalApplication>> SubmitApplicationAsync(
-            int prospectId,
-            int propertyId,
+            Guid prospectId,
+            Guid propertyId,
             ApplicationSubmissionModel model)
         {
             return await ExecuteWorkflowAsync<RentalApplication>(async () =>
@@ -122,6 +126,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 // Create application
                 var application = new RentalApplication
                 {
+                    Id = Guid.NewGuid(),
                     OrganizationId = orgId,
                     ProspectiveTenantId = prospectId,
                     PropertyId = propertyId,
@@ -205,7 +210,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// <summary>
         /// Marks an application as under manual review.
         /// </summary>
-        public async Task<WorkflowResult> MarkApplicationUnderReviewAsync(int applicationId)
+        public async Task<WorkflowResult> MarkApplicationUnderReviewAsync(Guid applicationId)
         {
             return await ExecuteWorkflowAsync(async () =>
             {
@@ -248,7 +253,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// Requires application fee to be paid.
         /// </summary>
         public async Task<WorkflowResult<ApplicationScreening>> InitiateScreeningAsync(
-            int applicationId,
+            Guid applicationId,
             bool requestBackgroundCheck,
             bool requestCreditCheck)
         {
@@ -343,7 +348,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// Approves an application after screening review.
         /// Requires screening to be completed with passing result.
         /// </summary>
-        public async Task<WorkflowResult> ApproveApplicationAsync(int applicationId)
+        public async Task<WorkflowResult> ApproveApplicationAsync(Guid applicationId)
         {
             return await ExecuteWorkflowAsync(async () =>
             {
@@ -399,7 +404,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// Denies an application with a required reason.
         /// Rolls back property status if no other pending applications exist.
         /// </summary>
-        public async Task<WorkflowResult> DenyApplicationAsync(int applicationId, string denialReason)
+        public async Task<WorkflowResult> DenyApplicationAsync(Guid applicationId, string denialReason)
         {
             return await ExecuteWorkflowAsync(async () =>
             {
@@ -460,7 +465,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// Withdraws an application (initiated by prospect).
         /// Rolls back property status if no other pending applications exist.
         /// </summary>
-        public async Task<WorkflowResult> WithdrawApplicationAsync(int applicationId, string withdrawalReason)
+        public async Task<WorkflowResult> WithdrawApplicationAsync(Guid applicationId, string withdrawalReason)
         {
             return await ExecuteWorkflowAsync(async () =>
             {
@@ -524,7 +529,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// Does not automatically approve - requires manual ApproveApplicationAsync call.
         /// </summary>
         public async Task<WorkflowResult> CompleteScreeningAsync(
-            int applicationId,
+            Guid applicationId,
             ScreeningResultModel results)
         {
             return await ExecuteWorkflowAsync(async () =>
@@ -583,7 +588,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// Creates LeaseOffer entity, updates property to LeasePending, and denies competing applications.
         /// </summary>
         public async Task<WorkflowResult<LeaseOffer>> GenerateLeaseOfferAsync(
-            int applicationId,
+            Guid applicationId,
             LeaseOfferModel model)
         {
             return await ExecuteWorkflowAsync<LeaseOffer>(async () =>
@@ -621,6 +626,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 // Create lease offer
                 var leaseOffer = new LeaseOffer
                 {
+                    Id = Guid.NewGuid(),
                     OrganizationId = orgId,
                     RentalApplicationId = applicationId,
                     PropertyId = property.Id,
@@ -725,7 +731,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// Records security deposit payment.
         /// </summary>
         public async Task<WorkflowResult<Lease>> AcceptLeaseOfferAsync(
-            int leaseOfferId,
+            Guid leaseOfferId,
             string depositPaymentMethod,
             DateTime depositPaymentDate,
             string? depositReferenceNumber = null,
@@ -760,6 +766,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 // Convert prospect to tenant
                 var tenant = new Tenant
                 {
+                    Id = Guid.NewGuid(),
                     OrganizationId = orgId,
                     FirstName = prospect.FirstName,
                     LastName = prospect.LastName,
@@ -779,6 +786,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 // Create lease
                 var lease = new Lease
                 {
+                    Id = Guid.NewGuid(),
                     OrganizationId = orgId,
                     PropertyId = leaseOffer.PropertyId,
                     Tenant = tenant, // Use navigation property instead of TenantId
@@ -788,7 +796,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                     MonthlyRent = leaseOffer.MonthlyRent,
                     SecurityDeposit = leaseOffer.SecurityDeposit,
                     Terms = leaseOffer.Terms,
-                    Status = "Active",
+                    Status = ApplicationConstants.LeaseStatuses.Active,
                     SignedOn = DateTime.UtcNow,
                     CreatedBy = userId,
                     CreatedOn = DateTime.UtcNow
@@ -800,6 +808,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                 // Create security deposit record
                 var securityDeposit = new SecurityDeposit
                 {
+                    Id = Guid.NewGuid(),
                     OrganizationId = orgId,
                     Lease = lease, // Use navigation property
                     Tenant = tenant, // Use navigation property
@@ -861,6 +870,13 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
                     ApplicationConstants.ProspectiveStatuses.ConvertedToTenant,
                     "AcceptLeaseOffer");
 
+                // Add note if lease start date is in the future
+                if (leaseOffer.StartDate > DateTime.Today)
+                {
+                    var noteContent = $"Lease accepted on {DateTime.Today:MMM dd, yyyy}. Lease start date: {leaseOffer.StartDate:MMM dd, yyyy}.";
+                    await _noteService.AddNoteAsync(ApplicationConstants.EntityTypes.Lease, lease.Id, noteContent);
+                }
+
                 return WorkflowResult<Lease>.Ok(lease, "Lease offer accepted and tenant created successfully");
 
             });
@@ -870,7 +886,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// Declines a lease offer.
         /// Rolls back property status and marks prospect as lease declined.
         /// </summary>
-        public async Task<WorkflowResult> DeclineLeaseOfferAsync(int leaseOfferId, string declineReason)
+        public async Task<WorkflowResult> DeclineLeaseOfferAsync(Guid leaseOfferId, string declineReason)
         {
             return await ExecuteWorkflowAsync(async () =>
             {
@@ -938,7 +954,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// Expires a lease offer (called by scheduled task).
         /// Similar to decline but automated.
         /// </summary>
-        public async Task<WorkflowResult> ExpireLeaseOfferAsync(int leaseOfferId)
+        public async Task<WorkflowResult> ExpireLeaseOfferAsync(Guid leaseOfferId)
         {
             return await ExecuteWorkflowAsync(async () =>
             {
@@ -1005,7 +1021,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
 
         #region Helper Methods
 
-        private async Task<RentalApplication?> GetApplicationAsync(int applicationId)
+        private async Task<RentalApplication?> GetApplicationAsync(Guid applicationId)
         {
             var orgId = await GetActiveOrganizationIdAsync();
             return await _context.RentalApplications
@@ -1019,8 +1035,8 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         }
 
         private async Task<WorkflowResult> ValidateApplicationSubmissionAsync(
-            int prospectId,
-            int propertyId)
+            Guid prospectId,
+            Guid propertyId)
         {
             var errors = new List<string>();
             var orgId = await GetActiveOrganizationIdAsync();
@@ -1069,7 +1085,7 @@ namespace Aquiis.SimpleStart.Application.Services.Workflows
         /// Checks if property status should roll back when an application is denied/withdrawn.
         /// Rolls back to Available if no active applications remain.
         /// </summary>
-        private async Task RollbackPropertyStatusIfNeededAsync(int propertyId)
+        private async Task RollbackPropertyStatusIfNeededAsync(Guid propertyId)
         {
             var orgId = await GetActiveOrganizationIdAsync();
             var userId = await GetCurrentUserIdAsync();

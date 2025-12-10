@@ -1,19 +1,19 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Aquiis.SimpleStart.Core.Validation;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {
     public class ChecklistItem : BaseModel
     {
 
-        [Required]
-        [StringLength(100)]
+        [RequiredGuid]
         [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
-        [Required]
+        [RequiredGuid]
         [Display(Name = "Checklist ID")]
-        public int ChecklistId { get; set; }
+        public Guid ChecklistId { get; set; }
 
         [Required]
         [StringLength(500)]

@@ -12,7 +12,7 @@ namespace Aquiis.SimpleStart.Core.Entities
         [StringLength(100)]
         [DataType(DataType.Text)]
         [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
         [Required]
         [JsonInclude]

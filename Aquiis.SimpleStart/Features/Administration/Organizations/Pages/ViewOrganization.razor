@@ -1,4 +1,4 @@
-@page "/administration/organizations/view/{Id}"
+@page "/administration/organizations/view/{Id:guid}"
 
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
@@ -225,7 +225,7 @@
 
 @code {
     [Parameter]
-    public string Id { get; set; } = string.Empty;
+    public Guid Id { get; set; } = Guid.Empty;
 
     private bool isLoading = true;
     private Organization? organization;

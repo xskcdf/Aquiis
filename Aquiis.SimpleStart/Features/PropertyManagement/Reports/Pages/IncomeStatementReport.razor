@@ -164,12 +164,12 @@
 @code {
     private DateTime startDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
     private DateTime endDate = DateTime.Now;
-    private string? selectedPropertyId;
+    private Guid? selectedPropertyId;
     private List<Property> properties = new();
     private IncomeStatement? statement;
     private bool isLoading = false;
 
-    private string? organizationId = string.Empty;
+    private Guid? organizationId = Guid.Empty;
 
     [CascadingParameter]
     private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
@@ -183,7 +183,7 @@
 
         organizationId = await UserContextService.GetActiveOrganizationIdAsync();
 
-        if (!string.IsNullOrEmpty(organizationId))
+        if (organizationId.HasValue)
         {
             properties = await PropertyManagementService.GetPropertiesAsync();
         }
@@ -201,16 +201,16 @@
             var authState = await AuthenticationStateTask;
             var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-            if (!string.IsNullOrEmpty(organizationId))
+            if (organizationId.HasValue)
             {
-                int? propertyId = null;
-                if (!string.IsNullOrEmpty(selectedPropertyId) && int.TryParse(selectedPropertyId, out int pid))
+                @* Guid? propertyId = null;
+                if (selectedPropertyId.HasValue && Guid.TryParse(selectedPropertyId, out Guid pid))
                 {
                     propertyId = pid;
-                }
+                } *@
 
                 statement = await FinancialReportService.GenerateIncomeStatementAsync(
-                    organizationId, startDate, endDate, propertyId);
+                    organizationId.Value, startDate, endDate, selectedPropertyId);
             }
         }
         finally

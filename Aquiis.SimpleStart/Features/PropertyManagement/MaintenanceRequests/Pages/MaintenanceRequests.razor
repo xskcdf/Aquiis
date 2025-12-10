@@ -253,7 +253,7 @@ else
 
     [Parameter]
     [SupplyParameterFromQuery]
-    public int? PropertyId { get; set; }
+    public Guid? PropertyId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -338,12 +338,12 @@ else
         NavigationManager.NavigateTo("/propertymanagement/maintenance/create");
     }
 
-    private void ViewRequest(int requestId)
+    private void ViewRequest(Guid requestId)
     {
         NavigationManager.NavigateTo($"/propertymanagement/maintenance/view/{requestId}");
     }
 
-    private void ViewProperty(int propertyId)
+    private void ViewProperty(Guid propertyId)
     {
         NavigationManager.NavigateTo($"/propertymanagement/properties/view/{propertyId}");
     }

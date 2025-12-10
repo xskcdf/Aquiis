@@ -9,7 +9,7 @@ namespace Aquiis.SimpleStart.Core.Entities {
         [Required]
         [StringLength(100)]
         [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
         [Required]
         [StringLength(255)]
@@ -42,11 +42,11 @@ namespace Aquiis.SimpleStart.Core.Entities {
         public string Description { get; set; } = string.Empty;
 
         // Foreign keys - at least one must be set
-        public int? PropertyId { get; set; }
-        public int? TenantId { get; set; }
-        public int? LeaseId { get; set; }
-        public int? InvoiceId { get; set; }
-        public int? PaymentId { get; set; }
+        public Guid? PropertyId { get; set; }
+        public Guid? TenantId { get; set; }
+        public Guid? LeaseId { get; set; }
+        public Guid? InvoiceId { get; set; }
+        public Guid? PaymentId { get; set; }
 
         // Navigation properties
         [ForeignKey("PropertyId")]

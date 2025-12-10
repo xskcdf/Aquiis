@@ -300,12 +300,12 @@
         NavigationManager.NavigateTo("/propertymanagement/checklists/create");
     }
 
-    private void EditChecklist(int checklistId)
+    private void EditChecklist(Guid checklistId)
     {
         NavigationManager.NavigateTo($"/propertymanagement/checklists/complete/{checklistId}");
     }
 
-    private void ViewChecklist(int checklistId)
+    private void ViewChecklist(Guid checklistId)
     {
         NavigationManager.NavigateTo($"/propertymanagement/checklists/view/{checklistId}");
     }

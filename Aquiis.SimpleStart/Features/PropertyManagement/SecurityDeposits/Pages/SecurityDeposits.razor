@@ -365,7 +365,7 @@
         FilterDeposits();
     }
 
-    private async Task AddToPool(int depositId)
+    private async Task AddToPool(Guid depositId)
     {
         try
         {
@@ -379,7 +379,7 @@
         }
     }
 
-    private async Task RemoveFromPool(int depositId)
+    private async Task RemoveFromPool(Guid depositId)
     {
         try
         {
@@ -393,7 +393,7 @@
         }
     }
 
-    private void InitiateRefund(int depositId)
+    private void InitiateRefund(Guid depositId)
     {
         // TODO: Navigate to refund workflow page when implemented
         ToastService.ShowInfo("Refund workflow coming soon");

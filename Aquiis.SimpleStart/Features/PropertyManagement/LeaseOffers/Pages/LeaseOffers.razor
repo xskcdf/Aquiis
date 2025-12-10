@@ -103,13 +103,13 @@ else
 @code {
     private List<LeaseOffer> leaseOffers = new();
     private bool isLoading = true;
-    private string organizationId = string.Empty;
+    private Guid organizationId = Guid.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
+            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? Guid.Empty;
             await LoadLeaseOffers();
         }
         catch (Exception ex)
@@ -142,12 +142,12 @@ else
         leaseOffers = allOffers.OrderByDescending(o => o.OfferedOn).ToList();
     }
 
-    private void ViewOffer(int offerId)
+    private void ViewOffer(Guid offerId)
     {
         Navigation.NavigateTo($"/propertymanagement/leaseoffers/view/{offerId}");
     }
 
-    private void ViewLease(int leaseId)
+    private void ViewLease(Guid leaseId)
     {
         Navigation.NavigateTo($"/propertymanagement/leases/view/{leaseId}");
     }

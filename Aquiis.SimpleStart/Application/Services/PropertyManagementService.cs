@@ -58,7 +58,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<Property?> GetPropertyByIdAsync(int propertyId)
+        public async Task<Property?> GetPropertyByIdAsync(Guid propertyId)
         {
             var _userId = await _userContext.GetUserIdAsync();
 
@@ -122,7 +122,8 @@ namespace Aquiis.SimpleStart.Application.Services
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             // Set tracking fields automatically
-            property.OrganizationId = organizationId!;
+            property.Id = Guid.NewGuid();
+            property.OrganizationId = organizationId!.Value;
             property.CreatedBy = _userId;
             property.CreatedOn = DateTime.UtcNow;
 
@@ -160,13 +161,13 @@ namespace Aquiis.SimpleStart.Application.Services
             // Set tracking fields automatically
             property.LastModifiedBy = _userId;
             property.LastModifiedOn = DateTime.UtcNow;
-            property.OrganizationId = organizationId!; // Prevent org hijacking
+            property.OrganizationId = organizationId!.Value; // Prevent org hijacking
 
             _dbContext.Entry(existing).CurrentValues.SetValues(property);
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task DeletePropertyAsync(int propertyId)
+        public async Task DeletePropertyAsync(Guid propertyId)
         {
             var _userId = await _userContext.GetUserIdAsync();
 
@@ -197,7 +198,7 @@ namespace Aquiis.SimpleStart.Application.Services
             }
         }
 
-        private async Task SoftDeletePropertyAsync(int propertyId)
+        private async Task SoftDeletePropertyAsync(Guid propertyId)
         {
             var _userId = await _userContext.GetUserIdAsync();
 
@@ -269,7 +270,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
         
-        public async Task<List<Tenant>> GetTenantsByLeaseIdAsync(int leaseId)
+        public async Task<List<Tenant>> GetTenantsByLeaseIdAsync(Guid leaseId)
         {
             var _userId = await _userContext.GetUserIdAsync();
 
@@ -292,7 +293,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .Where(t => tenantIds.Contains(t.Id) && t.OrganizationId == organizationId && !t.IsDeleted)
                 .ToListAsync();
         }
-        public async Task<List<Tenant>> GetTenantsByPropertyIdAsync(int propertyId)
+        public async Task<List<Tenant>> GetTenantsByPropertyIdAsync(Guid propertyId)
         {
             var _userId = await _userContext.GetUserIdAsync();
 
@@ -316,7 +317,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<Tenant?> GetTenantByIdAsync(int tenantId)
+        public async Task<Tenant?> GetTenantByIdAsync(Guid tenantId)
         {
             var _userId = await _userContext.GetUserIdAsync();
 
@@ -363,7 +364,8 @@ namespace Aquiis.SimpleStart.Application.Services
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
             // Set tracking fields automatically
-            tenant.OrganizationId = organizationId!;
+            tenant.Id = Guid.NewGuid();
+            tenant.OrganizationId = organizationId!.Value;
             tenant.CreatedBy = _userId;
             tenant.CreatedOn = DateTime.UtcNow;
 
@@ -397,7 +399,7 @@ namespace Aquiis.SimpleStart.Application.Services
             // Set tracking fields automatically
             tenant.LastModifiedOn = DateTime.UtcNow;
             tenant.LastModifiedBy = _userId;
-            tenant.OrganizationId = organizationId!; // Prevent org hijacking
+            tenant.OrganizationId = organizationId!.Value; // Prevent org hijacking
 
             _dbContext.Entry(existing).CurrentValues.SetValues(tenant);
             await _dbContext.SaveChangesAsync();
@@ -463,7 +465,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .Where(l => !l.IsDeleted && !l.Tenant!.IsDeleted && !l.Property.IsDeleted && l.Property.OrganizationId == organizationId)
                 .ToListAsync();
         }
-        public async Task<Lease?> GetLeaseByIdAsync(int leaseId)
+        public async Task<Lease?> GetLeaseByIdAsync(Guid leaseId)
         {
             var _userId = await _userContext.GetUserIdAsync();
 
@@ -481,7 +483,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .FirstOrDefaultAsync(l => l.Id == leaseId && !l.IsDeleted && (l.Tenant == null || !l.Tenant.IsDeleted) && !l.Property.IsDeleted && l.Property.OrganizationId == organizationId);
         }
 
-        public async Task<List<Lease>> GetLeasesByPropertyIdAsync(int propertyId)
+        public async Task<List<Lease>> GetLeasesByPropertyIdAsync(Guid propertyId)
         {
             var _userId = await _userContext.GetUserIdAsync();
 
@@ -504,7 +506,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToList();
         }
 
-        public async Task<List<Lease>> GetCurrentAndUpcomingLeasesByPropertyIdAsync(int propertyId)
+        public async Task<List<Lease>> GetCurrentAndUpcomingLeasesByPropertyIdAsync(Guid propertyId)
         {
             var _userId = await _userContext.GetUserIdAsync();
 
@@ -521,11 +523,12 @@ namespace Aquiis.SimpleStart.Application.Services
                 .Where(l => l.PropertyId == propertyId 
                     && !l.IsDeleted 
                     && l.Property.OrganizationId == organizationId
-                    && (l.Status == "Active" || l.Status == "Pending"))
+                    && (l.Status == ApplicationConstants.LeaseStatuses.Pending
+                        || l.Status == ApplicationConstants.LeaseStatuses.Active))
                 .ToListAsync();
         }
 
-        public async Task<List<Lease>> GetActiveLeasesByPropertyIdAsync(int propertyId)
+        public async Task<List<Lease>> GetActiveLeasesByPropertyIdAsync(Guid propertyId)
         {
             var _userId = await _userContext.GetUserIdAsync();
 
@@ -549,7 +552,7 @@ namespace Aquiis.SimpleStart.Application.Services
         }
 
         
-        public async Task<List<Lease>> GetLeasesByTenantIdAsync(int tenantId)
+        public async Task<List<Lease>> GetLeasesByTenantIdAsync(Guid tenantId)
         {
             var _userId = await _userContext.GetUserIdAsync();
 
@@ -585,6 +588,8 @@ namespace Aquiis.SimpleStart.Application.Services
                 return lease;
 
             // Set tracking fields automatically
+            lease.Id = Guid.NewGuid();
+            lease.OrganizationId = organizationId!.Value;
             lease.CreatedBy = _userId;
             lease.CreatedOn = DateTime.UtcNow;
 
@@ -631,7 +636,7 @@ namespace Aquiis.SimpleStart.Application.Services
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task DeleteLeaseAsync(int leaseId)
+        public async Task DeleteLeaseAsync(Guid leaseId)
         {
             var _userId = await _userContext.GetUserIdAsync();
 
@@ -664,7 +669,7 @@ namespace Aquiis.SimpleStart.Application.Services
             }
         }
 
-        private async Task SoftDeleteLeaseAsync(int leaseId)
+        private async Task SoftDeleteLeaseAsync(Guid leaseId)
         {
             var userId = await _userContext.GetUserIdAsync();
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
@@ -706,7 +711,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<Invoice?> GetInvoiceByIdAsync(int invoiceId)
+        public async Task<Invoice?> GetInvoiceByIdAsync(Guid invoiceId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
@@ -722,7 +727,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     && i.Lease.Property.OrganizationId == organizationId);
         }
 
-        public async Task<List<Invoice>> GetInvoicesByLeaseIdAsync(int leaseId)
+        public async Task<List<Invoice>> GetInvoicesByLeaseIdAsync(Guid leaseId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
@@ -760,7 +765,8 @@ namespace Aquiis.SimpleStart.Application.Services
             }
 
             // Set tracking fields automatically
-            invoice.OrganizationId = organizationId!;
+            invoice.Id = Guid.NewGuid();
+            invoice.OrganizationId = organizationId!.Value;
             invoice.CreatedBy = _userId;
             invoice.CreatedOn = DateTime.UtcNow;
 
@@ -792,7 +798,7 @@ namespace Aquiis.SimpleStart.Application.Services
             // Set tracking fields automatically
             invoice.LastModifiedOn = DateTime.UtcNow;
             invoice.LastModifiedBy = userId;
-            invoice.OrganizationId = organizationId!; // Prevent org hijacking
+            invoice.OrganizationId = organizationId!.Value; // Prevent org hijacking
 
             _dbContext.Entry(existing).CurrentValues.SetValues(invoice);
             await _dbContext.SaveChangesAsync();
@@ -823,11 +829,11 @@ namespace Aquiis.SimpleStart.Application.Services
         public async Task<string> GenerateInvoiceNumberAsync()
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();    
-            var lastInvoice = await _dbContext.Invoices.Where(i => i.OrganizationId == organizationId)
-                .OrderByDescending(i => i.Id)
-                .FirstOrDefaultAsync();
+            var invoiceCount = await _dbContext.Invoices
+                .Where(i => i.OrganizationId == organizationId)
+                .CountAsync();
             
-            var nextNumber = lastInvoice != null ? lastInvoice.Id + 1 : 1;
+            var nextNumber = invoiceCount + 1;
             return $"INV-{DateTime.Now:yyyyMM}-{nextNumber:D5}";
         }
 
@@ -852,7 +858,7 @@ namespace Aquiis.SimpleStart.Application.Services
         }
 
 
-        public async Task<Payment?> GetPaymentByIdAsync(int paymentId)
+        public async Task<Payment?> GetPaymentByIdAsync(Guid paymentId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.Payments
@@ -865,7 +871,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .FirstOrDefaultAsync(p => p.Id == paymentId && !p.IsDeleted && p.Invoice.Lease.Property.OrganizationId == organizationId);
         }
 
-        public async Task<List<Payment>> GetPaymentsByInvoiceIdAsync(int invoiceId)
+        public async Task<List<Payment>> GetPaymentsByInvoiceIdAsync(Guid invoiceId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.Payments
@@ -887,7 +893,8 @@ namespace Aquiis.SimpleStart.Application.Services
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             
             // Set tracking fields automatically
-            payment.OrganizationId = organizationId!;
+            payment.Id = Guid.NewGuid();
+            payment.OrganizationId = organizationId!.Value;
             payment.CreatedBy = _userId;
             payment.CreatedOn = DateTime.UtcNow;
 
@@ -919,7 +926,7 @@ namespace Aquiis.SimpleStart.Application.Services
             }
             
             // Set tracking fields automatically
-            payment.OrganizationId = organizationId!;
+            payment.OrganizationId = organizationId!.Value;
             payment.LastModifiedOn = DateTime.UtcNow;
             payment.LastModifiedBy = _userId;
 
@@ -959,7 +966,7 @@ namespace Aquiis.SimpleStart.Application.Services
             await UpdateInvoicePaidAmountAsync(invoiceId);
         }
 
-        private async Task UpdateInvoicePaidAmountAsync(int invoiceId)
+        private async Task UpdateInvoicePaidAmountAsync(Guid invoiceId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var invoice = await _dbContext.Invoices.Where(i => i.Id == invoiceId && i.OrganizationId == organizationId).FirstOrDefaultAsync();
@@ -1008,7 +1015,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<Document?> GetDocumentByIdAsync(int documentId)
+        public async Task<Document?> GetDocumentByIdAsync(Guid documentId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
@@ -1025,7 +1032,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .FirstOrDefaultAsync(d => d.Id == documentId && !d.IsDeleted && d.OrganizationId == organizationId);
         }
 
-        public async Task<List<Document>> GetDocumentsByLeaseIdAsync(int leaseId)
+        public async Task<List<Document>> GetDocumentsByLeaseIdAsync(Guid leaseId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
@@ -1039,7 +1046,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
         
-        public async Task<List<Document>> GetDocumentsByPropertyIdAsync(int propertyId)
+        public async Task<List<Document>> GetDocumentsByPropertyIdAsync(Guid propertyId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
@@ -1052,7 +1059,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<List<Document>> GetDocumentsByTenantIdAsync(int tenantId)
+        public async Task<List<Document>> GetDocumentsByTenantIdAsync(Guid tenantId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
@@ -1075,8 +1082,9 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
 
+            document.Id = Guid.NewGuid();
+            document.OrganizationId = organizationId!.Value;
             document.CreatedBy = _userId;
-            document.OrganizationId = organizationId!;
             document.CreatedOn = DateTime.UtcNow;
             _dbContext.Documents.Add(document);
             await _dbContext.SaveChangesAsync();
@@ -1105,7 +1113,7 @@ namespace Aquiis.SimpleStart.Application.Services
             // Set tracking fields automatically
             document.LastModifiedBy = _userId;
             document.LastModifiedOn = DateTime.UtcNow;
-            document.OrganizationId = organizationId!; // Prevent org hijacking
+            document.OrganizationId = organizationId!.Value; // Prevent org hijacking
 
             _dbContext.Entry(existing).CurrentValues.SetValues(document);
             await _dbContext.SaveChangesAsync();
@@ -1206,7 +1214,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<List<Inspection>> GetInspectionsByPropertyIdAsync(int propertyId)
+        public async Task<List<Inspection>> GetInspectionsByPropertyIdAsync(Guid propertyId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             
@@ -1219,7 +1227,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<Inspection?> GetInspectionByIdAsync(int inspectionId)
+        public async Task<Inspection?> GetInspectionByIdAsync(Guid inspectionId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             
@@ -1240,7 +1248,9 @@ namespace Aquiis.SimpleStart.Application.Services
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
-            inspection.OrganizationId = organizationId!;
+
+            inspection.Id = Guid.NewGuid();
+            inspection.OrganizationId = organizationId!.Value;
             inspection.CreatedBy = _userId;
             inspection.CreatedOn = DateTime.UtcNow;
             await _dbContext.Inspections.AddAsync(inspection);
@@ -1295,7 +1305,7 @@ namespace Aquiis.SimpleStart.Application.Services
             // Set tracking fields automatically
             inspection.LastModifiedBy = _userId;
             inspection.LastModifiedOn = DateTime.UtcNow;
-            inspection.OrganizationId = organizationId!; // Prevent org hijacking
+            inspection.OrganizationId = organizationId!.Value; // Prevent org hijacking
 
             _dbContext.Entry(existing).CurrentValues.SetValues(inspection);
             await _dbContext.SaveChangesAsync();
@@ -1304,11 +1314,11 @@ namespace Aquiis.SimpleStart.Application.Services
             await _calendarEventService.CreateOrUpdateEventAsync(inspection);
         }
 
-        public async Task DeleteInspectionAsync(int inspectionId)
+        public async Task DeleteInspectionAsync(Guid inspectionId)
         {
             var userId = await _userContext.GetUserIdAsync();
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId))
+            if (string.IsNullOrEmpty(userId) || !organizationId.HasValue || organizationId == Guid.Empty)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
@@ -1341,7 +1351,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Updates property inspection tracking after a routine inspection is completed
         /// </summary>
-        public async Task UpdatePropertyInspectionTrackingAsync(int propertyId, DateTime inspectionDate, int intervalMonths = 12)
+        public async Task UpdatePropertyInspectionTrackingAsync(Guid propertyId, DateTime inspectionDate, int intervalMonths = 12)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
@@ -1414,7 +1424,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Initializes inspection tracking for a property (sets first inspection due date)
         /// </summary>
-        public async Task InitializePropertyInspectionTrackingAsync(int propertyId, int intervalMonths = 12)
+        public async Task InitializePropertyInspectionTrackingAsync(Guid propertyId, int intervalMonths = 12)
         {
             var property = await _dbContext.Properties.FindAsync(propertyId);
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
@@ -1458,6 +1468,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
             var calendarEvent = new CalendarEvent
             {
+                Id = Guid.NewGuid(),
                 Title = $"Routine Inspection - {property.Address}",
                 Description = $"Routine inspection due for property at {property.Address}, {property.City}, {property.State}",
                 StartOn = property.NextRoutineInspectionDueDate.Value,
@@ -1495,7 +1506,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<List<MaintenanceRequest>> GetMaintenanceRequestsByPropertyAsync(int propertyId)
+        public async Task<List<MaintenanceRequest>> GetMaintenanceRequestsByPropertyAsync(Guid propertyId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
@@ -1507,7 +1518,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<List<MaintenanceRequest>> GetMaintenanceRequestsByLeaseAsync(int leaseId)
+        public async Task<List<MaintenanceRequest>> GetMaintenanceRequestsByLeaseAsync(Guid leaseId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
@@ -1586,7 +1597,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .CountAsync();
         }
 
-        public async Task<MaintenanceRequest?> GetMaintenanceRequestByIdAsync(int id)
+        public async Task<MaintenanceRequest?> GetMaintenanceRequestByIdAsync(Guid id)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
@@ -1606,7 +1617,9 @@ namespace Aquiis.SimpleStart.Application.Services
             }
 
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
-            maintenanceRequest.OrganizationId = organizationId!;
+            // Set tracking fields automatically
+            maintenanceRequest.Id = Guid.NewGuid();
+            maintenanceRequest.OrganizationId = organizationId!.Value;
             maintenanceRequest.CreatedBy = _userId;
             maintenanceRequest.CreatedOn = DateTime.UtcNow;
 
@@ -1640,7 +1653,7 @@ namespace Aquiis.SimpleStart.Application.Services
             // Set tracking fields automatically
             maintenanceRequest.LastModifiedBy = _userId;
             maintenanceRequest.LastModifiedOn = DateTime.UtcNow;
-            maintenanceRequest.OrganizationId = organizationId!; // Prevent org hijacking
+            maintenanceRequest.OrganizationId = organizationId!.Value; // Prevent org hijacking
 
             _dbContext.Entry(existing).CurrentValues.SetValues(maintenanceRequest);
             await _dbContext.SaveChangesAsync();
@@ -1649,7 +1662,7 @@ namespace Aquiis.SimpleStart.Application.Services
             await _calendarEventService.CreateOrUpdateEventAsync(maintenanceRequest);
         }
 
-        public async Task DeleteMaintenanceRequestAsync(int id)
+        public async Task DeleteMaintenanceRequestAsync(Guid id)
         {
             var _userId = await _userContext.GetUserIdAsync();
 
@@ -1677,7 +1690,7 @@ namespace Aquiis.SimpleStart.Application.Services
             }
         }
 
-        public async Task UpdateMaintenanceRequestStatusAsync(int id, string status)
+        public async Task UpdateMaintenanceRequestStatusAsync(Guid id, string status)
         {
             var _userId = await _userContext.GetUserIdAsync();
 
@@ -1719,7 +1732,7 @@ namespace Aquiis.SimpleStart.Application.Services
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
-            if (string.IsNullOrEmpty(organizationId))
+            if (!organizationId.HasValue || organizationId == Guid.Empty)
             {
                 throw new InvalidOperationException("Organization ID not found for current user");
             }
@@ -1734,7 +1747,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 var userId = await _userContext.GetUserIdAsync();
                 settings = new OrganizationSettings
                 {
-                    OrganizationId = organizationId, // This should be set to the actual organization ID
+                    OrganizationId = organizationId.Value, // This should be set to the actual organization ID
                     LateFeeEnabled = true,
                     LateFeeAutoApply = true,
                     LateFeeGracePeriodDays = 3,
@@ -1753,7 +1766,7 @@ namespace Aquiis.SimpleStart.Application.Services
             return settings;
         }
 
-        public async Task<OrganizationSettings?> GetOrganizationSettingsByOrgIdAsync(string organizationId)
+        public async Task<OrganizationSettings?> GetOrganizationSettingsByOrgIdAsync(Guid organizationId)
         {
             var settings = await _dbContext.OrganizationSettings
                 .Where(s => !s.IsDeleted && s.OrganizationId == organizationId)
@@ -1768,11 +1781,11 @@ namespace Aquiis.SimpleStart.Application.Services
         public async Task UpdateOrganizationSettingsAsync(OrganizationSettings settings)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
-            if (string.IsNullOrEmpty(organizationId))
+            if (!organizationId.HasValue || organizationId == Guid.Empty)
             {
                 throw new InvalidOperationException("Organization ID not found for current user");
             }
-            if (settings.OrganizationId != organizationId)
+            if (settings.OrganizationId != organizationId.Value)
             {
                 throw new InvalidOperationException("Cannot update settings for a different organization");
             }
@@ -1802,7 +1815,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<ProspectiveTenant?> GetProspectiveTenantByIdAsync(int id)
+        public async Task<ProspectiveTenant?> GetProspectiveTenantByIdAsync(Guid id)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.ProspectiveTenants
@@ -1818,7 +1831,8 @@ namespace Aquiis.SimpleStart.Application.Services
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var userId = await _userContext.GetUserIdAsync();
 
-            prospectiveTenant.OrganizationId = organizationId!;
+            prospectiveTenant.Id = Guid.NewGuid();
+            prospectiveTenant.OrganizationId = organizationId!.Value;
             prospectiveTenant.CreatedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
             prospectiveTenant.CreatedOn = DateTime.UtcNow;
             prospectiveTenant.Status = ApplicationConstants.ProspectiveStatuses.Lead;
@@ -1852,14 +1866,14 @@ namespace Aquiis.SimpleStart.Application.Services
             // Set tracking fields automatically
             prospectiveTenant.LastModifiedOn = DateTime.UtcNow;
             prospectiveTenant.LastModifiedBy = userId;
-            prospectiveTenant.OrganizationId = organizationId!; // Prevent org hijacking
+            prospectiveTenant.OrganizationId = organizationId!.Value; // Prevent org hijacking
 
             _dbContext.Entry(existing).CurrentValues.SetValues(prospectiveTenant);
             await _dbContext.SaveChangesAsync();
             return prospectiveTenant;
         }
 
-        public async Task DeleteProspectiveTenantAsync(int id)
+        public async Task DeleteProspectiveTenantAsync(Guid id)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var userId = await _userContext.GetUserIdAsync();
@@ -1896,7 +1910,7 @@ namespace Aquiis.SimpleStart.Application.Services
             .ToListAsync();
         }
 
-        public async Task<List<Tour>> GetToursByProspectiveIdAsync(int prospectiveTenantId)
+        public async Task<List<Tour>> GetToursByProspectiveIdAsync(Guid prospectiveTenantId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.Tours
@@ -1908,7 +1922,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<Tour?> GetTourByIdAsync(int id)
+        public async Task<Tour?> GetTourByIdAsync(Guid id)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.Tours
@@ -1919,14 +1933,14 @@ namespace Aquiis.SimpleStart.Application.Services
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<Tour> CreateTourAsync(Tour tour, int? templateId = null)
+        public async Task<Tour> CreateTourAsync(Tour tour, Guid? templateId = null)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var userId = await _userContext.GetUserIdAsync();
 
-            tour.OrganizationId = organizationId!;
+            tour.Id = Guid.NewGuid();
+            tour.OrganizationId = organizationId!.Value;
             tour.CreatedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
-
             tour.CreatedOn = DateTime.UtcNow;
             tour.Status = ApplicationConstants.TourStatuses.Scheduled;
 
@@ -1938,7 +1952,7 @@ namespace Aquiis.SimpleStart.Application.Services
             // Find the specified template, or fall back to default "Property Tour" template
             ChecklistTemplate? tourTemplate = null;
             
-            if (templateId.HasValue && templateId.Value > 0)
+            if (templateId.HasValue)
             {
                 // Use the specified template
                 tourTemplate = await _dbContext.ChecklistTemplates
@@ -2013,7 +2027,7 @@ namespace Aquiis.SimpleStart.Application.Services
             // Set tracking fields automatically
             tour.LastModifiedBy = userId;
             tour.LastModifiedOn = DateTime.UtcNow;
-            tour.OrganizationId = organizationId!; // Prevent org hijacking
+            tour.OrganizationId = organizationId!.Value; // Prevent org hijacking
 
             _dbContext.Entry(existing).CurrentValues.SetValues(tour);
             await _dbContext.SaveChangesAsync();
@@ -2024,12 +2038,12 @@ namespace Aquiis.SimpleStart.Application.Services
             return tour;
         }
 
-        public async Task DeleteTourAsync(int id)
+        public async Task DeleteTourAsync(Guid id)
         {
             var userId = await _userContext.GetUserIdAsync();
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
-            if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId))
+            if(string.IsNullOrEmpty(userId) || !organizationId.HasValue || organizationId == Guid.Empty)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
@@ -2056,7 +2070,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 await _calendarEventService.DeleteEventAsync(tour.CalendarEventId);
         }
 
-        public async Task<bool> CancelTourAsync(int tourId)
+        public async Task<bool> CancelTourAsync(Guid tourId)
         {
             var userId = await _userContext.GetUserIdAsync();
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
@@ -2067,7 +2081,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new InvalidOperationException("Tour not found.");
             }
 
-            if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId) || tour.OrganizationId != organizationId)
+            if(string.IsNullOrEmpty(userId) || !organizationId.HasValue || tour.OrganizationId != organizationId.Value)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
@@ -2104,7 +2118,7 @@ namespace Aquiis.SimpleStart.Application.Services
             return true;
         }
 
-        public async Task<bool> CompleteTourAsync(int tourId, string? feedback = null, string? interestLevel = null)
+        public async Task<bool> CompleteTourAsync(Guid tourId, string? feedback = null, string? interestLevel = null)
         {
             var userId = await _userContext.GetUserIdAsync();
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
@@ -2112,7 +2126,7 @@ namespace Aquiis.SimpleStart.Application.Services
             var tour = await GetTourByIdAsync(tourId);
             if (tour == null) return false;
 
-            if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId) || tour.OrganizationId != organizationId)
+            if(string.IsNullOrEmpty(userId) || !organizationId.HasValue || tour.OrganizationId != organizationId.Value)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
@@ -2143,7 +2157,7 @@ namespace Aquiis.SimpleStart.Application.Services
             return true;
         }
 
-        public async Task<bool> MarkTourAsNoShowAsync(int tourId)
+        public async Task<bool> MarkTourAsNoShowAsync(Guid tourId)
         {
             var userId = await _userContext.GetUserIdAsync();
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
@@ -2151,7 +2165,7 @@ namespace Aquiis.SimpleStart.Application.Services
             var tour = await GetTourByIdAsync(tourId);
             if (tour == null) return false;
 
-            if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(organizationId) || tour.OrganizationId != organizationId)
+            if(string.IsNullOrEmpty(userId) || !organizationId.HasValue || tour.OrganizationId != organizationId.Value)
             {
                 throw new UnauthorizedAccessException("User is not authenticated.");
             }
@@ -2193,7 +2207,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<RentalApplication?> GetRentalApplicationByIdAsync(int id)
+        public async Task<RentalApplication?> GetRentalApplicationByIdAsync(Guid id)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.RentalApplications
@@ -2204,7 +2218,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<RentalApplication?> GetApplicationByProspectiveIdAsync(int prospectiveTenantId)
+        public async Task<RentalApplication?> GetApplicationByProspectiveIdAsync(Guid prospectiveTenantId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.RentalApplications
@@ -2219,7 +2233,8 @@ namespace Aquiis.SimpleStart.Application.Services
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var userId = await _userContext.GetUserIdAsync();
 
-            application.OrganizationId = organizationId!;
+            application.Id = Guid.NewGuid();
+            application.OrganizationId = organizationId!.Value;
             application.CreatedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
             application.CreatedOn = DateTime.UtcNow;
             application.AppliedOn = DateTime.UtcNow;
@@ -2304,14 +2319,14 @@ namespace Aquiis.SimpleStart.Application.Services
             // Set tracking fields automatically
             application.LastModifiedBy = userId;
             application.LastModifiedOn = DateTime.UtcNow;
-            application.OrganizationId = organizationId!; // Prevent org hijacking
+            application.OrganizationId = organizationId!.Value; // Prevent org hijacking
 
             _dbContext.Entry(existing).CurrentValues.SetValues(application);
             await _dbContext.SaveChangesAsync();
             return application;
         }
 
-        public async Task DeleteRentalApplicationAsync(int id)
+        public async Task DeleteRentalApplicationAsync(Guid id)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var userId = await _userContext.GetUserIdAsync();
@@ -2337,7 +2352,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         #region ApplicationScreening CRUD
 
-        public async Task<ApplicationScreening?> GetScreeningByApplicationIdAsync(int rentalApplicationId)
+        public async Task<ApplicationScreening?> GetScreeningByApplicationIdAsync(Guid rentalApplicationId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.ApplicationScreenings
@@ -2350,8 +2365,9 @@ namespace Aquiis.SimpleStart.Application.Services
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var userId = await _userContext.GetUserIdAsync();
-
-            screening.OrganizationId = organizationId!;
+            
+            screening.Id = Guid.NewGuid();
+            screening.OrganizationId = organizationId!.Value;
             screening.CreatedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
             screening.CreatedOn = DateTime.UtcNow;
             screening.OverallResult = ApplicationConstants.ScreeningResults.Pending;
@@ -2402,7 +2418,7 @@ namespace Aquiis.SimpleStart.Application.Services
             // Set tracking fields automatically
             screening.LastModifiedOn = DateTime.UtcNow;
             screening.LastModifiedBy = userId;
-            screening.OrganizationId = organizationId!; // Prevent org hijacking
+            screening.OrganizationId = organizationId!.Value; // Prevent org hijacking
 
             _dbContext.Entry(existing).CurrentValues.SetValues(screening);
             await _dbContext.SaveChangesAsync();
@@ -2413,7 +2429,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         #region Business Logic
 
-        public async Task<bool> ApproveApplicationAsync(int applicationId)
+        public async Task<bool> ApproveApplicationAsync(Guid applicationId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var userId = await _userContext.GetUserIdAsync() ?? string.Empty;
@@ -2447,7 +2463,7 @@ namespace Aquiis.SimpleStart.Application.Services
             return true;
         }
 
-        public async Task<bool> DenyApplicationAsync(int applicationId, string reason)
+        public async Task<bool> DenyApplicationAsync(Guid applicationId, string reason)
         {
             var userId = await _userContext.GetUserIdAsync() ?? string.Empty;
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
@@ -2477,7 +2493,7 @@ namespace Aquiis.SimpleStart.Application.Services
             return true;
         }
 
-        public async Task<bool> WithdrawApplicationAsync(int applicationId, string? reason = null)
+        public async Task<bool> WithdrawApplicationAsync(Guid applicationId, string? reason = null)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var userId = await _userContext.GetUserIdAsync() ?? string.Empty;
@@ -2585,7 +2601,8 @@ namespace Aquiis.SimpleStart.Application.Services
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             var userId = await _userContext.GetUserIdAsync();
 
-            leaseOffer.OrganizationId = organizationId!;
+            leaseOffer.Id = Guid.NewGuid();
+            leaseOffer.OrganizationId = organizationId!.Value;
             leaseOffer.CreatedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
             leaseOffer.CreatedOn = DateTime.UtcNow;
             _dbContext.LeaseOffers.Add(leaseOffer);
@@ -2593,7 +2610,7 @@ namespace Aquiis.SimpleStart.Application.Services
             return leaseOffer;
         }
 
-        public async Task<LeaseOffer?> GetLeaseOfferByIdAsync(int leaseOfferId)
+        public async Task<LeaseOffer?> GetLeaseOfferByIdAsync(Guid leaseOfferId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.LeaseOffers
@@ -2603,7 +2620,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .FirstOrDefaultAsync(lo => lo.Id == leaseOfferId && lo.OrganizationId == organizationId && !lo.IsDeleted);
         }
 
-        public async Task<LeaseOffer?> GetLeaseOfferByApplicationIdAsync(int applicationId)
+        public async Task<LeaseOffer?> GetLeaseOfferByApplicationIdAsync(Guid applicationId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.LeaseOffers
@@ -2613,7 +2630,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .FirstOrDefaultAsync(lo => lo.RentalApplicationId == applicationId && lo.OrganizationId == organizationId && !lo.IsDeleted);
         }
 
-        public async Task<List<LeaseOffer>> GetLeaseOffersByPropertyIdAsync(int propertyId)
+        public async Task<List<LeaseOffer>> GetLeaseOffersByPropertyIdAsync(Guid propertyId)
         {
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
             return await _dbContext.LeaseOffers
@@ -2648,7 +2665,7 @@ namespace Aquiis.SimpleStart.Application.Services
             // Set tracking fields automatically
             leaseOffer.LastModifiedBy = userId;
             leaseOffer.LastModifiedOn = DateTime.UtcNow;
-            leaseOffer.OrganizationId = organizationId!; // Prevent org hijacking
+            leaseOffer.OrganizationId = organizationId!.Value; // Prevent org hijacking
 
             _dbContext.Entry(existing).CurrentValues.SetValues(leaseOffer);
             await _dbContext.SaveChangesAsync();

@@ -9,10 +9,10 @@ public class ApplicationUser : IdentityUser
     /// <summary>
     /// The currently active organization ID for this user session
     /// </summary>
-    public string ActiveOrganizationId { get; set; } = string.Empty;
+    public Guid ActiveOrganizationId { get; set; } = Guid.Empty;
 
     // The organization ID this user belongs to
-    public string OrganizationId { get; set; } = string.Empty;
+    public Guid OrganizationId { get; set; } = Guid.Empty;
 
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;

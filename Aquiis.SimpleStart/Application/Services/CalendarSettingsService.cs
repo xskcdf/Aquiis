@@ -17,7 +17,7 @@ public class CalendarSettingsService
         _userContext = userContext;
     }
 
-    public async Task<List<CalendarSettings>> GetSettingsAsync(string organizationId)
+    public async Task<List<CalendarSettings>> GetSettingsAsync(Guid organizationId)
     {
         await EnsureDefaultsAsync(organizationId);
 
@@ -28,7 +28,7 @@ public class CalendarSettingsService
             .ToListAsync();
     }
 
-    public async Task<CalendarSettings?> GetSettingAsync(string organizationId, string entityType)
+    public async Task<CalendarSettings?> GetSettingAsync(Guid organizationId, string entityType)
     {
         var setting = await _context.CalendarSettings
             .FirstOrDefaultAsync(s => s.OrganizationId == organizationId 
@@ -58,7 +58,7 @@ public class CalendarSettingsService
         return setting;
     }
 
-    public async Task<bool> IsAutoCreateEnabledAsync(string organizationId, string entityType)
+    public async Task<bool> IsAutoCreateEnabledAsync(Guid organizationId, string entityType)
     {
         var setting = await _context.CalendarSettings
             .FirstOrDefaultAsync(s => s.OrganizationId == organizationId 
@@ -69,7 +69,7 @@ public class CalendarSettingsService
         return setting?.AutoCreateEvents ?? true;
     }
 
-    public async Task EnsureDefaultsAsync(string organizationId)
+    public async Task EnsureDefaultsAsync(Guid organizationId)
     {
         var userId = await _userContext.GetUserIdAsync();
         var entityTypes = SchedulableEntityRegistry.GetEntityTypeNames();
@@ -96,7 +96,7 @@ public class CalendarSettingsService
         }
     }
 
-    private CalendarSettings CreateDefaultSetting(string organizationId, string entityType)
+    private CalendarSettings CreateDefaultSetting(Guid organizationId, string entityType)
     {
         // Get defaults from CalendarEventTypes if available
         var config = CalendarEventTypes.Config.ContainsKey(entityType)
@@ -106,6 +106,7 @@ public class CalendarSettingsService
         var userId = _userContext.GetUserIdAsync().Result;
         return new CalendarSettings
         {
+            Id = Guid.NewGuid(),
             OrganizationId = organizationId,
             EntityType = entityType,
             AutoCreateEvents = true,

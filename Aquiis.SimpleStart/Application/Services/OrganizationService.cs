@@ -27,7 +27,7 @@ namespace Aquiis.SimpleStart.Application.Services
         {
             var organization = new Organization
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = Guid.NewGuid(),
                 OwnerId = ownerId,
                 Name = name,
                 DisplayName = displayName ?? name,
@@ -42,7 +42,7 @@ namespace Aquiis.SimpleStart.Application.Services
             // Create Owner entry in UserOrganizations
             var userOrganization = new UserOrganization
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = Guid.NewGuid(),
                 UserId = ownerId,
                 OrganizationId = organization.Id,
                 Role = ApplicationConstants.OrganizationRoles.Owner,
@@ -54,11 +54,11 @@ namespace Aquiis.SimpleStart.Application.Services
             };
 
             _dbContext.UserOrganizations.Add(userOrganization);
-            await _dbContext.SaveChangesAsync();
 
             // add organization settings record with defaults
             var settings = new OrganizationSettings
                 {
+                    Id = Guid.NewGuid(),
                     OrganizationId = organization.Id,
                     Name = organization.Name,
                     LateFeeEnabled = true,
@@ -90,7 +90,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new InvalidOperationException("Cannot create organization: User ID is not available in context.");
 
 
-            organization.Id = Guid.NewGuid().ToString();
+            organization.Id = Guid.NewGuid();
             organization.OwnerId = userId;
             organization.IsActive = true;
             organization.CreatedOn = DateTime.UtcNow;
@@ -101,7 +101,7 @@ namespace Aquiis.SimpleStart.Application.Services
             // Create Owner entry in UserOrganizations
             var userOrganization = new UserOrganization
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = Guid.NewGuid(),
                 UserId = userId,
                 OrganizationId = organization.Id,
                 Role = ApplicationConstants.OrganizationRoles.Owner,
@@ -141,7 +141,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Get organization by ID
         /// </summary>
-        public async Task<Organization?> GetOrganizationByIdAsync(string organizationId)
+        public async Task<Organization?> GetOrganizationByIdAsync(Guid organizationId)
         {
             return await _dbContext.Organizations
                 .Include(o => o.UserOrganizations)
@@ -195,7 +195,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Delete organization (soft delete)
         /// </summary>
-        public async Task<bool> DeleteOrganizationAsync(string organizationId, string deletedBy)
+        public async Task<bool> DeleteOrganizationAsync(Guid organizationId, string deletedBy)
         {
             var organization = await _dbContext.Organizations.FindAsync(organizationId);
             if (organization == null || organization.IsDeleted)
@@ -231,7 +231,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Check if user is the owner of an organization
         /// </summary>
-        public async Task<bool> IsOwnerAsync(string userId, string organizationId)
+        public async Task<bool> IsOwnerAsync(string userId, Guid organizationId)
         {
             var organization = await _dbContext.Organizations.FindAsync(organizationId);
             return organization != null && organization.OwnerId == userId && !organization.IsDeleted;
@@ -240,7 +240,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Check if user has administrator role in an organization
         /// </summary>
-        public async Task<bool> IsAdministratorAsync(string userId, string organizationId)
+        public async Task<bool> IsAdministratorAsync(string userId, Guid organizationId)
         {
             var role = await GetUserRoleForOrganizationAsync(userId, organizationId);
             return role == ApplicationConstants.OrganizationRoles.Administrator;
@@ -249,7 +249,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Check if user can access an organization (has any active role)
         /// </summary>
-        public async Task<bool> CanAccessOrganizationAsync(string userId, string organizationId)
+        public async Task<bool> CanAccessOrganizationAsync(string userId, Guid organizationId)
         {
             return await _dbContext.UserOrganizations
                 .AnyAsync(uo => uo.UserId == userId 
@@ -261,7 +261,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Get user's role for a specific organization
         /// </summary>
-        public async Task<string?> GetUserRoleForOrganizationAsync(string userId, string organizationId)
+        public async Task<string?> GetUserRoleForOrganizationAsync(string userId, Guid organizationId)
         {
             var userOrg = await _dbContext.UserOrganizations
                 .FirstOrDefaultAsync(uo => uo.UserId == userId 
@@ -279,7 +279,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Grant a user access to an organization with a specific role
         /// </summary>
-        public async Task<bool> GrantOrganizationAccessAsync(string userId, string organizationId, string role, string grantedBy)
+        public async Task<bool> GrantOrganizationAccessAsync(string userId, Guid organizationId, string role, string grantedBy)
         {
             // Validate role
             if (!ApplicationConstants.OrganizationRoles.IsValid(role))
@@ -317,7 +317,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 // Create new access
                 var userOrganization = new UserOrganization
                 {
-                    Id = Guid.NewGuid().ToString(),
+                    Id = Guid.NewGuid(),
                     UserId = userId,
                     OrganizationId = organizationId,
                     Role = role,
@@ -338,7 +338,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Revoke a user's access to an organization
         /// </summary>
-        public async Task<bool> RevokeOrganizationAccessAsync(string userId, string organizationId, string revokedBy)
+        public async Task<bool> RevokeOrganizationAccessAsync(string userId, Guid organizationId, string revokedBy)
         {
             var userOrg = await _dbContext.UserOrganizations
                 .FirstOrDefaultAsync(uo => uo.UserId == userId 
@@ -368,7 +368,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Update a user's role in an organization
         /// </summary>
-        public async Task<bool> UpdateUserRoleAsync(string userId, string organizationId, string newRole, string modifiedBy)
+        public async Task<bool> UpdateUserRoleAsync(string userId, Guid organizationId, string newRole, string modifiedBy)
         {
             // Validate role
             if (!ApplicationConstants.OrganizationRoles.IsValid(newRole))
@@ -402,7 +402,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Get all users with access to an organization
         /// </summary>
-        public async Task<List<UserOrganization>> GetOrganizationUsersAsync(string organizationId)
+        public async Task<List<UserOrganization>> GetOrganizationUsersAsync(Guid organizationId)
         {
             return await _dbContext.UserOrganizations
                 .Where(uo => uo.OrganizationId == organizationId && uo.IsActive && !uo.IsDeleted && uo.UserId != ApplicationConstants.SystemUser.Id)

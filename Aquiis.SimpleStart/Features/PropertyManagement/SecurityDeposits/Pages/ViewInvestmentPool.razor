@@ -1,4 +1,4 @@
-@page "/property-management/security-deposits/investment-pool/{PoolId:int}"
+@page "/property-management/security-deposits/investment-pool/{PoolId:guid}"
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
 @using Aquiis.SimpleStart.Shared.Services
@@ -379,7 +379,7 @@
 
 @code {
     [Parameter]
-    public int PoolId { get; set; }
+    public Guid PoolId { get; set; }
 
     private SecurityDepositInvestmentPool? pool;
     private List<SecurityDepositDividend> dividends = new();

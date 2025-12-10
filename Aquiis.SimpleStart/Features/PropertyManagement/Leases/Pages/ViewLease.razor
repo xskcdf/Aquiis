@@ -1,6 +1,7 @@
-@page "/propertymanagement/leases/view/{Id:int}"
+@page "/propertymanagement/leases/view/{Id:guid}"
 
 @using Aquiis.SimpleStart.Core.Entities
+@using Aquiis.SimpleStart.Core.Validation
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components
@@ -330,7 +331,18 @@ else
             </div>
         </div>
     </div>
-
+    <div class="row">
+        <div class="col-md-8 mt-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Notes</h5>
+                </div>
+                <div class="card-body">
+                    <NotesTimeline EntityType="Lease" EntityId="@lease.Id" />
+                </div>
+            </div>
+        </div>
+    </div>
     @* Renewal Offer Modal *@
     @if (showRenewalModal && lease != null)
     {
@@ -389,15 +401,14 @@ else
 }
 
 @code {
-    [Parameter] public int Id { get; set; }
+    [Parameter] public Guid Id { get; set; }
 
     [Parameter]
     [SupplyParameterFromQuery]
-    public int? PropertyId { get; set; }
-
+    public Guid? PropertyId { get; set; }
     [Parameter]
     [SupplyParameterFromQuery]
-    public int? TenantId { get; set; }
+    public Guid? TenantId { get; set; }
 
     private Lease? lease;
     private List<Invoice> recentInvoices = new();
@@ -642,7 +653,7 @@ else
 
     private async Task OnPropertyChanged()
     {
-        if (leaseModel.PropertyId > 0)
+        if (leaseModel.PropertyId != Guid.Empty)
         {
             selectedProperty = availableProperties.FirstOrDefault(p => p.Id == leaseModel.PropertyId);
             if (selectedProperty != null)
@@ -762,13 +773,11 @@ else
 
     public class LeaseModel
     {
-        [Required(ErrorMessage = "Property is required")]
-        [Range(1, int.MaxValue, ErrorMessage = "Please select a property")]
-        public int PropertyId { get; set; }
+        [RequiredGuid(ErrorMessage = "Property is required")]
+        public Guid PropertyId { get; set; }
 
-        [Required(ErrorMessage = "Tenant is required")]
-        [Range(1, int.MaxValue, ErrorMessage = "Please select a tenant")]
-        public int TenantId { get; set; }
+        [RequiredGuid(ErrorMessage = "Tenant is required")]
+        public Guid TenantId { get; set; }
 
         [Required(ErrorMessage = "Start date is required")]
         public DateTime StartDate { get; set; } = DateTime.Today;

@@ -1,4 +1,4 @@
-@page "/propertymanagement/payments/view/{PaymentId:int}"
+@page "/propertymanagement/payments/view/{PaymentId:guid}"
 
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Core.Entities
@@ -306,7 +306,7 @@ else
 
 @code {
     [Parameter]
-    public int PaymentId { get; set; }
+    public Guid PaymentId { get; set; }
 
     private Payment? payment;
     private bool isGenerating = false;

@@ -1,4 +1,4 @@
-@page "/propertymanagement/leaseoffers/view/{Id:int}"
+@page "/propertymanagement/leaseoffers/view/{Id:guid}"
 
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
@@ -399,7 +399,7 @@
 
 @code {
     [Parameter]
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     private LeaseOffer? leaseOffer;
     private bool isLoading = true;
@@ -409,7 +409,7 @@
     private string errorMessage = string.Empty;
     private string declineReason = string.Empty;
     private string userId = string.Empty;
-    private string organizationId = string.Empty;
+    private Guid organizationId = Guid.Empty;
     private DepositPaymentModel depositPaymentModel = new();
 
     protected override async Task OnInitializedAsync()
@@ -418,7 +418,7 @@
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
+            organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? Guid.Empty;
 
             await LoadLeaseOffer();
         }

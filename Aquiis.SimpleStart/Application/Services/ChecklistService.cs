@@ -41,7 +41,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<ChecklistTemplate?> GetChecklistTemplateByIdAsync(int templateId)
+        public async Task<ChecklistTemplate?> GetChecklistTemplateByIdAsync(Guid templateId)
         {
             var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
@@ -78,7 +78,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 throw new InvalidOperationException($"A template named '{template.Name}' already exists.");
             }
 
-            template.OrganizationId = organizationId!;
+            template.OrganizationId = organizationId!.Value;
             template.CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty;
             template.CreatedOn = DateTime.UtcNow;
 
@@ -103,7 +103,7 @@ namespace Aquiis.SimpleStart.Application.Services
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task DeleteChecklistTemplateAsync(int templateId)
+        public async Task DeleteChecklistTemplateAsync(Guid templateId)
         {
             var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
@@ -135,7 +135,8 @@ namespace Aquiis.SimpleStart.Application.Services
 
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
-            item.OrganizationId = organizationId!;
+            item.Id = Guid.NewGuid();
+            item.OrganizationId = organizationId!.Value;
             item.CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty;
             item.CreatedOn = DateTime.UtcNow;
 
@@ -160,7 +161,7 @@ namespace Aquiis.SimpleStart.Application.Services
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task DeleteChecklistTemplateItemAsync(int itemId)
+        public async Task DeleteChecklistTemplateItemAsync(Guid itemId)
         {
             var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
@@ -211,7 +212,7 @@ namespace Aquiis.SimpleStart.Application.Services
             return await query.OrderByDescending(c => c.CreatedOn).ToListAsync();
         }
 
-        public async Task<List<Checklist>> GetChecklistsByPropertyIdAsync(int propertyId)
+        public async Task<List<Checklist>> GetChecklistsByPropertyIdAsync(Guid propertyId)
         {
             var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
@@ -231,7 +232,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<List<Checklist>> GetChecklistsByLeaseIdAsync(int leaseId)
+        public async Task<List<Checklist>> GetChecklistsByLeaseIdAsync(Guid leaseId)
         {
             var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
@@ -251,7 +252,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<Checklist?> GetChecklistByIdAsync(int checklistId)
+        public async Task<Checklist?> GetChecklistByIdAsync(Guid checklistId)
         {
             var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
@@ -274,7 +275,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Creates a new checklist instance from a template, including all template items
         /// </summary>
-        public async Task<Checklist> CreateChecklistFromTemplateAsync(int templateId)
+        public async Task<Checklist> CreateChecklistFromTemplateAsync(Guid templateId)
         {
             var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
@@ -294,11 +295,12 @@ namespace Aquiis.SimpleStart.Application.Services
             // Create the checklist from template
             var checklist = new Checklist
             {
+                Id = Guid.NewGuid(),
                 Name = template.Name,
                 ChecklistType = template.Category,
                 ChecklistTemplateId = template.Id,
                 Status = ApplicationConstants.ChecklistStatuses.Draft,
-                OrganizationId = organizationId!,
+                OrganizationId = organizationId!.Value,
                 CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty,
                 CreatedOn = DateTime.UtcNow
             };
@@ -311,6 +313,7 @@ namespace Aquiis.SimpleStart.Application.Services
             {
                 var checklistItem = new ChecklistItem
                 {
+                    Id = Guid.NewGuid(),
                     ChecklistId = checklist.Id,
                     ItemText = templateItem.ItemText,
                     ItemOrder = templateItem.ItemOrder,
@@ -318,15 +321,23 @@ namespace Aquiis.SimpleStart.Application.Services
                     SectionOrder = templateItem.SectionOrder,
                     RequiresValue = templateItem.RequiresValue,
                     IsChecked = false,
-                    OrganizationId = organizationId!
+                    OrganizationId = organizationId!.Value,
+                    CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty,
+                    CreatedOn = DateTime.UtcNow
                 };
                 _dbContext.ChecklistItems.Add(checklistItem);
             }
 
             await _dbContext.SaveChangesAsync();
 
-            // Reload with items
-            return await GetChecklistByIdAsync(checklist.Id) ?? checklist;
+            // Return checklist with items already loaded in memory
+            checklist.Items = await _dbContext.ChecklistItems
+                .Where(i => i.ChecklistId == checklist.Id)
+                .OrderBy(i => i.SectionOrder)
+                .ThenBy(i => i.ItemOrder)
+                .ToListAsync();
+                
+            return checklist;
         }
 
         public async Task<Checklist> AddChecklistAsync(Checklist checklist)
@@ -339,7 +350,8 @@ namespace Aquiis.SimpleStart.Application.Services
 
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
-            checklist.OrganizationId = organizationId!;
+            checklist.Id = Guid.NewGuid();
+            checklist.OrganizationId = organizationId!.Value;
             checklist.CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty;
             checklist.CreatedOn = DateTime.UtcNow;
 
@@ -364,7 +376,7 @@ namespace Aquiis.SimpleStart.Application.Services
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task DeleteChecklistAsync(int checklistId)
+        public async Task DeleteChecklistAsync(Guid checklistId)
         {
             var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
@@ -393,7 +405,7 @@ namespace Aquiis.SimpleStart.Application.Services
             }
         }
 
-        public async Task ArchiveChecklistAsync(int checklistId)
+        public async Task ArchiveChecklistAsync(Guid checklistId)
         {
             var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
@@ -415,7 +427,7 @@ namespace Aquiis.SimpleStart.Application.Services
             }
         }
 
-        public async Task UnarchiveChecklistAsync(int checklistId)
+        public async Task UnarchiveChecklistAsync(Guid checklistId)
         {
             var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
@@ -437,7 +449,7 @@ namespace Aquiis.SimpleStart.Application.Services
             }
         }
 
-        public async Task CompleteChecklistAsync(int checklistId)
+        public async Task CompleteChecklistAsync(Guid checklistId)
         {
             var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
@@ -506,7 +518,7 @@ namespace Aquiis.SimpleStart.Application.Services
             }
         }
 
-        public async Task<ChecklistTemplate> SaveChecklistAsTemplateAsync(int checklistId, string templateName, string? templateDescription = null)
+        public async Task<ChecklistTemplate> SaveChecklistAsTemplateAsync(Guid checklistId, string templateName, string? templateDescription = null)
         {
             var userId = await _userContext.GetUserIdAsync();
             if (userId == null)
@@ -544,7 +556,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 Description = templateDescription ?? $"Template created from checklist: {checklist.Name}",
                 Category = checklist.ChecklistType,
                 IsSystemTemplate = false,
-                OrganizationId = organizationId!,
+                OrganizationId = organizationId!.Value,
                 CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty,
                 CreatedOn = DateTime.UtcNow
             };
@@ -557,6 +569,7 @@ namespace Aquiis.SimpleStart.Application.Services
             {
                 var templateItem = new ChecklistTemplateItem
                 {
+                    Id = Guid.NewGuid(),
                     ChecklistTemplateId = template.Id,
                     ItemText = item.ItemText,
                     ItemOrder = item.ItemOrder,
@@ -565,7 +578,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     IsRequired = false, // User can customize this later
                     RequiresValue = item.RequiresValue,
                     AllowsNotes = true,
-                    OrganizationId = organizationId!,
+                    OrganizationId = organizationId!.Value,
                     CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty,
                     CreatedOn = DateTime.UtcNow
                 };
@@ -592,7 +605,8 @@ namespace Aquiis.SimpleStart.Application.Services
 
             var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
-            item.OrganizationId = organizationId!;
+            item.Id = Guid.NewGuid();
+            item.OrganizationId = organizationId!.Value;
             item.CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty;
             item.CreatedOn = DateTime.UtcNow;
 
@@ -617,7 +631,7 @@ namespace Aquiis.SimpleStart.Application.Services
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task DeleteChecklistItemAsync(int itemId)
+        public async Task DeleteChecklistItemAsync(Guid itemId)
         {
             var userId = await _userContext.GetUserIdAsync();
             if (userId == null)

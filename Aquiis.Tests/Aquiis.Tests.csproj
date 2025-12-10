@@ -21,4 +21,8 @@
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Aquiis.SimpleStart\Aquiis.SimpleStart.csproj" />
+  </ItemGroup>
+
 </Project>

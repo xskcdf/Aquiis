@@ -301,8 +301,8 @@ else
     private List<Payment>? payments;
     private List<Payment> filteredPayments = new();
     private List<Payment> pagedPayments = new();
-    private IEnumerable<IGrouping<int, Payment>> groupedPayments = Enumerable.Empty<IGrouping<int, Payment>>();
-    private HashSet<int> expandedInvoices = new();
+    private IEnumerable<IGrouping<Guid, Payment>> groupedPayments = Enumerable.Empty<IGrouping<Guid, Payment>>();
+    private HashSet<Guid> expandedInvoices = new();
     private string searchTerm = string.Empty;
     private string selectedMethod = string.Empty;
     private string sortColumn = nameof(Payment.PaidOn);
@@ -376,7 +376,7 @@ else
         }
     }
 
-    private void ToggleInvoiceGroup(int invoiceId)
+    private void ToggleInvoiceGroup(Guid invoiceId)
     {
         if (expandedInvoices.Contains(invoiceId))
         {
@@ -471,12 +471,12 @@ else
         Navigation.NavigateTo("/propertymanagement/payments/create");
     }
 
-    private void ViewPayment(int id)
+    private void ViewPayment(Guid id)
     {
         Navigation.NavigateTo($"/propertymanagement/payments/view/{id}");
     }
 
-    private void EditPayment(int id)
+    private void EditPayment(Guid id)
     {
         Navigation.NavigateTo($"/propertymanagement/payments/edit/{id}");
     }

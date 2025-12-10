@@ -9,12 +9,12 @@ namespace Aquiis.SimpleStart.Core.Entities
         /// <summary>
         /// Entity ID
         /// </summary>
-        int Id { get; set; }
+        Guid Id { get; set; }
 
         /// <summary>
         /// Organization ID
         /// </summary>
-        string OrganizationId { get; set; }
+        Guid OrganizationId { get; set; }
 
         /// <summary>
         /// Created By User ID
@@ -24,7 +24,7 @@ namespace Aquiis.SimpleStart.Core.Entities
         /// <summary>
         /// Link to the associated CalendarEvent
         /// </summary>
-        int? CalendarEventId { get; set; }
+        Guid? CalendarEventId { get; set; }
 
         /// <summary>
         /// Get the title to display on the calendar
@@ -49,7 +49,7 @@ namespace Aquiis.SimpleStart.Core.Entities
         /// <summary>
         /// Get the associated property ID (if applicable)
         /// </summary>
-        int? GetPropertyId();
+        Guid? GetPropertyId();
 
         /// <summary>
         /// Get the description/details for the event

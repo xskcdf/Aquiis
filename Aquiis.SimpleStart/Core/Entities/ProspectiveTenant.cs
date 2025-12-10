@@ -8,7 +8,7 @@ namespace Aquiis.SimpleStart.Core.Entities
         [Required]
         [StringLength(100)]
         [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
         [Required]
         [StringLength(100)]
@@ -58,7 +58,7 @@ namespace Aquiis.SimpleStart.Core.Entities
         public string? Notes { get; set; }
 
         [Display(Name = "Interested Property")]
-        public int? InterestedPropertyId { get; set; }
+        public Guid? InterestedPropertyId { get; set; }
 
         [Display(Name = "Desired Move-In Date")]
         public DateTime? DesiredMoveInDate { get; set; }

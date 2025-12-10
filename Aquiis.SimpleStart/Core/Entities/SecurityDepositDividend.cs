@@ -14,19 +14,19 @@ namespace Aquiis.SimpleStart.Core.Entities
         [JsonInclude]
         [StringLength(100)]
         [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
         [Required]
-        public int SecurityDepositId { get; set; }
+        public Guid SecurityDepositId { get; set; }
 
         [Required]
-        public int InvestmentPoolId { get; set; }
+        public Guid InvestmentPoolId { get; set; }
 
         [Required]
-        public int LeaseId { get; set; }
+        public Guid LeaseId { get; set; }
 
         [Required]
-        public int TenantId { get; set; }
+        public Guid TenantId { get; set; }
 
         [Required]
         public int Year { get; set; }

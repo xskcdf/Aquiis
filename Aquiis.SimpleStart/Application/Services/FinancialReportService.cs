@@ -17,10 +17,10 @@ public class FinancialReportService
     /// Generate income statement for a specific period and optional property
     /// </summary>
     public async Task<IncomeStatement> GenerateIncomeStatementAsync(
-        string organizationId, 
+        Guid organizationId, 
         DateTime startDate, 
         DateTime endDate, 
-        int? propertyId = null)
+        Guid? propertyId = null)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -97,7 +97,7 @@ public class FinancialReportService
     /// <summary>
     /// Generate rent roll report showing all properties and tenants
     /// </summary>
-    public async Task<List<RentRollItem>> GenerateRentRollAsync(string organizationId, DateTime asOfDate)
+    public async Task<List<RentRollItem>> GenerateRentRollAsync(Guid organizationId, DateTime asOfDate)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -136,7 +136,7 @@ public class FinancialReportService
     /// Generate property performance comparison report
     /// </summary>
     public async Task<List<PropertyPerformance>> GeneratePropertyPerformanceAsync(
-        string organizationId, 
+        Guid organizationId, 
         DateTime startDate, 
         DateTime endDate)
     {
@@ -213,7 +213,7 @@ public class FinancialReportService
     /// <summary>
     /// Generate tax report data for Schedule E
     /// </summary>
-    public async Task<List<TaxReportData>> GenerateTaxReportAsync(string organizationId, int year, int? propertyId = null)
+    public async Task<List<TaxReportData>> GenerateTaxReportAsync(Guid organizationId, int year, Guid? propertyId = null)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
         var startDate = new DateTime(year, 1, 1);

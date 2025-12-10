@@ -1,13 +1,13 @@
 using System.ComponentModel.DataAnnotations;
+using Aquiis.SimpleStart.Core.Validation;
 
 namespace Aquiis.SimpleStart.Core.Entities;
 
 public class CalendarSettings : BaseModel
 {
-    [Required]
-    [StringLength(100)]
+    [RequiredGuid]
     [Display(Name = "Organization ID")]
-    public string OrganizationId { get; set; } = string.Empty;
+    public Guid OrganizationId { get; set; } = Guid.Empty;
     public string EntityType { get; set; } = string.Empty;
     public bool AutoCreateEvents { get; set; } = true;
     public bool ShowOnCalendar { get; set; } = true;

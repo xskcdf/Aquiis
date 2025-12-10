@@ -1,4 +1,4 @@
-@page "/propertymanagement/checklists/complete/{ChecklistId:int}"
+@page "/propertymanagement/checklists/complete/{ChecklistId:guid}"
 @page "/propertymanagement/checklists/complete/new"
 
 @using Aquiis.SimpleStart.Core.Entities
@@ -10,6 +10,7 @@
 @inject ChecklistService ChecklistService
 @inject PropertyManagementService PropertyManagementService
 @inject UserContextService UserContext
+@inject ToastService ToastService
 @inject NavigationManager NavigationManager
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
@@ -85,13 +86,13 @@ else
                                             <option value="@lease.Id">@lease.Tenant?.FullName - @lease.StartDate.ToString("MM/dd/yyyy")</option>
                                         }
                                     </select>
-                                    @if (requiresLease && selectedLeaseId == 0)
+                                    @if (requiresLease && selectedLeaseId == Guid.Empty)
                                     {
                                         <small class="text-danger">This checklist type requires a lease selection</small>
                                     }
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-primary" @onclick="AssignPropertyAndLease" disabled="@(selectedPropertyId == 0 || (requiresLease && selectedLeaseId == 0))">
+                            <button type="button" class="btn btn-primary" @onclick="AssignPropertyAndLease" disabled="@(selectedPropertyId == Guid.Empty || (requiresLease && selectedLeaseId == Guid.Empty))">
                                 <i class="bi bi-check"></i> Assign and Continue
                             </button>
                         </div>
@@ -327,10 +328,10 @@ else
 
 @code {
     [Parameter]
-    public int ChecklistId { get; set; }
+    public Guid ChecklistId { get; set; }
 
     [SupplyParameterFromQuery(Name = "templateId")]
-    public int? TemplateId { get; set; }
+    public Guid? TemplateId { get; set; }
 
     private Checklist? checklist;
     private ChecklistTemplate? template;
@@ -338,24 +339,24 @@ else
     private List<Property> properties = new();
     private List<Lease> leases = new();
     private List<ChecklistItem> checklistItems = new();
-    private int selectedPropertyId = 0;
-    private int selectedLeaseId = 0;
+    private Guid selectedPropertyId = Guid.Empty;
+    private Guid selectedLeaseId = Guid.Empty;
     private bool requiresLease = false;
     private string? successMessage;
     private string? errorMessage;
     private bool isSaving = false;
-    private Dictionary<int, ChecklistItem> modifiedItems = new();
+    private Dictionary<Guid, ChecklistItem> modifiedItems = new();
 
     protected override async Task OnInitializedAsync()
     {
         await LoadProperties();
         
-        if (TemplateId.HasValue && TemplateId.Value > 0)
+        if (TemplateId.HasValue)
         {
             // New checklist from template
             await LoadTemplateForNewChecklist();
         }
-        else if (ChecklistId > 0)
+        else if (ChecklistId != Guid.Empty)
         {
             // Existing checklist
             await LoadChecklist();
@@ -381,11 +382,12 @@ else
             // Create a temporary checklist object (not saved to DB yet)
             checklist = new Checklist
             {
+                Id = Guid.NewGuid(),
                 Name = template.Name,
                 ChecklistType = template.Category,
                 ChecklistTemplateId = template.Id,
                 Status = ApplicationConstants.ChecklistStatuses.Draft,
-                OrganizationId = organizationId!,
+                OrganizationId = organizationId!.Value,
                 CreatedBy = userId!,
                 CreatedOn = DateTime.UtcNow
             };
@@ -393,13 +395,14 @@ else
             // Copy template items to working list
             checklistItems = template.Items.Select(ti => new ChecklistItem
             {
+                Id = Guid.NewGuid(),
                 ItemText = ti.ItemText,
                 ItemOrder = ti.ItemOrder,
                 CategorySection = ti.CategorySection,
                 SectionOrder = ti.SectionOrder,
                 RequiresValue = ti.RequiresValue,
                 IsChecked = false,
-                OrganizationId = organizationId!
+                OrganizationId = organizationId!.Value,
             }).ToList();
 
             // Set Items collection for display
@@ -456,14 +459,14 @@ else
 
     private async Task OnPropertyChanged()
     {
-        if (selectedPropertyId > 0)
+        if (selectedPropertyId != Guid.Empty)
         {
             leases = await PropertyManagementService.GetActiveLeasesByPropertyIdAsync(selectedPropertyId);
         }
         else
         {
             leases.Clear();
-            selectedLeaseId = 0;
+            selectedLeaseId = Guid.Empty;
         }
     }
 
@@ -476,12 +479,31 @@ else
             isSaving = true;
             errorMessage = null;
 
-            checklist.PropertyId = selectedPropertyId;
-            checklist.LeaseId = selectedLeaseId > 0 ? selectedLeaseId : null;
+            checklist.PropertyId = selectedPropertyId != Guid.Empty ? selectedPropertyId : null;
+            checklist.LeaseId = selectedLeaseId != Guid.Empty ? selectedLeaseId : null;
 
-            await ChecklistService.UpdateChecklistAsync(checklist);
+            if (isNewChecklist)
+            {
+                // Create the checklist and persist items
+                var savedChecklist = await ChecklistService.AddChecklistAsync(checklist);
+
+                // Add any in-memory items to the database
+                foreach (var item in checklistItems)
+                {
+                    item.ChecklistId = savedChecklist.Id;
+                    await ChecklistService.AddChecklistItemAsync(item);
+                }
+
+                ChecklistId = savedChecklist.Id;
+                isNewChecklist = false;
+            }
+            else
+            {
+                await ChecklistService.UpdateChecklistAsync(checklist);
+            }
+
             await LoadChecklist(); // Reload to get navigation properties
-            
+
             successMessage = "Property and lease assigned successfully.";
         }
         catch (Exception ex)
@@ -621,7 +643,8 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = $"Error saving progress: {ex.Message}";
+            errorMessage = $"Error saving progress: {$"{ex.Message} - {ex.InnerException?.Message}"}";
+            ToastService.ShowError(errorMessage);
         }
         finally
         {
@@ -676,7 +699,8 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = $"Error completing checklist: {ex.Message}";
+            errorMessage = $"Error completing checklist: {$"{ex.Message} - {ex.InnerException?.Message}"}";
+            ToastService.ShowError(errorMessage);
             isSaving = false;
         }
     }

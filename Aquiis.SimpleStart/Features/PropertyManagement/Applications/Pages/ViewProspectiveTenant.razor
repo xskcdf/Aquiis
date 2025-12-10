@@ -1,4 +1,4 @@
-@page "/PropertyManagement/ProspectiveTenants/{ProspectId:int}"
+@page "/PropertyManagement/ProspectiveTenants/{ProspectId:guid}"
 
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
@@ -568,7 +568,7 @@
 
 @code {
     [Parameter]
-    public int ProspectId { get; set; }
+    public Guid ProspectId { get; set; }
 
     private ProspectiveTenant? prospect;
     private List<Tour> tours = new();
@@ -588,8 +588,8 @@
         loading = true;
         try
         {
-            var orgId = await UserContext.GetActiveOrganizationIdAsync();
-            if (!string.IsNullOrEmpty(orgId))
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            if (organizationId.HasValue)
             {
                 prospect = await PropertyService.GetProspectiveTenantByIdAsync(ProspectId);
                 
@@ -659,7 +659,7 @@
             prospect.IdentificationState = editModel.IdentificationState;
             prospect.Source = editModel.Source;
             prospect.Notes = editModel.Notes;
-            prospect.InterestedPropertyId = int.TryParse(editModel.InterestedPropertyId, out var propId) && propId > 0 ? propId : null;
+            prospect.InterestedPropertyId = Guid.TryParse(editModel.InterestedPropertyId, out var propId) && propId != Guid.Empty ? propId : null;
             prospect.DesiredMoveInDate = editModel.DesiredMoveInDate;
 
             await PropertyService.UpdateProspectiveTenantAsync(prospect);

@@ -1,4 +1,4 @@
-@page "/administration/organizations/{Id}/users"
+@page "/administration/organizations/{Id:guid}/users"
 
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Application.Services
@@ -215,7 +215,7 @@
 
 @code {
     [Parameter]
-    public string Id { get; set; } = string.Empty;
+    public Guid Id { get; set; } = Guid.Empty;
 
     private bool isLoading = true;
     private Organization? organization;
@@ -237,7 +237,7 @@
         isLoading = true;
         try
         {
-            var userId = await UserContext.GetUserIdAsync();
+            string? userId = await UserContext.GetUserIdAsync();
             if (string.IsNullOrEmpty(userId))
             {
                 return;

@@ -31,7 +31,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// </summary>
         /// <param name="prospectiveTenantId">ID of the prospective tenant to convert</param>
         /// <returns>The newly created Tenant, or existing Tenant if already converted</returns>
-        public async Task<Tenant?> ConvertProspectToTenantAsync(int prospectiveTenantId)
+        public async Task<Tenant?> ConvertProspectToTenantAsync(Guid prospectiveTenantId)
         {
             try
             {
@@ -93,7 +93,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Gets tenant by ProspectiveTenantId, or null if not yet converted
         /// </summary>
-        public async Task<Tenant?> GetTenantByProspectIdAsync(int prospectiveTenantId)
+        public async Task<Tenant?> GetTenantByProspectIdAsync(Guid prospectiveTenantId)
         {
             return await _context.Tenants
                 .FirstOrDefaultAsync(t => t.ProspectiveTenantId == prospectiveTenantId && !t.IsDeleted);
@@ -102,7 +102,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Checks if a prospect has already been converted to a tenant
         /// </summary>
-        public async Task<bool> IsProspectAlreadyConvertedAsync(int prospectiveTenantId)
+        public async Task<bool> IsProspectAlreadyConvertedAsync(Guid prospectiveTenantId)
         {
             return await _context.Tenants
                 .AnyAsync(t => t.ProspectiveTenantId == prospectiveTenantId && !t.IsDeleted);
@@ -111,7 +111,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// <summary>
         /// Gets the ProspectiveTenant history for a given Tenant
         /// </summary>
-        public async Task<ProspectiveTenant?> GetProspectHistoryForTenantAsync(int tenantId)
+        public async Task<ProspectiveTenant?> GetProspectHistoryForTenantAsync(Guid tenantId)
         {
             var tenant = await _context.Tenants
                 .FirstOrDefaultAsync(t => t.Id == tenantId && !t.IsDeleted);

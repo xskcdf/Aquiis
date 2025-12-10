@@ -214,12 +214,12 @@
 
 @code {
     private int taxYear = DateTime.Now.Month >= 11 ? DateTime.Now.Year : DateTime.Now.Year - 1;
-    private string? selectedPropertyId;
+    private Guid? selectedPropertyId;
     private List<Property> properties = new();
     private List<TaxReportData> taxReports = new();
     private bool isLoading = false;
 
-    private string? organizationId = string.Empty;
+    private Guid? organizationId = Guid.Empty;
 
     [CascadingParameter]
     private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
@@ -251,15 +251,10 @@
             var authState = await AuthenticationStateTask;
             var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-            if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(organizationId))
+            if (!string.IsNullOrEmpty(userId) && organizationId.HasValue)
             {
-                int? propertyId = null;
-                if (!string.IsNullOrEmpty(selectedPropertyId) && int.TryParse(selectedPropertyId, out int pid))
-                {
-                    propertyId = pid;
-                }
 
-                taxReports = await FinancialReportService.GenerateTaxReportAsync(organizationId, taxYear, propertyId);
+                taxReports = await FinancialReportService.GenerateTaxReportAsync(organizationId.Value, taxYear, selectedPropertyId);
             }
         }
         finally

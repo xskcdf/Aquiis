@@ -1,4 +1,4 @@
-@page "/propertymanagement/checklists/view/{ChecklistId:int}"
+@page "/propertymanagement/checklists/view/{ChecklistId:guid}"
 
 @using Aquiis.SimpleStart.Core.Entities
 @using Aquiis.SimpleStart.Features.PropertyManagement
@@ -344,7 +344,7 @@ else
 
 @code {
     [Parameter]
-    public int ChecklistId { get; set; }
+    public Guid ChecklistId { get; set; }
 
     private Checklist? checklist;
     private string? successMessage;
@@ -524,7 +524,8 @@ else
             // Create document record
             var document = new Document
             {
-                OrganizationId = organizationId!,
+                Id = Guid.NewGuid(),
+                OrganizationId = organizationId!.Value,
                 FileName = $"Checklist_{checklist.Name.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf",
                 FileExtension = ".pdf",
                 FileData = pdfBytes,

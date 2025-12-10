@@ -1,4 +1,4 @@
-@page "/propertymanagement/leases/{LeaseId:int}/documents"
+@page "/propertymanagement/leases/{LeaseId:guid}/documents"
 
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Core.Entities
@@ -181,7 +181,7 @@ else
 
 @code {
     [Parameter]
-    public int LeaseId { get; set; }
+    public Guid LeaseId { get; set; }
 
     private Lease? lease;
     private List<Document>? documents;
@@ -247,7 +247,7 @@ else
         isUploading = true;
         try
         {
-           var organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? string.Empty;
+           var organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? Guid.Empty;
 
             // Read file data
             using var memoryStream = new MemoryStream();

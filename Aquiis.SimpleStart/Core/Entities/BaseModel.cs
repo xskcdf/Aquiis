@@ -8,8 +8,8 @@ namespace Aquiis.SimpleStart.Core.Entities
     {
         [Key]
         [JsonInclude]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.None)]
+        public Guid Id { get; set; }
 
         [Required]
         [JsonInclude]

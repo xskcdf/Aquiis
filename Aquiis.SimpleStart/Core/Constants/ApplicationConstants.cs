@@ -235,6 +235,8 @@ namespace Aquiis.SimpleStart.Core.Constants
         public static class LeaseStatuses { 
             public const string Offered = "Offered";
             public const string Pending = "Pending";
+            public const string Accepted = "Accepted";
+            public const string AcceptedPendingStart = "Accepted - Pending Start";
             public const string Active = "Active";
             public const string Declined = "Declined";
             public const string Renewed = "Renewed";
@@ -256,6 +258,8 @@ namespace Aquiis.SimpleStart.Core.Constants
             {
                 Offered,
                 Pending,
+                Accepted,
+                AcceptedPendingStart,
                 Active,
                 Declined,
                 Renewed,
@@ -297,10 +301,18 @@ namespace Aquiis.SimpleStart.Core.Constants
             public const string Available = "Available";
             public const string ApplicationPending = "Application Pending";
             public const string LeasePending = "Lease Pending";
+            public const string MoveInPending = "Accepted - Move-In Pending";
             public const string Occupied = "Occupied";
+            public const string MoveOutPending = "Move-Out Pending";
             public const string UnderRenovation = "Under Renovation";
             public const string OffMarket = "Off Market";
             
+            public static IReadOnlyList<string> OccupiedStatuses { get; } = new List<string>
+            {
+                MoveInPending,
+                Occupied,
+                MoveOutPending
+            };
             public static IReadOnlyList<string> AllPropertyStatuses { get; } = new List<string>
             {
                 Available,
@@ -373,16 +385,22 @@ namespace Aquiis.SimpleStart.Core.Constants
 
         public static class TenantStatuses
         {
-            public const string Active = "Active";
-            public const string Inactive = "Inactive";
             public const string Prospective = "Prospective";
+            public const string Pending = "Pending";
+            public const string MoveInPending = "Move-In Pending";
+            public const string Active = "Active";
+            public const string MoveOutPending = "Move-Out Pending";
+            public const string Inactive = "Inactive";
             public const string Evicted = "Evicted";
 
             public static IReadOnlyList<string> AllTenantStatuses { get; } = new List<string>
-            {       
-                Active,
-                Inactive,
+            {
                 Prospective,
+                Pending,       
+                MoveInPending,
+                Active,
+                MoveOutPending,
+                Inactive,
                 Evicted
             };
 
@@ -633,6 +651,23 @@ namespace Aquiis.SimpleStart.Core.Constants
                 Applied,
                 Paid
             };
+        }
+
+        public static class EntityTypes
+        {
+            public const string Property = "Property";
+            public const string Tenant = "Tenant";
+            public const string Lease = "Lease";
+            public const string Invoice = "Invoice";
+            public const string Payment = "Payment";
+            public const string MaintenanceRequest = "MaintenanceRequest";
+            public const string Document = "Document";
+            public const string Inspection = "Inspection";
+            public const string ProspectiveTenant = "ProspectiveTenant";
+            public const string Application = "Application";
+            public const string Tour = "Tour";
+            public const string Checklist = "Checklist";
+            public const string Note = "Note";
         }
 
         

@@ -125,7 +125,7 @@ namespace Aquiis.SimpleStart.Application.Services
         private async Task ApplyLateFees(
             ApplicationDbContext dbContext, 
             ToastService toastService, 
-            string organizationId,
+            Guid organizationId,
             OrganizationSettings settings,
             CancellationToken stoppingToken)
         {
@@ -176,7 +176,7 @@ namespace Aquiis.SimpleStart.Application.Services
             }
         }
 
-        private async Task UpdateInvoiceStatuses(ApplicationDbContext dbContext, string organizationId, CancellationToken stoppingToken)
+        private async Task UpdateInvoiceStatuses(ApplicationDbContext dbContext, Guid organizationId, CancellationToken stoppingToken)
         {
             try
             {
@@ -213,7 +213,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
         private async Task SendPaymentReminders(
             ApplicationDbContext dbContext, 
-            string organizationId,
+            Guid organizationId,
             OrganizationSettings settings,
             CancellationToken stoppingToken)
         {
@@ -265,7 +265,7 @@ namespace Aquiis.SimpleStart.Application.Services
             }
         }
 
-        private async Task CheckLeaseRenewals(ApplicationDbContext dbContext, string organizationId, CancellationToken stoppingToken)
+        private async Task CheckLeaseRenewals(ApplicationDbContext dbContext, Guid organizationId, CancellationToken stoppingToken)
         {
             try
             {

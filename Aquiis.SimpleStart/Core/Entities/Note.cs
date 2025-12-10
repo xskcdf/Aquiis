@@ -12,7 +12,7 @@ namespace Aquiis.SimpleStart.Core.Entities
         [Required]
         [StringLength(100)]
         [Display(Name = "Organization ID")]
-        public string OrganizationId { get; set; } = string.Empty;
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
         [Required]
         [StringLength(5000)]
@@ -26,7 +26,7 @@ namespace Aquiis.SimpleStart.Core.Entities
 
         [Required]
         [Display(Name = "Entity ID")]
-        public int EntityId { get; set; }
+        public Guid EntityId { get; set; }
 
         [StringLength(100)]
         [Display(Name = "User Full Name")]
