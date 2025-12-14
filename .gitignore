@@ -21,6 +21,10 @@ Data/Backups/**
 
 /Data/app*
 
+sp_credentials.json
+
+publish_profile.xml
+
 
 # Python virtual environment created per-project
 .venv/

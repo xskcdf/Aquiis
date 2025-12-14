@@ -1,0 +1,22 @@
+name: Auto-merge on approval
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  automerge:
+    if: ${{ github.event.review.state == 'approved' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+      checks: read
+    steps:
+      - name: Attempt merge when approved
+        uses: peter-evans/merge-pull-request@v3
+        with:
+          pull-request-number: ${{ github.event.pull_request.number }}
+          merge-method: merge
+          commit-title: "Auto-merge PR #${{ github.event.pull_request.number }}"
+          delete-branch: false
+          token: ${{ secrets.GITHUB_TOKEN }}

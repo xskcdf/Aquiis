@@ -1,0 +1,85 @@
+name: Deploy to Azure (on merge to main)
+
+on:
+  push:
+    branches: [main]
+
+env:
+  DOTNET_VERSION: "9.0.x"
+
+jobs:
+  build-and-deploy:
+    name: Build, Publish and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore Aquiis.sln
+
+      - name: Publish
+        run: dotnet publish ./Aquiis.SimpleStart/Aquiis.SimpleStart.csproj -c Release -o ./publish
+
+      - name: Azure Login (for deployment)
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy with Azure CLI
+        run: |
+          az webapp deploy \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name ${{ secrets.AZURE_WEBAPP_NAME }} \
+            --src-path ./publish
+
+      - name: Save publish profile to file
+        run: |
+          echo "${{ secrets.AZURE_PUBLISH_PROFILE }}" > /tmp/publish_profile.xml
+
+      - name: Extract DB settings and export to GITHUB_ENV
+        run: |
+          DB_FILE=$(jq -r '.ApplicationSettings.DatabaseFileName // "app_v0.0.0.db"' Aquiis.SimpleStart/appsettings.json)
+          PREV_DB_FILE=$(jq -r '.ApplicationSettings.PreviousDatabaseFileName // ""' Aquiis.SimpleStart/appsettings.json)
+          APP_VERSION=$(jq -r '.ApplicationSettings.Version // ""' Aquiis.SimpleStart/appsettings.json)
+          SCHEMA_VERSION=$(jq -r '.ApplicationSettings.SchemaVersion // ""' Aquiis.SimpleStart/appsettings.json)
+          echo "DB_FILE=$DB_FILE" >> "$GITHUB_ENV"
+          echo "PREV_DB_FILE=$PREV_DB_FILE" >> "$GITHUB_ENV"
+          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+          echo "SCHEMA_VERSION=$SCHEMA_VERSION" >> "$GITHUB_ENV"
+          echo "DB_PATH=/home/data/$DB_FILE" >> "$GITHUB_ENV"
+        shell: bash
+
+      - name: Create /home/data on App Service
+        run: |
+          chmod +x ./scripts/kudu-create-data-dir.sh
+          ./scripts/kudu-create-data-dir.sh /tmp/publish_profile.xml ${{ secrets.AZURE_WEBAPP_NAME }}
+
+      - name: Backup existing DB (if any)
+        run: |
+          chmod +x ./scripts/kudu-backup-db.sh
+          ./scripts/kudu-backup-db.sh /tmp/publish_profile.xml ${{ secrets.AZURE_WEBAPP_NAME }} "$DB_PATH" || true
+
+      - name: Azure Login (for App Settings)
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Configure App Settings (set SQLite connection string and app metadata)
+        run: |
+          az webapp config appsettings set \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ secrets.AZURE_WEBAPP_NAME }}" \
+            --settings \
+              "ConnectionStrings__DefaultConnection=DataSource=/home/data/$DB_FILE;Cache=Shared" \
+              "ApplicationSettings__Version=$APP_VERSION" \
+              "ApplicationSettings__DatabaseFileName=$DB_FILE" \
+              "ApplicationSettings__PreviousDatabaseFileName=$PREV_DB_FILE" \
+              "ApplicationSettings__SchemaVersion=$SCHEMA_VERSION" \
+              ASPNETCORE_ENVIRONMENT=Production
+        shell: bash
