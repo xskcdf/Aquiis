@@ -12,11 +12,7 @@ jobs:
       contents: write
       checks: read
     steps:
-      - name: Attempt merge when approved
-        uses: peter-evans/merge-pull-request@v3
-        with:
-          pull-request-number: ${{ github.event.pull_request.number }}
-          merge-method: merge
-          commit-title: "Auto-merge PR #${{ github.event.pull_request.number }}"
-          delete-branch: false
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Auto-merge disabled
+        run: |
+          echo "Auto-merge on approval disabled."
+          echo "Please merge the PR manually after required checks and approvals pass."
