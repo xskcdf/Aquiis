@@ -55,10 +55,6 @@ jobs:
             --src-path "${{ github.workspace }}/publish.zip" \
             --type zip
 
-      - name: Save publish profile to file
-        run: |
-          echo "${{ secrets.AZURE_PUBLISH_PROFILE }}" > /tmp/publish_profile.xml
-
       - name: Extract DB settings and export to GITHUB_ENV
         run: |
           DB_FILE=$(jq -r '.ApplicationSettings.DatabaseFileName // "app_v0.0.0.db"' Aquiis.SimpleStart/appsettings.json)
@@ -71,16 +67,11 @@ jobs:
           echo "SCHEMA_VERSION=$SCHEMA_VERSION" >> "$GITHUB_ENV"
           echo "DB_PATH=/home/data/$DB_FILE" >> "$GITHUB_ENV"
         shell: bash
-
-      - name: Create /home/data on App Service
-        run: |
-          chmod +x ./scripts/kudu-create-data-dir.sh
-          ./scripts/kudu-create-data-dir.sh /tmp/publish_profile.xml ${{ secrets.AZURE_WEBAPP_NAME }}
-
       - name: Backup existing DB (if any)
+        if: env.DB_PATH != ''
         run: |
-          chmod +x ./scripts/kudu-backup-db.sh
-          ./scripts/kudu-backup-db.sh /tmp/publish_profile.xml ${{ secrets.AZURE_WEBAPP_NAME }} "$DB_PATH" || true
+          echo "Skipping Kudu-based DB backup because publish-profile/Kudu is not used when deploy via service principal."
+          echo "Ensure app startup handles DB migrations/backups or run an alternative remote command if necessary."
 
       - name: Azure Login (for App Settings)
         uses: azure/login@v1
