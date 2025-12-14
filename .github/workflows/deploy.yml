@@ -24,19 +24,36 @@ jobs:
         run: dotnet restore Aquiis.sln
 
       - name: Publish
-        run: dotnet publish ./Aquiis.SimpleStart/Aquiis.SimpleStart.csproj -c Release -o ./publish
+        run: dotnet publish ./Aquiis.SimpleStart/Aquiis.SimpleStart.csproj -c Release -o ${{ github.workspace }}/publish
 
       - name: Azure Login (for deployment)
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Show publish output
+        run: |
+          echo "Publish folder contents:"
+          ls -la "${{ github.workspace }}/publish" || true
+          du -sh "${{ github.workspace }}/publish" || true
+
+      - name: Zip publish output
+        run: |
+          cd "${{ github.workspace }}"
+          if [ -d ./publish ]; then
+            rm -f publish.zip
+            zip -r publish.zip publish
+          else
+            echo "ERROR: publish folder not found" && exit 3
+          fi
+
       - name: Deploy with Azure CLI
         run: |
           az webapp deploy \
             --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
             --name ${{ secrets.AZURE_WEBAPP_NAME }} \
-            --src-path ./publish
+            --src-path "${{ github.workspace }}/publish.zip" \
+            --type zip
 
       - name: Save publish profile to file
         run: |
