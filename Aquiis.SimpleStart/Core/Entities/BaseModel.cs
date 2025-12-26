@@ -1,10 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using Aquiis.SimpleStart.Core.Interfaces;
 
 namespace Aquiis.SimpleStart.Core.Entities
 {
-    public class BaseModel
+    public class BaseModel : IAuditable
     {
         [Key]
         [JsonInclude]
@@ -33,7 +34,7 @@ namespace Aquiis.SimpleStart.Core.Entities
         [StringLength(100)]
         [DataType(DataType.Text)]
         [Display(Name = "Last Modified By")]
-        public string? LastModifiedBy { get; set; } = string.Empty;
+        public string? LastModifiedBy { get; set; }
 
         [JsonInclude]
         [Display(Name = "Is Deleted?")]

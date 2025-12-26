@@ -141,6 +141,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddScoped<PropertyManagementService>();
+builder.Services.AddScoped<PropertyService>(); // New refactored service
 builder.Services.AddScoped<ChecklistService>();
 builder.Services.AddScoped<ApplicationService>();
 builder.Services.AddScoped<CalendarSettingsService>();
