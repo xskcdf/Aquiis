@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Aquiis.SimpleStart.Infrastructure.Data;
 using Aquiis.SimpleStart.Core.Entities;
+using Aquiis.SimpleStart.Core.Interfaces;
 using Aquiis.SimpleStart.Shared.Services;
 
 namespace Aquiis.SimpleStart.Application.Services
@@ -8,7 +9,7 @@ namespace Aquiis.SimpleStart.Application.Services
     /// <summary>
     /// Service for managing calendar events and synchronizing with schedulable entities
     /// </summary>
-    public class CalendarEventService
+    public class CalendarEventService : ICalendarEventService
     {
         private readonly ApplicationDbContext _context;
         private readonly CalendarSettingsService _settingsService;

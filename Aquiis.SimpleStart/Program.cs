@@ -142,13 +142,19 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddScoped<PropertyManagementService>();
 builder.Services.AddScoped<PropertyService>(); // New refactored service
+builder.Services.AddScoped<TenantService>(); // New refactored service
+builder.Services.AddScoped<LeaseService>(); // New refactored service
+builder.Services.AddScoped<Aquiis.SimpleStart.Application.Services.DocumentService>(); // New refactored service
+builder.Services.AddScoped<InvoiceService>(); // New refactored service
+builder.Services.AddScoped<PaymentService>(); // New refactored service
+builder.Services.AddScoped<MaintenanceService>(); // New refactored service
 builder.Services.AddScoped<ChecklistService>();
 builder.Services.AddScoped<ApplicationService>();
 builder.Services.AddScoped<CalendarSettingsService>();
 builder.Services.AddScoped<CalendarEventService>();
 builder.Services.AddScoped<TenantConversionService>();
 builder.Services.AddScoped<UserContextService>();
-builder.Services.AddScoped<DocumentService>();
+builder.Services.AddScoped<Aquiis.SimpleStart.Shared.Services.DocumentService>(); // Existing PDF service
 builder.Services.AddScoped<NoteService>();
 
 // Workflow services
