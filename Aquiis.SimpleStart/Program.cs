@@ -14,6 +14,8 @@ using Aquiis.SimpleStart.Shared.Authorization;
 using ElectronNET.API;
 using Microsoft.Extensions.Options;
 using Aquiis.SimpleStart.Application.Services.Workflows;
+using Aquiis.SimpleStart.Core.Interfaces.Services;
+using Aquiis.SimpleStart.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -163,6 +165,13 @@ builder.Services.AddScoped<ICalendarEventService>(sp => sp.GetRequiredService<Ca
 builder.Services.AddScoped<TenantConversionService>();
 builder.Services.AddScoped<UserContextService>();
 builder.Services.AddScoped<NoteService>();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<IEmailService, EmailService>(); // Phase 2.4.8 - Notifications & Alerts
+builder.Services.AddScoped<ISMSService, SMSService>(); // Phase 2.4.8 - Notifications & Alerts
+builder.Services.AddScoped<TwilioSMSService>();
+builder.Services.AddScoped<SMSSettingsService>();
+builder.Services.AddScoped<SendGridEmailService>();
+builder.Services.AddScoped<EmailSettingsService>();
 
 // Workflow services
 builder.Services.AddScoped<Aquiis.SimpleStart.Application.Services.Workflows.ApplicationWorkflowService>();

@@ -56,6 +56,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data
         // Workflow audit logging
         public DbSet<Aquiis.SimpleStart.Application.Services.Workflows.WorkflowAuditLog> WorkflowAuditLogs { get; set; }
 
+        // Notification system
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<NotificationPreferences> NotificationPreferences { get; set; }
+
+        // Organization email settings
+        public DbSet<OrganizationEmailSettings> OrganizationEmailSettings { get; set; }
+
+        // Organization SMS settings
+        public DbSet<OrganizationSMSSettings> OrganizationSMSSettings { get; set; }
+
          protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -529,6 +539,85 @@ namespace Aquiis.SimpleStart.Infrastructure.Data
                 entity.HasIndex(e => e.Action);
                 entity.HasIndex(e => e.PerformedOn);
                 entity.HasIndex(e => e.PerformedBy);
+            });
+
+            // Configure Notification entity
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                
+                entity.HasIndex(e => e.RecipientUserId);
+                entity.HasIndex(e => e.OrganizationId);
+                entity.HasIndex(e => e.SentOn);
+                entity.HasIndex(e => e.IsRead);
+                entity.HasIndex(e => e.Category);
+                
+                // Organization relationship
+                entity.HasOne(n => n.Organization)
+                    .WithMany()
+                    .HasForeignKey(n => n.OrganizationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                // User relationship (RecipientUserId)
+                entity.HasOne<ApplicationUser>()
+                    .WithMany()
+                    .HasForeignKey(n => n.RecipientUserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure NotificationPreferences entity
+            modelBuilder.Entity<NotificationPreferences>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.OrganizationId);
+                
+                // Unique constraint: one preference record per user per organization
+                entity.HasIndex(e => new { e.UserId, e.OrganizationId })
+                    .IsUnique();
+                
+                // Organization relationship
+                entity.HasOne(np => np.Organization)
+                    .WithMany()
+                    .HasForeignKey(np => np.OrganizationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                // User relationship
+                entity.HasOne<ApplicationUser>()
+                    .WithMany()
+                    .HasForeignKey(np => np.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure OrganizationEmailSettings entity
+            modelBuilder.Entity<OrganizationEmailSettings>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasIndex(e => e.OrganizationId).IsUnique();
+                entity.HasIndex(e => e.IsEmailEnabled);
+
+                // One email settings per organization
+                entity.HasOne(e => e.Organization)
+                    .WithOne()
+                    .HasForeignKey<OrganizationEmailSettings>(e => e.OrganizationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure OrganizationSMSSettings entity
+            modelBuilder.Entity<OrganizationSMSSettings>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasIndex(e => e.OrganizationId).IsUnique();
+                entity.HasIndex(e => e.IsSMSEnabled);
+
+                // One SMS settings per organization
+                entity.HasOne(e => e.Organization)
+                    .WithOne()
+                    .HasForeignKey<OrganizationSMSSettings>(e => e.OrganizationId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Seed System Checklist Templates
