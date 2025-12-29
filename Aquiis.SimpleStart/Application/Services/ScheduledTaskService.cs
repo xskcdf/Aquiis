@@ -77,7 +77,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 {
                     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                     var toastService = scope.ServiceProvider.GetRequiredService<ToastService>();
-                    var propertyManagementService = scope.ServiceProvider.GetRequiredService<PropertyManagementService>();
+                    var organizationService = scope.ServiceProvider.GetRequiredService<OrganizationService>();
 
                     // Get all distinct organization IDs from OrganizationSettings
                     var organizations = await dbContext.OrganizationSettings
@@ -89,7 +89,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     foreach (var organizationId in organizations)
                     {
                         // Get settings for this organization
-                        var settings = await propertyManagementService.GetOrganizationSettingsByOrgIdAsync(organizationId);
+                        var settings = await organizationService.GetOrganizationSettingsByOrgIdAsync(organizationId);
                         
                         if (settings == null)
                         {
@@ -392,12 +392,13 @@ namespace Aquiis.SimpleStart.Application.Services
             try
             {
                 using var scope = _serviceProvider.CreateScope();
-                var propertyManagementService = scope.ServiceProvider.GetRequiredService<PropertyManagementService>();
+                var paymentService = scope.ServiceProvider.GetRequiredService<PaymentService>();
+                var propertyService = scope.ServiceProvider.GetRequiredService<PropertyService>();
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
                 // Calculate daily payment totals
                 var today = DateTime.Today;
-                var todayPayments = await propertyManagementService.GetPaymentsAsync();
+                var todayPayments = await paymentService.GetAllAsync();
                 var dailyTotal = todayPayments
                     .Where(p => p.PaidOn.Date == today && !p.IsDeleted)
                     .Sum(p => p.Amount);
@@ -407,7 +408,7 @@ namespace Aquiis.SimpleStart.Application.Services
                     dailyTotal);
 
                 // Check for overdue routine inspections
-                var overdueInspections = await propertyManagementService.GetPropertiesWithOverdueInspectionsAsync();
+                var overdueInspections = await propertyService.GetPropertiesWithOverdueInspectionsAsync();
                 if (overdueInspections.Any())
                 {
                     _logger.LogWarning("{Count} propert(ies) have overdue routine inspections", 
@@ -424,7 +425,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 }
 
                 // Check for inspections due soon (within 30 days)
-                var dueSoonInspections = await propertyManagementService.GetPropertiesWithInspectionsDueSoonAsync(30);
+                var dueSoonInspections = await propertyService.GetPropertiesWithInspectionsDueSoonAsync(30);
                 if (dueSoonInspections.Any())
                 {
                     _logger.LogInformation("{Count} propert(ies) have routine inspections due within 30 days", 
@@ -473,7 +474,8 @@ namespace Aquiis.SimpleStart.Application.Services
             try
             {
                 using var scope = _serviceProvider.CreateScope();
-                var propertyManagementService = scope.ServiceProvider.GetRequiredService<PropertyManagementService>();
+                var tourService = scope.ServiceProvider.GetRequiredService<TourService>();
+                var leaseService = scope.ServiceProvider.GetRequiredService<LeaseService>();
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
                 // Get all organizations
@@ -505,7 +507,7 @@ namespace Aquiis.SimpleStart.Application.Services
 
                     foreach (var tour in noShowTours)
                     {
-                        await propertyManagementService.MarkTourAsNoShowAsync(tour.Id);
+                        await tourService.MarkTourAsNoShowAsync(tour.Id);
                         totalMarkedNoShow++;
                         
                         _logger.LogInformation(
@@ -527,7 +529,7 @@ namespace Aquiis.SimpleStart.Application.Services
                 
                 if (!string.IsNullOrEmpty(userId))
                 {
-                    var upcomingLeases = await propertyManagementService.GetLeasesAsync();
+                    var upcomingLeases = await leaseService.GetAllAsync();
                     var expiringIn30Days = upcomingLeases
                         .Where(l => l.EndDate >= DateTime.Today && 
                                    l.EndDate <= DateTime.Today.AddDays(30) && 

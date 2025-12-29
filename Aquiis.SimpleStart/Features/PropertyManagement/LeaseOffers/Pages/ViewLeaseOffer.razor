@@ -12,7 +12,7 @@
 @using Microsoft.EntityFrameworkCore
 @using System.ComponentModel.DataAnnotations
 
-@inject PropertyManagementService PropertyService
+@inject LeaseOfferService LeaseOfferService
 @inject ApplicationWorkflowService WorkflowService
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
@@ -434,7 +434,7 @@
 
     private async Task LoadLeaseOffer()
     {
-        leaseOffer = await PropertyService.GetLeaseOfferByIdAsync(Id);
+        leaseOffer = await LeaseOfferService.GetLeaseOfferWithRelationsAsync(Id);
     }
 
     private int CalculateDuration()

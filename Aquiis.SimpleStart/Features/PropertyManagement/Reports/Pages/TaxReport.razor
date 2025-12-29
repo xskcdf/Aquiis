@@ -7,7 +7,7 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @inject FinancialReportService FinancialReportService
-@inject PropertyManagementService PropertyManagementService
+@inject PropertyService PropertyService
 @inject FinancialReportPdfGenerator PdfGenerator
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
@@ -235,7 +235,7 @@
 
         if (!string.IsNullOrEmpty(userId))
         {
-            properties = await PropertyManagementService.GetPropertiesAsync();
+            properties = await PropertyService.GetAllAsync();
         }
     }
 

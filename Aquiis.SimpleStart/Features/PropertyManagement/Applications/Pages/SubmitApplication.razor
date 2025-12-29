@@ -10,7 +10,10 @@
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
 
-@inject PropertyManagementService PropertyService
+@inject ProspectiveTenantService ProspectiveTenantService
+@inject RentalApplicationService RentalApplicationService
+@inject PropertyService PropertyService
+@inject OrganizationService OrganizationService
 @inject ApplicationWorkflowService WorkflowService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
@@ -401,15 +404,15 @@
     private async Task LoadData()
     {
         // Load prospect
-        prospect = await PropertyService.GetProspectiveTenantByIdAsync(ProspectId);
+        prospect = await ProspectiveTenantService.GetByIdAsync(ProspectId);
         
         if (prospect == null) return;
 
         // Check if application already exists
-        existingApplication = await PropertyService.GetApplicationByProspectiveIdAsync(ProspectId);
+        existingApplication = await RentalApplicationService.GetApplicationByProspectiveIdAsync(ProspectId);
 
         // Load available properties
-        var allProperties = await PropertyService.GetPropertiesAsync();
+        var allProperties = await PropertyService.GetAllAsync();
         availableProperties = allProperties.Where(p => 
             p.Status == ApplicationConstants.PropertyStatuses.Available || 
             p.Status == ApplicationConstants.PropertyStatuses.ApplicationPending).ToList();
@@ -422,7 +425,7 @@
         }
 
         // Load organization settings for application fee
-        var orgSettings = await PropertyService.GetOrganizationSettingsAsync();
+        var orgSettings = await OrganizationService.GetOrganizationSettingsByOrgIdAsync(prospect.OrganizationId);
         if (orgSettings != null)
         {
             applicationFeeRequired = orgSettings.ApplicationFeeEnabled;

@@ -2,7 +2,7 @@
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Microsoft.AspNetCore.Authorization
 @inject NavigationManager Navigation
-@inject PropertyManagementService PropertyManagementService
+@inject TenantService TenantService
 @inject IJSRuntime JSRuntime
 @inject UserContextService UserContext
 
@@ -340,7 +340,7 @@ else
             return;
         }
 
-        tenants = await PropertyManagementService.GetTenantsAsync();
+        tenants = await TenantService.GetAllAsync();
     }
 
     private void CreateTenant()
@@ -368,11 +368,11 @@ else
 
         
         // Add confirmation dialog in a real application
-        var tenant = await PropertyManagementService.GetTenantByIdAsync(id);
+        var tenant = await TenantService.GetByIdAsync(id);
         if (tenant != null)
         {
 
-            await PropertyManagementService.DeleteTenantAsync(tenant);
+            await TenantService.DeleteAsync(tenant.Id);
             await LoadTenants();
             FilterTenants();
             CalculateMetrics();

@@ -6,6 +6,7 @@ using Aquiis.SimpleStart.Shared.Components.Account;
 using Aquiis.SimpleStart.Infrastructure.Data;
 using Aquiis.SimpleStart.Features.PropertyManagement;
 using Aquiis.SimpleStart.Core.Constants;
+using Aquiis.SimpleStart.Core.Interfaces;
 using Aquiis.SimpleStart.Application.Services;
 using Aquiis.SimpleStart.Application.Services.PdfGenerators;
 using Aquiis.SimpleStart.Shared.Services;
@@ -148,13 +149,19 @@ builder.Services.AddScoped<Aquiis.SimpleStart.Application.Services.DocumentServi
 builder.Services.AddScoped<InvoiceService>(); // New refactored service
 builder.Services.AddScoped<PaymentService>(); // New refactored service
 builder.Services.AddScoped<MaintenanceService>(); // New refactored service
+builder.Services.AddScoped<InspectionService>(); // New refactored service
+builder.Services.AddScoped<TourService>(); // New refactored service
+builder.Services.AddScoped<ProspectiveTenantService>(); // New refactored service
+builder.Services.AddScoped<RentalApplicationService>(); // New refactored service
+builder.Services.AddScoped<ScreeningService>(); // New refactored service
+builder.Services.AddScoped<LeaseOfferService>(); // New refactored service
 builder.Services.AddScoped<ChecklistService>();
 builder.Services.AddScoped<ApplicationService>();
 builder.Services.AddScoped<CalendarSettingsService>();
-builder.Services.AddScoped<CalendarEventService>();
+builder.Services.AddScoped<CalendarEventService>(); // Concrete class for services that need it
+builder.Services.AddScoped<ICalendarEventService>(sp => sp.GetRequiredService<CalendarEventService>()); // Interface alias
 builder.Services.AddScoped<TenantConversionService>();
 builder.Services.AddScoped<UserContextService>();
-builder.Services.AddScoped<Aquiis.SimpleStart.Shared.Services.DocumentService>(); // Existing PDF service
 builder.Services.AddScoped<NoteService>();
 
 // Workflow services

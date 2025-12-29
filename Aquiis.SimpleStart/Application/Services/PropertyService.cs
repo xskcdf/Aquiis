@@ -327,6 +327,56 @@ namespace Aquiis.SimpleStart.Application.Services
             await _calendarEventService.CreateCustomEventAsync(calendarEvent);
         }
 
+        /// <summary>
+        /// Gets properties with overdue routine inspections.
+        /// </summary>
+        public async Task<List<Property>> GetPropertiesWithOverdueInspectionsAsync()
+        {
+            try
+            {
+                var organizationId = await _userContext.GetOrganizationIdAsync();
+                
+                return await _context.Properties
+                    .Where(p => p.OrganizationId == organizationId && 
+                               !p.IsDeleted &&
+                               p.NextRoutineInspectionDueDate.HasValue &&
+                               p.NextRoutineInspectionDueDate.Value < DateTime.Today)
+                    .OrderBy(p => p.NextRoutineInspectionDueDate)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                await HandleExceptionAsync(ex, "GetPropertiesWithOverdueInspections");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Gets properties with inspections due within specified days.
+        /// </summary>
+        public async Task<List<Property>> GetPropertiesWithInspectionsDueSoonAsync(int daysAhead = 30)
+        {
+            try
+            {
+                var organizationId = await _userContext.GetOrganizationIdAsync();
+                var dueDate = DateTime.Today.AddDays(daysAhead);
+                
+                return await _context.Properties
+                    .Where(p => p.OrganizationId == organizationId && 
+                               !p.IsDeleted &&
+                               p.NextRoutineInspectionDueDate.HasValue &&
+                               p.NextRoutineInspectionDueDate.Value >= DateTime.Today &&
+                               p.NextRoutineInspectionDueDate.Value <= dueDate)
+                    .OrderBy(p => p.NextRoutineInspectionDueDate)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                await HandleExceptionAsync(ex, "GetPropertiesWithInspectionsDueSoon");
+                throw;
+            }
+        }
+
         #endregion
     }
 }

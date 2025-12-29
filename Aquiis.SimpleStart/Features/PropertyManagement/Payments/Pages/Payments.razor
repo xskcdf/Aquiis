@@ -5,7 +5,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Forms
 @inject NavigationManager Navigation
-@inject PropertyManagementService PropertyManagementService
+@inject PaymentService PaymentService
 @inject IJSRuntime JSRuntime
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
@@ -337,7 +337,7 @@ else
 
         if (!string.IsNullOrEmpty(userId))
         {
-            payments = await PropertyManagementService.GetPaymentsAsync();
+            payments = await PaymentService.GetAllAsync();
             FilterPayments();
             UpdateStatistics();
         }
@@ -485,7 +485,7 @@ else
     {
         if (await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete this payment of {payment.Amount:C}?"))
         {
-            await PropertyManagementService.DeletePaymentAsync(payment);
+            await PaymentService.DeleteAsync(payment.Id);
             await LoadPayments();
         }
     }

@@ -3,6 +3,7 @@ using Aquiis.SimpleStart.Core.Entities;
 using Aquiis.SimpleStart.Core.Services;
 using Aquiis.SimpleStart.Infrastructure.Data;
 using Aquiis.SimpleStart.Shared.Services;
+using Aquiis.SimpleStart.Application.Services.PdfGenerators;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -412,6 +413,18 @@ namespace Aquiis.SimpleStart.Application.Services
                 await HandleExceptionAsync(ex, "GetDocumentCountByType");
                 throw;
             }
+        }
+
+        #endregion
+
+        #region PDF Generation Methods
+
+        /// <summary>
+        /// Generates a lease document PDF.
+        /// </summary>
+        public async Task<byte[]> GenerateLeaseDocumentAsync(Lease lease)
+        {
+            return await LeasePdfGenerator.GenerateLeasePdf(lease);
         }
 
         #endregion

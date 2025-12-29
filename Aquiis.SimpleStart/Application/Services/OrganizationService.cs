@@ -446,6 +446,50 @@ namespace Aquiis.SimpleStart.Application.Services
                 .ToListAsync();
         }
 
+        /// <summary>
+        /// Gets organization settings by organization ID (for scheduled tasks).
+        /// </summary>
+        public async Task<OrganizationSettings?> GetOrganizationSettingsByOrgIdAsync(Guid organizationId)
+        {
+            return await _dbContext.OrganizationSettings
+                .Where(s => !s.IsDeleted && s.OrganizationId == organizationId)
+                .FirstOrDefaultAsync();
+        }
+
+        /// <summary>
+        /// Gets the organization settings for the current user's active organization.
+        /// If no settings exist, creates default settings.
+        /// </summary>
+        public async Task<OrganizationSettings?> GetOrganizationSettingsAsync()
+        {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            if (!organizationId.HasValue || organizationId == Guid.Empty)
+                throw new InvalidOperationException("Organization ID not found for current user");
+
+            return await GetOrganizationSettingsByOrgIdAsync(organizationId.Value);
+        }
+
+        /// <summary>
+        /// Updates the organization settings for the current user's organization.
+        /// </summary>
+        public async Task<bool> UpdateOrganizationSettingsAsync(OrganizationSettings settings)
+        {
+            var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+            if (!organizationId.HasValue || organizationId == Guid.Empty)
+                throw new InvalidOperationException("Organization ID not found for current user");
+
+            if (settings.OrganizationId != organizationId.Value)
+                throw new InvalidOperationException("Cannot update settings for a different organization");
+
+            var userId = await _userContext.GetUserIdAsync();
+            settings.LastModifiedOn = DateTime.UtcNow;
+            settings.LastModifiedBy = string.IsNullOrEmpty(userId) ? string.Empty : userId;
+
+            _dbContext.OrganizationSettings.Update(settings);
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+
         #endregion
     }
 }

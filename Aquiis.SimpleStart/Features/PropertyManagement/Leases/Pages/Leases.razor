@@ -9,7 +9,9 @@
 @using Aquiis.SimpleStart.Shared.Components.Account
 
 @inject NavigationManager NavigationManager
-@inject PropertyManagementService PropertyManagementService
+@inject LeaseService LeaseService
+@inject TenantService TenantService
+@inject PropertyService PropertyService
 @inject IJSRuntime JSRuntime
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
@@ -570,12 +572,12 @@ else
 
         if (TenantId.HasValue)
         {
-            filterTenant = await PropertyManagementService.GetTenantByIdAsync(TenantId.Value);
+            filterTenant = await TenantService.GetByIdAsync(TenantId.Value);
         }
 
         if (PropertyId.HasValue)
         {
-            filterProperty = await PropertyManagementService.GetPropertyByIdAsync(PropertyId.Value);
+            filterProperty = await PropertyService.GetByIdAsync(PropertyId.Value);
         }
     }
 
@@ -590,7 +592,7 @@ else
             return;
         }
 
-        var     allLeases = await PropertyManagementService.GetLeasesAsync();
+        var     allLeases = await LeaseService.GetAllAsync();
         leases = allLeases
             .Where(l => 
                    (!TenantId.HasValue || l.TenantId == TenantId.Value) &&
@@ -829,7 +831,7 @@ else
         if (!confirmed)
             return;
 
-        await PropertyManagementService.DeleteLeaseAsync(id);
+        await LeaseService.DeleteAsync(id);
         await LoadLeases();
     }
 }

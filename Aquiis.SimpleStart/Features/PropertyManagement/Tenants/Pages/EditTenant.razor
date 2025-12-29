@@ -8,7 +8,7 @@
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @inject NavigationManager NavigationManager
-@inject PropertyManagementService PropertyManagementService
+@inject TenantService TenantService
 @rendermode InteractiveServer
 
 @if (tenant == null)
@@ -202,7 +202,7 @@ else
             return;
         }
 
-        tenant = await PropertyManagementService.GetTenantByIdAsync(Id);
+        tenant = await TenantService.GetByIdAsync(Id);
 
         if (tenant == null)
         {
@@ -255,7 +255,7 @@ else
             tenant.EmergencyContactPhone = tenantModel.EmergencyContactPhone;
             tenant.Notes = tenantModel.Notes;
 
-            await PropertyManagementService.UpdateTenantAsync(tenant);
+            await TenantService.UpdateAsync(tenant);
             successMessage = "Tenant updated successfully!";
         }
         catch (Exception ex)
@@ -289,7 +289,7 @@ else
         {
             try
             {
-                await PropertyManagementService.DeleteTenantAsync(tenant);
+                await TenantService.DeleteAsync(tenant.Id);
                 NavigationManager.NavigateTo("/propertymanagement/tenants");
             }
             catch (Exception ex)

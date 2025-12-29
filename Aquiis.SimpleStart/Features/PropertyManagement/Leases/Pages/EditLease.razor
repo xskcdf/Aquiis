@@ -8,7 +8,7 @@
 @using System.ComponentModel.DataAnnotations
 
 @inject NavigationManager Navigation
-@inject PropertyManagementService PropertyManagementService
+@inject LeaseService LeaseService
 @inject UserContextService UserContextService
 
 @rendermode InteractiveServer
@@ -210,7 +210,7 @@ else
 
     private async Task LoadLease()
     {
-        lease = await PropertyManagementService.GetLeaseByIdAsync(Id);
+        lease = await LeaseService.GetByIdAsync(Id);
 
         if (lease == null)
         {
@@ -258,7 +258,7 @@ else
                 else if (oldStatus == "Active" && leaseModel.Status != "Active")
                 {
                     // Check if there are other active leases for this property
-                    var activeLeases = await PropertyManagementService.GetActiveLeasesByPropertyIdAsync(lease.PropertyId);
+                    var activeLeases = await LeaseService.GetActiveLeasesByPropertyIdAsync(lease.PropertyId);
                     var otherActiveLeases = activeLeases.Any(l => l.PropertyId == lease.PropertyId && l.Id != Id && l.Status == "Active");
                     
                     if (!otherActiveLeases)
@@ -268,7 +268,7 @@ else
                 }
             }
 
-            await PropertyManagementService.UpdateLeaseAsync(lease);
+            await LeaseService.UpdateAsync(lease);
             successMessage = "Lease updated successfully!";
             statusChangeWarning = false;
         }
@@ -312,7 +312,7 @@ else
                 // If deleting an active lease, make property available
                 if (lease.Status == "Active" && lease.Property != null)
                 {
-                    var otherActiveLeases = await PropertyManagementService.GetActiveLeasesByPropertyIdAsync(lease.PropertyId);
+                    var otherActiveLeases = await LeaseService.GetActiveLeasesByPropertyIdAsync(lease.PropertyId);
                     var otherActiveLeasesExist = otherActiveLeases.Any(l => l.Id != Id && l.Status == "Active");
 
                     if (!otherActiveLeasesExist)
@@ -321,7 +321,7 @@ else
                     }
                 }
     
-                await PropertyManagementService.DeleteLeaseAsync(lease.Id);
+                await LeaseService.DeleteAsync(lease.Id);
                 Navigation.NavigateTo("/propertymanagement/leases");
             }
             catch (Exception ex)

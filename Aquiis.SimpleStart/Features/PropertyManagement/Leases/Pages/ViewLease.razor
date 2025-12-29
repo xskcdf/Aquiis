@@ -14,11 +14,14 @@
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
 
 @inject NavigationManager Navigation
-@inject PropertyManagementService PropertyManagementService
+@inject LeaseService LeaseService
+@inject InvoiceService InvoiceService
+@inject Application.Services.DocumentService DocumentService
 @inject LeaseWorkflowService LeaseWorkflowService
 @inject UserContextService UserContextService
 @inject LeaseRenewalPdfGenerator RenewalPdfGenerator
 @inject ToastService ToastService
+@inject OrganizationService OrganizationService
 @inject IJSRuntime JSRuntime
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 
@@ -733,7 +736,7 @@ else
             return;
         }
 
-        lease = await PropertyManagementService.GetLeaseByIdAsync(Id);
+        lease = await LeaseService.GetByIdAsync(Id);
 
         if (lease == null)
         {
@@ -741,7 +744,7 @@ else
             return;
         }
 
-        var invoices = await PropertyManagementService.GetInvoicesByLeaseIdAsync(Id);
+        var invoices = await InvoiceService.GetInvoicesByLeaseIdAsync(Id);
         recentInvoices = invoices
             .OrderByDescending(i => i.DueOn)
             .Take(5)
@@ -750,7 +753,7 @@ else
         // Load the document if it exists
         if (lease.DocumentId != null)
         {
-            document = await PropertyManagementService.GetDocumentByIdAsync(lease.DocumentId.Value);
+            document = await DocumentService.GetByIdAsync(lease.DocumentId.Value);
         }
     }
 
@@ -798,7 +801,7 @@ else
             lease.RenewalOfferedOn = DateTime.UtcNow;
             lease.RenewalNotes = renewalNotes;
 
-            await PropertyManagementService.UpdateLeaseAsync(lease);
+            await LeaseService.UpdateAsync(lease);
             
             // TODO: Send email notification to tenant
             
@@ -849,7 +852,7 @@ else
                 Description = $"Renewal offer letter for {lease.Property?.Address}. Proposed rent: {lease.ProposedRenewalRent:C}"
             };
 
-            await PropertyManagementService.AddDocumentAsync(document);
+            await DocumentService.CreateAsync(document);
             
             ToastService.ShowSuccess($"Renewal offer letter generated and saved to documents!");
         }
@@ -908,7 +911,7 @@ else
         {
             lease.RenewalStatus = "Declined";
             lease.RenewalResponseOn = DateTime.UtcNow;
-            await PropertyManagementService.UpdateLeaseAsync(lease);
+            await LeaseService.UpdateAsync(lease);
             await LoadLease();
             StateHasChanged();
 
@@ -1114,7 +1117,7 @@ else
             if (selectedProperty != null)
             {
                 // Get organization settings for security deposit calculation
-                var settings = await PropertyManagementService.GetOrganizationSettingsAsync();
+                var settings = await OrganizationService.GetOrganizationSettingsAsync();
                 var depositMultiplier = settings?.AutoCalculateSecurityDeposit == true 
                     ? settings.SecurityDepositMultiplier 
                     : 1.0m;
@@ -1202,12 +1205,12 @@ else
             };
 
             // Save to database
-            await PropertyManagementService.AddDocumentAsync(document);
+            await DocumentService.CreateAsync(document);
 
             // Update lease with DocumentId
             lease.DocumentId = document.Id;
             
-            await PropertyManagementService.UpdateLeaseAsync(lease);
+            await LeaseService.UpdateAsync(lease);
 
             // Reload lease and document
             await LoadLease();

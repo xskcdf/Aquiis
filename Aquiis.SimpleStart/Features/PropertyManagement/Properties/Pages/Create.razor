@@ -6,7 +6,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
 @inject NavigationManager Navigation
-@inject PropertyManagementService PropertyManagementService
+@inject PropertyService PropertyService
 
 @rendermode InteractiveServer
 
@@ -195,7 +195,7 @@
         };
 
         // Save the property using a service or API call
-        await PropertyManagementService.AddPropertyAsync(property);
+        await PropertyService.CreateAsync(property);
 
         isSubmitting = false;
         // Redirect to the properties list page after successful addition

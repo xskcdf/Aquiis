@@ -4,7 +4,7 @@
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
 
-@inject PropertyManagementService PropertyManagementService
+@inject MaintenanceService MaintenanceService
 @inject NavigationManager NavigationManager
 @inject ToastService ToastService
 
@@ -271,7 +271,7 @@ else
         isLoading = true;
         try
         {
-            maintenanceRequest = await PropertyManagementService.GetMaintenanceRequestByIdAsync(Id);
+            maintenanceRequest = await MaintenanceService.GetByIdAsync(Id);
         }
         finally
         {
@@ -283,7 +283,7 @@ else
     {
         if (maintenanceRequest != null)
         {
-            await PropertyManagementService.UpdateMaintenanceRequestStatusAsync(maintenanceRequest.Id, newStatus);
+            await MaintenanceService.UpdateMaintenanceRequestStatusAsync(maintenanceRequest.Id, newStatus);
             ToastService.ShowSuccess($"Maintenance request status updated to '{newStatus}'.");
             await LoadMaintenanceRequest();
         }

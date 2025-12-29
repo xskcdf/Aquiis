@@ -4,7 +4,8 @@
 @using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @inject NavigationManager Navigation
-@inject PropertyManagementService PropertyManagementService
+@inject Application.Services.DocumentService DocumentService
+@inject LeaseService LeaseService
 @inject UserContextService UserContext
 @inject IJSRuntime JSRuntime
 
@@ -203,7 +204,7 @@ else
 
     private async Task LoadLease()
     {
-        lease = await PropertyManagementService.GetLeaseByIdAsync(LeaseId);
+        lease = await LeaseService.GetByIdAsync(LeaseId);
         if (lease == null)
         {
             Navigation.NavigateTo("/propertymanagement/leases");
@@ -212,7 +213,7 @@ else
 
     private async Task LoadDocuments()
     {
-        documents = await PropertyManagementService.GetDocumentsByLeaseIdAsync(LeaseId);
+        documents = await DocumentService.GetDocumentsByLeaseIdAsync(LeaseId);
     }
 
     private void ShowUploadDialog()
@@ -267,7 +268,7 @@ else
                 LeaseId = LeaseId,
             };
 
-            await PropertyManagementService.AddDocumentAsync(document);
+            await DocumentService.CreateAsync(document);
             await LoadDocuments();
             CancelUpload();
         }
@@ -300,7 +301,7 @@ else
     {
         if (await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete '{doc.FileName}'?"))
         {
-            await PropertyManagementService.DeleteDocumentAsync(doc);
+            await DocumentService.DeleteAsync(doc.Id);
             await LoadDocuments();
         }
     }

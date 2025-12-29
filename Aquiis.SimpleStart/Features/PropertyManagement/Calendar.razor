@@ -15,7 +15,11 @@
 @inject UserContextService UserContext
 @inject NavigationManager Navigation
 @inject ToastService ToastService
-@inject PropertyManagementService PropertyService
+@inject PropertyManagementService PropertyManagementService
+@inject PropertyService PropertyService
+@inject TourService TourService
+@inject InspectionService InspectionService
+@inject MaintenanceService MaintenanceService
 
 @rendermode InteractiveServer
 
@@ -1250,7 +1254,7 @@
 
     private async Task ShowTourDetailById(Guid tourId)
     {
-        var tour = await PropertyService.GetTourByIdAsync(tourId);
+        var tour = await TourService.GetByIdAsync(tourId);
         if (tour != null)
         {
             selectedTour = tour;
@@ -1263,7 +1267,7 @@
 
     private async Task ShowInspectionDetailById(Guid inspectionId)
     {
-        var inspection = await PropertyService.GetInspectionByIdAsync(inspectionId);
+        var inspection = await InspectionService.GetByIdAsync(inspectionId);
         if (inspection != null)
         {
             selectedInspection = inspection;
@@ -1276,7 +1280,7 @@
 
     private async Task ShowMaintenanceRequestDetailById(Guid maintenanceId)
     {
-        var maintenanceRequest = await PropertyService.GetMaintenanceRequestByIdAsync(maintenanceId);
+        var maintenanceRequest = await MaintenanceService.GetByIdAsync(maintenanceId);
         if (maintenanceRequest != null)
         {
             selectedMaintenanceRequest = maintenanceRequest;
@@ -1343,7 +1347,7 @@
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             if (organizationId.HasValue)
             {
-                var tour = await PropertyService.GetTourByIdAsync(tourId);
+                var tour = await TourService.GetByIdAsync(tourId);
                 if (tour != null)
                 {
                     CloseModal();
@@ -1373,7 +1377,7 @@
             
             if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
             {
-                await PropertyService.CancelTourAsync(tourId);
+                await TourService.CancelTourAsync(tourId);
                 ToastService.ShowSuccess("Tour cancelled successfully");
                 CloseModal();
                 await LoadEvents();
@@ -1394,7 +1398,7 @@
             
             if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
             {
-                await PropertyService.MarkTourAsNoShowAsync(tourId);
+                await TourService.MarkTourAsNoShowAsync(tourId);
                 ToastService.ShowSuccess("Tour marked as No Show");
                 CloseModal();
                 await LoadEvents();
@@ -1415,13 +1419,13 @@
             
             if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
             {
-                var request = await PropertyService.GetMaintenanceRequestByIdAsync(maintenanceRequestId);
+                var request = await MaintenanceService.GetByIdAsync(maintenanceRequestId);
                 if (request != null)
                 {
                     request.Status = ApplicationConstants.MaintenanceRequestStatuses.InProgress;
                     
                     
-                    await PropertyService.UpdateMaintenanceRequestAsync(request);
+                    await MaintenanceService.UpdateAsync(request);
                     ToastService.ShowSuccess("Work started on maintenance request");
                     
                     // Reload the maintenance request to show updated status
@@ -1445,12 +1449,13 @@
             
             if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
             {
-                var request = await PropertyService.GetMaintenanceRequestByIdAsync(maintenanceRequestId);
+                var request = await MaintenanceService.GetByIdAsync(maintenanceRequestId);
                 if (request != null)
                 {
                     request.Status = ApplicationConstants.MaintenanceRequestStatuses.Completed;
+                    request.CompletedOn = request.CompletedOn ?? DateTime.UtcNow;
                     
-                    await PropertyService.UpdateMaintenanceRequestAsync(request);
+                    await MaintenanceService.UpdateAsync(request);
                     ToastService.ShowSuccess("Maintenance request marked as complete");
                     
                     // Reload the maintenance request to show updated status
@@ -1474,12 +1479,12 @@
             
             if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
             {
-                var request = await PropertyService.GetMaintenanceRequestByIdAsync(maintenanceRequestId);
+                var request = await MaintenanceService.GetByIdAsync(maintenanceRequestId);
                 if (request != null)
                 {
                     request.Status = ApplicationConstants.MaintenanceRequestStatuses.Cancelled;
                     
-                    await PropertyService.UpdateMaintenanceRequestAsync(request);
+                    await MaintenanceService.UpdateAsync(request);
                     ToastService.ShowSuccess("Maintenance request cancelled");
                     CloseModal();
                     await LoadEvents();

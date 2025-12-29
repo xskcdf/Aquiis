@@ -10,7 +10,7 @@
 @inject UserContextService UserContext
 @inject NavigationManager Navigation
 @inject ToastService ToastService
-@inject PropertyManagementService PropertyService
+@inject TourService TourService
 
 @rendermode InteractiveServer
 
@@ -274,8 +274,8 @@
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             if (organizationId.HasValue)
             {
-                allTours = await PropertyService.GetAllToursAsync();
-                upcomingTours = await PropertyService.GetUpcomingToursAsync(7);
+                allTours = await TourService.GetAllAsync();
+                upcomingTours = await TourService.GetUpcomingToursAsync(7);
             }
         }
         catch (Exception ex)
@@ -310,7 +310,7 @@
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             if (organizationId.HasValue)
             {
-                var tour = await PropertyService.GetTourByIdAsync(tourId);
+                var tour = await TourService.GetByIdAsync(tourId);
                 if (tour != null)
                 {
                     // Navigate to the property tour checklist to complete it
@@ -340,7 +340,7 @@
             var userId = await UserContext.GetUserIdAsync();
             if (organizationId.HasValue)
             {
-                await PropertyService.CancelTourAsync(tourId);
+                await TourService.CancelTourAsync(tourId);
                 
                 ToastService.ShowSuccess("Tour cancelled");
                 await LoadData();

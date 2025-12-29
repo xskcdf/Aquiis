@@ -5,7 +5,8 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @inject NavigationManager NavigationManager
-@inject PropertyManagementService PropertyManagementService
+@inject InvoiceService InvoiceService
+@inject Application.Services.DocumentService DocumentService
 @inject UserContextService UserContextService
 @inject IJSRuntime JSRuntime
 
@@ -288,12 +289,12 @@ else
 
     private async Task LoadInvoice()
     {
-        invoice = await PropertyManagementService.GetInvoiceByIdAsync(Id);
+        invoice = await InvoiceService.GetByIdAsync(Id);
         
         // Load the document if it exists
         if (invoice?.DocumentId != null)
         {
-            document = await PropertyManagementService.GetDocumentByIdAsync(invoice.DocumentId.Value);
+            document = await DocumentService.GetByIdAsync(invoice.DocumentId.Value);
         }
     }
 
@@ -381,12 +382,12 @@ else
             };
 
             // Save to database
-            await PropertyManagementService.AddDocumentAsync(document);
+            await DocumentService.CreateAsync(document);
 
             // Update invoice with DocumentId
             invoice.DocumentId = document.Id;
             
-            await PropertyManagementService.UpdateInvoiceAsync(invoice);
+            await InvoiceService.UpdateAsync(invoice);
 
             // Reload invoice and document
             await LoadInvoice();

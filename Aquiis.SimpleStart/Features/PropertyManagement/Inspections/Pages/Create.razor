@@ -11,7 +11,9 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
 
-@inject PropertyManagementService PropertyManagementService
+@inject InspectionService InspectionService
+@inject PropertyService PropertyService
+@inject LeaseService LeaseService
 @inject UserContextService UserContext
 @inject NavigationManager NavigationManager
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
@@ -289,7 +291,7 @@ else
 
         if (PropertyId.HasValue)
         {
-            property = await PropertyManagementService.GetPropertyByIdAsync(PropertyId.Value);
+            property = await PropertyService.GetByIdAsync(PropertyId.Value);
             
             if (property == null)
             {
@@ -300,7 +302,7 @@ else
             model.PropertyId = PropertyId.Value;
             
             // Check if there's an active lease
-            var activeLeases = await PropertyManagementService.GetActiveLeasesByPropertyIdAsync(PropertyId.Value);
+            var activeLeases = await LeaseService.GetActiveLeasesByPropertyIdAsync(PropertyId.Value);
             if (activeLeases.Any())
             {
                 model.LeaseId = activeLeases.First().Id;
@@ -387,7 +389,7 @@ else
             };
 
             // Add the inspection
-            await PropertyManagementService.AddInspectionAsync(inspection);
+            await InspectionService.CreateAsync(inspection);
 
             successMessage = "Inspection saved successfully!";
             

@@ -9,7 +9,10 @@
 @using System.Net
 @using System.ComponentModel.DataAnnotations
 
-@inject PropertyManagementService PropertyService
+@inject LeaseService LeaseService
+@inject PropertyService PropertyService
+@inject RentalApplicationService RentalApplicationService
+@inject ProspectiveTenantService ProspectiveTenantService
 @inject TenantConversionService TenantConversionService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
@@ -361,7 +364,7 @@
 
     private async Task LoadLease()
     {
-        lease = await PropertyService.GetLeaseByIdAsync(LeaseId);
+        lease = await LeaseService.GetByIdAsync(LeaseId);
         
         if (lease != null)
         {
@@ -374,14 +377,14 @@
             // Find the application and prospective tenant
             if (lease.Property != null)
             {
-                var allApplications = await PropertyService.GetAllRentalApplicationsAsync();
+                var allApplications = await RentalApplicationService.GetAllAsync();
                 application = allApplications.FirstOrDefault(a => 
                     a.PropertyId == lease.PropertyId && 
                     a.Status == ApplicationConstants.ApplicationStatuses.Approved);
 
                 if (application != null)
                 {
-                    prospectiveTenant = await PropertyService.GetProspectiveTenantByIdAsync(
+                    prospectiveTenant = await ProspectiveTenantService.GetByIdAsync(
                         application.ProspectiveTenantId);
                 }
             }
@@ -466,7 +469,7 @@
             }
 
             
-            await PropertyService.UpdateLeaseAsync(lease);
+            await LeaseService.UpdateAsync(lease);
 
             // Update property status to Occupied
             if (lease.Property != null)
@@ -474,7 +477,7 @@
                 lease.Property.Status = ApplicationConstants.PropertyStatuses.Occupied;
                 lease.Property.IsAvailable = false;
                 
-                await PropertyService.UpdatePropertyAsync(lease.Property);
+                await PropertyService.UpdateAsync(lease.Property);
             }
 
             // Update application status
@@ -482,13 +485,13 @@
             {
                 application.Status = "LeaseAccepted"; // We'll add this status
                 
-                await PropertyService.UpdateRentalApplicationAsync(application);
+                await RentalApplicationService.UpdateAsync(application);
             }
 
             // Update prospect status to ConvertedToTenant
             prospectiveTenant.Status = ApplicationConstants.ProspectiveStatuses.ConvertedToTenant;
             
-            await PropertyService.UpdateProspectiveTenantAsync(prospectiveTenant);
+            await ProspectiveTenantService.UpdateAsync(prospectiveTenant);
 
             ToastService.ShowSuccess($"Lease accepted! Tenant {tenant.FullName} created successfully.");
             
@@ -523,10 +526,10 @@
             lease.Notes += $"\n\nDeclined on: {DateTime.UtcNow:MMM dd, yyyy h:mm tt UTC}\n" +
                           $"Declined by: {userId}\n" +
                           $"Reason: {(string.IsNullOrWhiteSpace(declineReason) ? "Not specified" : declineReason)}";
-            await PropertyService.UpdateLeaseAsync(lease);
+            await LeaseService.UpdateAsync(lease);
 
             // Check if there are other pending applications
-            var allApplications = await PropertyService.GetAllRentalApplicationsAsync();
+            var allApplications = await RentalApplicationService.GetAllAsync();
             var otherPendingApps = allApplications.Any(a => 
                 a.PropertyId == lease.PropertyId && 
                 (a.Status == ApplicationConstants.ApplicationStatuses.Submitted ||
@@ -541,7 +544,7 @@
                     : ApplicationConstants.PropertyStatuses.Available;
                 lease.Property.IsAvailable = !otherPendingApps;
                 
-                await PropertyService.UpdatePropertyAsync(lease.Property);
+                await PropertyService.UpdateAsync(lease.Property);
             }
 
             // Update application and prospect status
@@ -549,14 +552,14 @@
             {
                 application.Status = "LeaseDeclined";
                
-                await PropertyService.UpdateRentalApplicationAsync(application);
+                await RentalApplicationService.UpdateAsync(application);
             }
 
             if (prospectiveTenant != null)
             {
                 prospectiveTenant.Status = "LeaseDeclined";
                 
-                await PropertyService.UpdateProspectiveTenantAsync(prospectiveTenant);
+                await ProspectiveTenantService.UpdateAsync(prospectiveTenant);
             }
 
             showDeclineModal = false;

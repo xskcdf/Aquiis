@@ -4,7 +4,11 @@
 @using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 
-@inject PropertyManagementService PropertyManagementService
+@inject PropertyService PropertyService
+@inject LeaseService LeaseService
+@inject MaintenanceService MaintenanceService
+@inject InspectionService InspectionService
+@inject Application.Services.DocumentService DocumentService
 @inject ChecklistService ChecklistService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
@@ -464,13 +468,13 @@ else
             isAuthorized = false;
             return;
         }
-        property = await PropertyManagementService.GetPropertyByIdAsync(PropertyId);
+        property = await PropertyService.GetByIdAsync(PropertyId);
         if (property == null)
         {
             isAuthorized = false;
             return;
         }
-        activeLeases = await PropertyManagementService.GetActiveLeasesByPropertyIdAsync(PropertyId);
+        activeLeases = await LeaseService.GetActiveLeasesByPropertyIdAsync(PropertyId);
 
         Lease? lease = activeLeases.FirstOrDefault();
         if (lease != null)
@@ -479,17 +483,15 @@ else
         }
         
         // Load documents for this property
-        var allDocuments = await PropertyManagementService.GetDocumentsAsync();
-        propertyDocuments = allDocuments
-            .Where(d => d.PropertyId == PropertyId && !d.IsDeleted)
-            .OrderByDescending(d => d.CreatedOn)
+            propertyDocuments = await DocumentService.GetDocumentsByPropertyIdAsync(PropertyId);
+            propertyDocuments = propertyDocuments
+                .Where(d => !d.IsDeleted)
             .ToList();
         
         // Load maintenance requests for this property
-        maintenanceRequests = await PropertyManagementService.GetMaintenanceRequestsByPropertyAsync(PropertyId);
-        
+            maintenanceRequests = await MaintenanceService.GetMaintenanceRequestsByPropertyAsync(PropertyId);
         // Load inspections for this property
-        propertyInspections = await PropertyManagementService.GetInspectionsByPropertyIdAsync(PropertyId);
+        propertyInspections = await InspectionService.GetByPropertyIdAsync(PropertyId);
         
         // Load checklists for this property
         var allChecklists = await ChecklistService.GetChecklistsAsync(includeArchived: false);

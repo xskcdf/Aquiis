@@ -13,6 +13,16 @@ namespace Aquiis.SimpleStart.Infrastructure.Data
         {
         }
 
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            base.OnConfiguring(optionsBuilder);
+            
+            // Suppress pending model changes warning - bidirectional Document-Invoice/Payment relationship issue
+            // TODO: Fix the Document-Invoice and Document-Payment bidirectional relationships properly
+            optionsBuilder.ConfigureWarnings(warnings =>
+                warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+        }
+
         public DbSet<Property> Properties { get; set; }
         public DbSet<Lease> Leases { get; set; }
         public DbSet<LeaseOffer> LeaseOffers { get; set; }

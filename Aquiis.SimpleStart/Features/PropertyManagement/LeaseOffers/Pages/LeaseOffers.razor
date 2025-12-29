@@ -9,7 +9,8 @@
 
 @inject NavigationManager Navigation
 @inject UserContextService UserContext
-@inject PropertyManagementService PropertyService
+@inject RentalApplicationService RentalApplicationService
+@inject LeaseOfferService LeaseOfferService
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
@@ -128,11 +129,11 @@ else
         var allOffers = new List<LeaseOffer>();
         
         // We'll need to get offers from all applications
-        var applications = await PropertyService.GetAllRentalApplicationsAsync();
+        var applications = await RentalApplicationService.GetAllAsync();
         
         foreach (var app in applications)
         {
-            var offer = await PropertyService.GetLeaseOfferByApplicationIdAsync(app.Id);
+            var offer = await LeaseOfferService.GetLeaseOfferByApplicationIdAsync(app.Id);
             if (offer != null && !offer.IsDeleted)
             {
                 allOffers.Add(offer);

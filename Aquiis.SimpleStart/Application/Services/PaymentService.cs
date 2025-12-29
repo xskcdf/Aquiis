@@ -85,7 +85,8 @@ namespace Aquiis.SimpleStart.Application.Services
             }
 
             // Validate payment method
-            var validMethods = new[] { "Cash", "Check", "CreditCard", "BankTransfer", "ACH", "Wire", "MoneyOrder", "Other" };
+            var validMethods = ApplicationConstants.PaymentMethods.AllPaymentMethods;
+
             if (!string.IsNullOrWhiteSpace(entity.PaymentMethod) && !validMethods.Contains(entity.PaymentMethod))
             {
                 errors.Add($"Payment method must be one of: {string.Join(", ", validMethods)}");

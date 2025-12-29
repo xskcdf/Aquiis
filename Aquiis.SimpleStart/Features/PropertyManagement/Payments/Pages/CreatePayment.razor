@@ -6,7 +6,8 @@
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Http.HttpResults
 @inject NavigationManager Navigation
-@inject PropertyManagementService PropertyManagementService
+@inject PaymentService PaymentService
+@inject InvoiceService InvoiceService
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
@@ -210,7 +211,7 @@
 
         
             // Get all invoices and filter to those with outstanding balance
-            List<Invoice>? allInvoices = await PropertyManagementService.GetInvoicesAsync();
+            List<Invoice>? allInvoices = await InvoiceService.GetAllAsync();
             invoices = allInvoices
                 .Where(i => i.BalanceDue > 0 && i.Status != "Cancelled")
                 .OrderByDescending(i => i.DueOn)
@@ -254,7 +255,7 @@
             PaymentMethod = paymentModel.PaymentMethod,
             Notes = paymentModel.Notes!
         };
-        await PropertyManagementService.AddPaymentAsync(payment);
+        await PaymentService.CreateAsync(payment);
         Navigation.NavigateTo("/propertymanagement/payments");
     }
 

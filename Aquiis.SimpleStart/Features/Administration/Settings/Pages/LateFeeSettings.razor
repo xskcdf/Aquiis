@@ -8,7 +8,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
 
-@inject PropertyManagementService PropertyService
+@inject OrganizationService OrganizationService
 @inject UserContextService UserContext
 @inject ToastService ToastService
 @inject NavigationManager Navigation
@@ -287,7 +287,7 @@
             userRole = await UserContext.GetCurrentOrganizationRoleAsync() ?? "User";
             canEdit = userRole != "User"; // User role is read-only
             
-            var settings = await PropertyService.GetOrganizationSettingsAsync();
+            var settings = await OrganizationService.GetOrganizationSettingsAsync();
             
             if (settings != null)
             {
@@ -336,7 +336,7 @@
             isSaving = true;
 
             // Get the existing entity
-            var settings = await PropertyService.GetOrganizationSettingsAsync();
+            var settings = await OrganizationService.GetOrganizationSettingsAsync();
             
             if (settings == null)
             {
@@ -355,7 +355,7 @@
             settings.PaymentReminderDaysBefore = viewModel.PaymentReminderDaysBefore;
             settings.TourNoShowGracePeriodHours = viewModel.TourNoShowGracePeriodHours;
 
-            await PropertyService.UpdateOrganizationSettingsAsync(settings);
+            await OrganizationService.UpdateOrganizationSettingsAsync(settings);
 
             ToastService.ShowSuccess("Late fee settings saved successfully!");
         }

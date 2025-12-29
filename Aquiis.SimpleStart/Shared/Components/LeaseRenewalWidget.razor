@@ -1,6 +1,6 @@
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Core.Entities
-@inject PropertyManagementService PropertyManagementService
+@inject LeaseService LeaseService
 @rendermode InteractiveServer
 
 <div class="card">
@@ -117,7 +117,7 @@
         try
         {
             isLoading = true;
-            var allLeases = await PropertyManagementService.GetLeasesAsync();
+            var allLeases = await LeaseService.GetAllAsync();
             var today = DateTime.Today;
 
             expiringLeases = allLeases

@@ -11,7 +11,10 @@
 @using System.ComponentModel.DataAnnotations
 
 @inject NavigationManager Navigation
-@inject PropertyManagementService PropertyManagementService
+@inject OrganizationService OrganizationService
+@inject LeaseService LeaseService
+@inject PropertyService PropertyService
+@inject TenantService TenantService
 
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
@@ -219,14 +222,14 @@
             return;
 
         // Load available properties (only available ones)
-        List<Property>? allProperties = await PropertyManagementService.GetPropertiesAsync();
+        List<Property>? allProperties = await PropertyService.GetAllAsync();
 
         availableProperties = allProperties
             .Where(p => p.IsAvailable)
             .ToList() ?? new List<Property>();
 
         // Load user's tenants
-        userTenants = await PropertyManagementService.GetTenantsAsync();
+        userTenants = await TenantService.GetAllAsync();
         userTenants = userTenants
             .Where(t => t.IsActive)
             .ToList();
@@ -245,7 +248,7 @@
             if (selectedProperty != null)
             {
                 // Get organization settings for security deposit calculation
-                var settings = await PropertyManagementService.GetOrganizationSettingsAsync();
+                var settings = await OrganizationService.GetOrganizationSettingsAsync();
                 var depositMultiplier = settings?.AutoCalculateSecurityDeposit == true 
                     ? settings.SecurityDepositMultiplier 
                     : 1.0m;
@@ -279,8 +282,8 @@
             }
 
             // Verify property and tenant belong to user
-            var property = await PropertyManagementService.GetPropertyByIdAsync(leaseModel.PropertyId);
-            var tenant = await PropertyManagementService.GetTenantByIdAsync(leaseModel.TenantId);
+            var property = await PropertyService.GetByIdAsync(leaseModel.PropertyId);
+            var tenant = await TenantService.GetByIdAsync(leaseModel.TenantId);
 
             if (property == null)
             {
@@ -308,7 +311,7 @@
                 Notes = leaseModel.Notes
             };
 
-            await PropertyManagementService.AddLeaseAsync(lease);
+            await LeaseService.CreateAsync(lease);
 
             // Mark property as unavailable if lease is active
             if (leaseModel.Status == ApplicationConstants.LeaseStatuses.Active)
@@ -316,7 +319,7 @@
                 property.IsAvailable = false;
             }
 
-            await PropertyManagementService.UpdatePropertyAsync(property);
+            await PropertyService.UpdateAsync(property);
 
             Navigation.NavigateTo("/propertymanagement/leases");
         }

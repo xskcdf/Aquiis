@@ -8,7 +8,8 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
 @inject NavigationManager NavigationManager
-@inject PropertyManagementService PropertyManagementService
+@inject InvoiceService InvoiceService
+@inject LeaseService LeaseService
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
@@ -245,7 +246,7 @@ else
 
     private async Task LoadInvoice()
     {
-        invoice = await PropertyManagementService.GetInvoiceByIdAsync(Id);
+        invoice = await InvoiceService.GetByIdAsync(Id);
         
         if (invoice != null)
         {
@@ -272,7 +273,7 @@ else
 
         if (!string.IsNullOrEmpty(userId))
         {
-            leases = await PropertyManagementService.GetLeasesAsync();
+            leases = await LeaseService.GetAllAsync();
         }
     }
 
@@ -308,7 +309,7 @@ else
             invoice.PaidOn = invoiceModel.PaidOn;
             invoice.Notes = invoiceModel.Notes ?? string.Empty;
 
-            await PropertyManagementService.UpdateInvoiceAsync(invoice);
+            await InvoiceService.UpdateAsync(invoice);
 
             successMessage = "Invoice updated successfully!";
         }

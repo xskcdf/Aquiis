@@ -9,7 +9,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
 
-@inject PropertyManagementService PropertyService
+@inject OrganizationService OrganizationService
 @inject UserContextService UserContext
 @inject ToastService ToastService
 @inject NavigationManager Navigation
@@ -394,7 +394,7 @@
 
     private async Task LoadSettings()
     {
-        settings = await PropertyService.GetOrganizationSettingsAsync();
+        settings = await OrganizationService.GetOrganizationSettingsAsync();
 
         if (settings != null)
         {
@@ -444,7 +444,7 @@
                 CreatedBy = "System"
             };
 
-            await PropertyService.UpdateOrganizationSettingsAsync(settings);
+            await OrganizationService.UpdateOrganizationSettingsAsync(settings);
             successMessage = "Default settings created successfully!";
             await LoadSettings();
         }
@@ -483,7 +483,7 @@
             settings.TourNoShowGracePeriodHours = settingsModel.TourNoShowGracePeriodHours;
             settings.LastModifiedOn = DateTime.UtcNow;
 
-            await PropertyService.UpdateOrganizationSettingsAsync(settings);
+            await OrganizationService.UpdateOrganizationSettingsAsync(settings);
             
             successMessage = "Settings saved successfully!";
             ToastService.ShowSuccess("Organization settings updated successfully.");

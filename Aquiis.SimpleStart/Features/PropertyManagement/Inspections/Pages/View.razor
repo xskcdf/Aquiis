@@ -8,7 +8,8 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components
 
-@inject PropertyManagementService PropertyManagementService
+@inject InspectionService InspectionService
+@inject Application.Services.DocumentService DocumentService
 @inject UserContextService UserContext
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
@@ -232,12 +233,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        inspection = await PropertyManagementService.GetInspectionByIdAsync(InspectionId);
+        inspection = await InspectionService.GetByIdAsync(InspectionId);
         
         // Load the document if it exists
         if (inspection?.DocumentId != null)
         {
-            document = await PropertyManagementService.GetDocumentByIdAsync(inspection.DocumentId.Value);
+            document = await DocumentService.GetByIdAsync(inspection.DocumentId.Value);
         }
     }
 
@@ -365,11 +366,11 @@ else
                 Description = $"{inspection.InspectionType} Inspection - {inspection.CompletedOn:MMM dd, yyyy}"
             };
 
-            await PropertyManagementService.AddDocumentAsync(newDocument);
+            await DocumentService.CreateAsync(newDocument);
 
             // Link the document to the inspection
             inspection.DocumentId = newDocument.Id;
-            await PropertyManagementService.UpdateInspectionAsync(inspection);
+            await InspectionService.UpdateAsync(inspection);
 
             document = newDocument;
             successMessage = "Inspection PDF generated and saved successfully!";

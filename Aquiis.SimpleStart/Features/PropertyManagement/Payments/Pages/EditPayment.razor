@@ -5,7 +5,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
 @inject NavigationManager Navigation
-@inject PropertyManagementService PropertyManagementService
+@inject PaymentService PaymentService
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
@@ -225,7 +225,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        payment = await PropertyManagementService.GetPaymentByIdAsync(PaymentId);
+        payment = await PaymentService.GetByIdAsync(PaymentId);
 
         if (payment == null)
         {
@@ -251,7 +251,7 @@ else
         payment.PaymentMethod = paymentModel.PaymentMethod;
         payment.Notes = paymentModel.Notes!;
 
-        await PropertyManagementService.UpdatePaymentAsync(payment);
+        await PaymentService.UpdateAsync(payment);
         Navigation.NavigateTo("/propertymanagement/payments");
     }
 

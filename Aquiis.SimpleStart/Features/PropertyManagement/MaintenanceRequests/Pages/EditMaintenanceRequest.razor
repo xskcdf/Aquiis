@@ -1,5 +1,7 @@
 @page "/propertymanagement/maintenance/edit/{Id:guid}"
-@inject PropertyManagementService PropertyManagementService
+@inject MaintenanceService MaintenanceService
+@inject PropertyService PropertyService
+@inject LeaseService LeaseService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
@@ -237,8 +239,8 @@
         isLoading = true;
         try
         {
-            maintenanceRequest = await PropertyManagementService.GetMaintenanceRequestByIdAsync(Id);
-            properties = await PropertyManagementService.GetPropertiesAsync();
+            maintenanceRequest = await MaintenanceService.GetByIdAsync(Id);
+            properties = await PropertyService.GetAllAsync();
             
             if (maintenanceRequest?.PropertyId != null)
             {
@@ -265,7 +267,7 @@
 
     private async Task LoadLeasesForProperty(Guid propertyId)
     {
-        var allLeases = await PropertyManagementService.GetLeasesByPropertyIdAsync(propertyId);
+        var allLeases = await LeaseService.GetLeasesByPropertyIdAsync(propertyId);
         availableLeases = allLeases.Where(l => l.Status == "Active" || l.Status == "Pending").ToList();
     }
 
@@ -276,7 +278,7 @@
         isSaving = true;
         try
         {
-            await PropertyManagementService.UpdateMaintenanceRequestAsync(maintenanceRequest);
+            await MaintenanceService.UpdateAsync(maintenanceRequest);
             NavigationManager.NavigateTo($"/propertymanagement/maintenance/view/{Id}");
         }
         finally
@@ -292,7 +294,7 @@
         var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this maintenance request?");
         if (confirmed)
         {
-            await PropertyManagementService.DeleteMaintenanceRequestAsync(Id);
+            await MaintenanceService.DeleteAsync(Id);
             NavigationManager.NavigateTo("/propertymanagement/maintenance");
         }
     }

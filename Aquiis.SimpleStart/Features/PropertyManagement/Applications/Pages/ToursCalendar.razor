@@ -10,7 +10,7 @@
 @inject UserContextService UserContext
 @inject NavigationManager Navigation
 @inject ToastService ToastService
-@inject PropertyManagementService PropertyService
+@inject TourService TourService
 
 @rendermode InteractiveServer
 
@@ -209,7 +209,7 @@
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             if (organizationId.HasValue)
             {
-                allTours = await PropertyService.GetAllToursAsync();
+                allTours = await TourService.GetAllAsync();
             }
         }
         catch (Exception ex)
@@ -569,7 +569,7 @@
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             if (organizationId.HasValue)
             {
-                var tour = await PropertyService.GetTourByIdAsync(tourId);
+                var tour = await TourService.GetByIdAsync(tourId);
                 if (tour != null)
                 {
                     CloseModal();
@@ -599,7 +599,7 @@
             
             if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
             {
-                await PropertyService.CancelTourAsync(tourId);
+                await TourService.CancelTourAsync(tourId);
                 ToastService.ShowSuccess("Tour cancelled successfully");
                 CloseModal();
                 await LoadTours();

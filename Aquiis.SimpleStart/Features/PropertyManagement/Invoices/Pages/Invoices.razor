@@ -5,7 +5,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Forms
 @inject NavigationManager Navigation
-@inject PropertyManagementService PropertyManagementService
+@inject InvoiceService InvoiceService
 @inject IJSRuntime JSRuntime
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
@@ -412,7 +412,7 @@ else
 
         if (!string.IsNullOrEmpty(userId))
         {
-            invoices = await PropertyManagementService.GetInvoicesAsync();
+            invoices = await InvoiceService.GetAllAsync();
             if (LeaseId.HasValue)
             {
                 invoices = invoices.Where(i => i.LeaseId == LeaseId.Value).ToList();
@@ -585,7 +585,7 @@ else
     {
         if (await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete invoice {invoice.InvoiceNumber}?"))
         {
-            await PropertyManagementService.DeleteInvoiceAsync(invoice);
+            await InvoiceService.DeleteAsync(invoice.Id);
             await LoadInvoices();
         }
     }

@@ -9,7 +9,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
 
-@inject PropertyManagementService PropertyService
+@inject RentalApplicationService RentalApplicationService
 @inject ApplicationWorkflowService WorkflowService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
@@ -292,7 +292,7 @@
 
     private async Task LoadApplication()
     {
-        application = await PropertyService.GetRentalApplicationByIdAsync(ApplicationId);
+        application = await RentalApplicationService.GetRentalApplicationWithRelationsAsync(ApplicationId);
         
         if (application != null)
         {

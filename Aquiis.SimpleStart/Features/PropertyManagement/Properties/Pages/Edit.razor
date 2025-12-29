@@ -12,7 +12,7 @@
 
 @rendermode InteractiveServer
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
-@inject PropertyManagementService PropertyManagementService
+@inject PropertyService PropertyService
 @inject NavigationManager NavigationManager
 
 @if (property == null)
@@ -256,7 +256,7 @@ else
             return;
         }
 
-        property = await PropertyManagementService.GetPropertyByIdAsync(PropertyId);
+        property = await PropertyService.GetByIdAsync(PropertyId);
 
         if (property == null)
         {
@@ -287,7 +287,7 @@ else
     {
         if (property != null)
         {
-            await PropertyManagementService.UpdatePropertyAsync(property);
+            await PropertyService.UpdateAsync(property);
             NavigationManager.NavigateTo("/propertymanagement/properties");
         }
     }
@@ -296,7 +296,7 @@ else
     {
         if (property != null)
         {
-            await PropertyManagementService.DeletePropertyAsync(property.Id);
+            await PropertyService.DeleteAsync(property.Id);
             NavigationManager.NavigateTo("/propertymanagement/properties");
         }
     }
@@ -334,7 +334,7 @@ else
             property.Status = propertyModel.Status;
             property.IsAvailable = propertyModel.IsAvailable;
 
-            await PropertyManagementService.UpdatePropertyAsync(property);
+            await PropertyService.UpdateAsync(property);
             } catch (Exception ex)
             {
                 errorMessage = $"An error occurred while updating the property: {ex.Message}";

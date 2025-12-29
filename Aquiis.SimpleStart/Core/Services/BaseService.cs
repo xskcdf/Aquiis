@@ -139,6 +139,15 @@ namespace Aquiis.SimpleStart.Core.Services
 
                 var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
+                // Set organization ID BEFORE validation so validation rules can check it
+                if (HasOrganizationIdProperty(entity) && organizationId.HasValue)
+                {
+                    SetOrganizationId(entity, organizationId.Value);
+                }
+
+                // Call hook to set default values
+                entity = await SetCreateDefaultsAsync(entity);
+
                 // Validate entity
                 await ValidateEntityAsync(entity);
 
@@ -151,16 +160,13 @@ namespace Aquiis.SimpleStart.Core.Services
                 // Set audit fields
                 SetAuditFieldsForCreate(entity, userId);
 
-                // Set organization ID if property exists
-                if (HasOrganizationIdProperty(entity) && organizationId.HasValue)
-                {
-                    SetOrganizationId(entity, organizationId.Value);
-                }
-
                 _dbSet.Add(entity);
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation($"{typeof(TEntity).Name} created: {entity.Id} by user {userId}");
+
+                // Call hook for post-create operations
+                await AfterCreateAsync(entity);
 
                 return entity;
             }
@@ -362,6 +368,25 @@ namespace Aquiis.SimpleStart.Core.Services
         {
             var property = typeof(TEntity).GetProperty("OrganizationId");
             property?.SetValue(entity, organizationId);
+        }
+
+        /// <summary>
+        /// Hook method called before creating entity to set default values.
+        /// Override in derived services to customize default behavior.
+        /// </summary>
+        protected virtual async Task<TEntity> SetCreateDefaultsAsync(TEntity entity)
+        {
+            await Task.CompletedTask;
+            return entity;
+        }
+
+        /// <summary>
+        /// Hook method called after creating entity for post-creation operations.
+        /// Override in derived services to handle side effects like updating related entities.
+        /// </summary>
+        protected virtual async Task AfterCreateAsync(TEntity entity)
+        {
+            await Task.CompletedTask;
         }
 
         #endregion

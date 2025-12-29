@@ -9,7 +9,11 @@
 @using Aquiis.SimpleStart.Shared.Components
 
 @inject NavigationManager NavigationManager
-@inject PropertyManagementService PropertyManagementService
+@inject PropertyService PropertyService
+@inject TenantService TenantService
+@inject LeaseService LeaseService
+@inject MaintenanceService MaintenanceService
+@inject InvoiceService InvoiceService
 @inject UserContextService UserContextService
 @inject ApplicationDbContext DbContext
 
@@ -379,16 +383,16 @@
                 return;
 
             // Load summary counts
-            var allProperties = await PropertyManagementService.GetPropertiesAsync();
+            var allProperties = await PropertyService.GetAllAsync();
             properties = allProperties.Where(p => !p.IsDeleted).ToList();
             totalProperties = properties.Count;
             availableProperties = properties.Count(p => p.IsAvailable);
     
-            var allTenants = await PropertyManagementService.GetTenantsAsync();
+            var allTenants = await TenantService.GetAllAsync();
             tenants = allTenants.Where(t => !t.IsDeleted).ToList();
             totalTenants = tenants.Count;
 
-            var allLeases = await PropertyManagementService.GetLeasesAsync();
+            var allLeases = await LeaseService.GetAllAsync();
             leases = allLeases.Where(l => !l.IsDeleted).ToList();
             activeLeases = leases.Count(l => l.Status == "Active");
 
@@ -406,7 +410,7 @@
                 .ToList();
 
             // Load open maintenance requests
-            var allMaintenanceRequests = await PropertyManagementService.GetMaintenanceRequestsAsync();
+            var allMaintenanceRequests = await MaintenanceService.GetAllAsync();
             openMaintenanceRequests = allMaintenanceRequests
                 .Where(m => m.OrganizationId == organizationId && m.Status != "Completed" && m.Status != "Cancelled")
                 .OrderByDescending(m => m.Priority == "Urgent" ? 1 : m.Priority == "High" ? 2 : 3)
@@ -415,7 +419,7 @@
                 .ToList();
 
             // Load recent invoices
-            var allInvoices = await PropertyManagementService.GetInvoicesAsync();
+            var allInvoices = await InvoiceService.GetAllAsync();
             recentInvoices = allInvoices
                 .Where(i => i.Status != "Paid" && i.Status != "Cancelled")
                 .OrderByDescending(i => i.InvoicedOn)

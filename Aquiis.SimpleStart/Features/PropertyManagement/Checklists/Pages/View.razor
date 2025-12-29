@@ -4,7 +4,6 @@
 @using Aquiis.SimpleStart.Features.PropertyManagement
 @using Aquiis.SimpleStart.Core.Constants
 @using Aquiis.SimpleStart.Application.Services
-@using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components
@@ -12,11 +11,10 @@
 @using Microsoft.JSInterop
 
 @inject ChecklistService ChecklistService
-@inject PropertyManagementService PropertyManagementService
 @inject UserContextService UserContext
 @inject NavigationManager NavigationManager
 @inject ChecklistPdfGenerator PdfGenerator
-@inject Aquiis.SimpleStart.Shared.Services.DocumentService DocumentService
+@inject Application.Services.DocumentService DocumentService
 @inject IJSRuntime JSRuntime
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
@@ -456,7 +454,7 @@ else
             isGeneratingPdf = true;
             errorMessage = null;
 
-            var document = await DocumentService.GetDocumentByIdAsync(checklist.DocumentId.Value);
+            var document = await DocumentService.GetByIdAsync(checklist.DocumentId.Value);
             if (document != null)
             {
                 var filename = $"Checklist_{checklist.Name.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf";
@@ -486,7 +484,7 @@ else
             isGeneratingPdf = true;
             errorMessage = null;
 
-            var document = await DocumentService.GetDocumentByIdAsync(checklist.DocumentId.Value);
+            var document = await DocumentService.GetByIdAsync(checklist.DocumentId.Value);
             if (document != null)
             {
                 await JSRuntime.InvokeVoidAsync("viewFile", Convert.ToBase64String(document.FileData), document.FileType);
@@ -541,7 +539,7 @@ else
             };
 
             // Save document to database
-            var savedDocument = await DocumentService.UploadDocumentAsync(document);
+            var savedDocument = await DocumentService.CreateAsync(document);
 
             // Update checklist with document reference
             checklist.DocumentId = savedDocument.Id;

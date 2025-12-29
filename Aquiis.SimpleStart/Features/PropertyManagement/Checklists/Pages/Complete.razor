@@ -8,7 +8,8 @@
 @using Microsoft.AspNetCore.Components
 
 @inject ChecklistService ChecklistService
-@inject PropertyManagementService PropertyManagementService
+@inject PropertyService PropertyService
+@inject LeaseService LeaseService
 @inject UserContextService UserContext
 @inject ToastService ToastService
 @inject NavigationManager NavigationManager
@@ -421,7 +422,7 @@ else
     {
         try
         {
-            properties = await PropertyManagementService.GetPropertiesAsync();
+            properties = await PropertyService.GetAllAsync();
         }
         catch (Exception ex)
         {
@@ -461,7 +462,7 @@ else
     {
         if (selectedPropertyId != Guid.Empty)
         {
-            leases = await PropertyManagementService.GetCurrentAndUpcomingLeasesByPropertyIdAsync(selectedPropertyId);
+            leases = await LeaseService.GetCurrentAndUpcomingLeasesByPropertyIdAsync(selectedPropertyId);
         }
         else
         {

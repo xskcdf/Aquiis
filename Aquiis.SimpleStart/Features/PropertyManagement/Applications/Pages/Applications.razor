@@ -9,7 +9,7 @@
 
 @inject NavigationManager Navigation
 @inject UserContextService UserContext
-@inject PropertyManagementService PropertyService
+@inject RentalApplicationService RentalApplicationService
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
@@ -208,7 +208,7 @@
 
     private async Task LoadApplications()
     {
-        applications = await PropertyService.GetAllRentalApplicationsAsync();
+        applications = await RentalApplicationService.GetAllAsync();
         
         pendingApplications = applications.Where(a => 
             a.Status == ApplicationConstants.ApplicationStatuses.Submitted ||

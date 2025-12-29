@@ -3,7 +3,7 @@
 @using Aquiis.SimpleStart.Core.Constants
 @using Microsoft.AspNetCore.Authorization
 @inject NavigationManager Navigation
-@inject PropertyManagementService PropertyManagementService
+@inject PropertyService PropertyService
 @inject IJSRuntime JSRuntime
 @inject UserContextService UserContext
 
@@ -383,7 +383,7 @@ else
             return;
         }
 
-        var allProperties = await PropertyManagementService.GetPropertiesAsync();
+        var allProperties = await PropertyService.GetAllAsync();
         properties = allProperties.Where(p=>p.IsDeleted==false).ToList();
     }
 
@@ -442,7 +442,7 @@ else
         if (string.IsNullOrEmpty(userId))
             return;
 
-        await PropertyManagementService.DeletePropertyAsync(propertyId);
+        await PropertyService.DeleteAsync(propertyId);
 
         // Add confirmation dialog in a real application
         await LoadProperties();

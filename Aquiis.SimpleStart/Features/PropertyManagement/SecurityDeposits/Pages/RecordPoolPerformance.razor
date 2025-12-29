@@ -6,7 +6,7 @@
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
 @using Microsoft.AspNetCore.Authorization
 @inject SecurityDepositService SecurityDepositService
-@inject PropertyManagementService PropertyManagementService
+@inject OrganizationService OrganizationService
 @inject NavigationManager NavigationManager
 @inject ToastService ToastService
 @rendermode InteractiveServer
@@ -267,7 +267,7 @@
             performanceModel.Year = Year.Value;
 
             // Load organization settings
-            organizationSettings = await PropertyManagementService.GetOrganizationSettingsAsync();
+            organizationSettings = await OrganizationService.GetOrganizationSettingsAsync();
 
             // Check if pool already exists for this year
             existingPool = await SecurityDepositService.GetInvestmentPoolByYearAsync(Year.Value);

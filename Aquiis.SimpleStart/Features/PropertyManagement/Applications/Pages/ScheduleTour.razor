@@ -8,7 +8,9 @@
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authorization
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
-@inject PropertyManagementService PropertyService
+@inject ProspectiveTenantService ProspectiveTenantService
+@inject PropertyService PropertyService
+@inject TourService TourService
 @inject ChecklistService ChecklistService
 @inject UserContextService UserContext
 @inject NavigationManager Navigation
@@ -204,12 +206,12 @@
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             if (organizationId.HasValue)
             {
-                prospect = await PropertyService.GetProspectiveTenantByIdAsync(ProspectId);
+                prospect = await ProspectiveTenantService.GetByIdAsync(ProspectId);
                 
                 if (prospect != null)
                 {
                     // Load available properties (Available status only)
-                    var allProperties = await PropertyService.GetPropertiesAsync();
+                    var allProperties = await PropertyService.GetAllAsync();
                     availableProperties = allProperties
                         .Where(p => p.Status == ApplicationConstants.PropertyStatuses.Available)
                         .ToList();
@@ -223,7 +225,7 @@
                         .ToList();
 
                     // Load existing tours for this prospect
-                    upcomingTours = await PropertyService.GetToursByProspectiveIdAsync(ProspectId);
+                    upcomingTours = await TourService.GetByProspectiveIdAsync(ProspectId);
                     upcomingTours = upcomingTours
                         .Where(s => s.ScheduledOn >= DateTime.Now && s.Status == ApplicationConstants.TourStatuses.Scheduled)
                         .OrderBy(s => s.ScheduledOn)
@@ -287,7 +289,7 @@
                 CreatedBy = userId
             };
             
-            await PropertyService.CreateTourAsync(tour, newTour.ChecklistTemplateId);
+            await TourService.CreateAsync(tour, newTour.ChecklistTemplateId);
             
             ToastService.ShowSuccess("Tour scheduled successfully");
             Navigation.NavigateTo("/PropertyManagement/Tours");

@@ -5,7 +5,8 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager Navigation
-@inject PropertyManagementService PropertyManagementService
+@inject PaymentService PaymentService
+@inject Application.Services.DocumentService DocumentService
 @inject UserContextService UserContextService
 @inject IJSRuntime JSRuntime
 
@@ -317,7 +318,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        payment = await PropertyManagementService.GetPaymentByIdAsync(PaymentId);
+        payment = await PaymentService.GetByIdAsync(PaymentId);
         
         if (payment == null)
         {
@@ -326,7 +327,7 @@ else
         else if (payment.DocumentId != null)
         {
             // Load the document if it exists
-            document = await PropertyManagementService.GetDocumentByIdAsync(payment.DocumentId.Value);
+            document = await DocumentService.GetByIdAsync(payment.DocumentId.Value);
         }
     }
 
@@ -390,12 +391,12 @@ else
             };
 
             // Save to database
-            await PropertyManagementService.AddDocumentAsync(document);
+            await DocumentService.CreateAsync(document);
 
             // Update payment with DocumentId
             payment.DocumentId = document.Id;
            
-            await PropertyManagementService.UpdatePaymentAsync(payment);
+            await PaymentService.UpdateAsync(payment);
 
             // Reload payment and document
             this.document = document;

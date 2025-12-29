@@ -4,7 +4,7 @@
 @using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 
-@inject PropertyManagementService PropertyManagementService
+@inject PropertyService PropertyService
 @inject NavigationManager NavigationManager
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
@@ -275,9 +275,9 @@ else
         isLoading = true;
         try
         {
-            allProperties = await PropertyManagementService.GetPropertiesAsync();
-            overdueProperties = await PropertyManagementService.GetPropertiesWithOverdueInspectionsAsync();
-            dueSoonProperties = await PropertyManagementService.GetPropertiesWithInspectionsDueSoonAsync(30);
+            allProperties = await PropertyService.GetAllAsync();
+            overdueProperties = await PropertyService.GetPropertiesWithOverdueInspectionsAsync();
+            dueSoonProperties = await PropertyService.GetPropertiesWithInspectionsDueSoonAsync(30);
             
             scheduledProperties = allProperties
                 .Where(p => p.NextRoutineInspectionDueDate.HasValue && 

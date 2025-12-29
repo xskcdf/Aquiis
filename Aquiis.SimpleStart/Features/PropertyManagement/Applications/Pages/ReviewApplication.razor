@@ -9,7 +9,9 @@
 @using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
 
-@inject PropertyManagementService PropertyService
+@inject RentalApplicationService RentalApplicationService
+@inject ScreeningService ScreeningService
+@inject LeaseOfferService LeaseOfferService
 @inject ApplicationWorkflowService WorkflowService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
@@ -815,14 +817,14 @@
 
     private async Task LoadApplication()
     {
-        application = await PropertyService.GetRentalApplicationByIdAsync(ApplicationId);
+        application = await RentalApplicationService.GetRentalApplicationWithRelationsAsync(ApplicationId);
         
         if (application != null)
         {
-            screening = await PropertyService.GetScreeningByApplicationIdAsync(ApplicationId);
+            screening = await ScreeningService.GetScreeningByApplicationIdAsync(ApplicationId);
             
             // Check if a lease offer already exists for this application
-            leaseOffer = await PropertyService.GetLeaseOfferByApplicationIdAsync(application.Id);
+            leaseOffer = await LeaseOfferService.GetLeaseOfferByApplicationIdAsync(application.Id);
             hasLeaseOffer = leaseOffer != null && !leaseOffer.IsDeleted;
         }
     }
@@ -975,7 +977,7 @@
                 application.Status = ApplicationConstants.ApplicationStatuses.UnderReview;
             }
 
-            await PropertyService.UpdateRentalApplicationAsync(application);
+            await RentalApplicationService.UpdateAsync(application);
 
             var successMsg = $"Application fee of {application.ApplicationFee:C} collected via {feePaymentModel.PaymentMethod}";
             if (!string.IsNullOrEmpty(feePaymentModel.ReferenceNumber))
@@ -1028,7 +1030,7 @@
             // Update overall result
             await UpdateOverallScreeningResult(screening);
 
-            await PropertyService.UpdateScreeningAsync(screening);
+            await ScreeningService.UpdateAsync(screening);
 
             ToastService.ShowSuccess($"Background check marked as {(backgroundCheckDisposition ? "PASSED" : "FAILED")}");
             showBackgroundCheckModal = false;
@@ -1061,7 +1063,7 @@
             // Update overall result
             await UpdateOverallScreeningResult(screening);
 
-            await PropertyService.UpdateScreeningAsync(screening);
+            await ScreeningService.UpdateAsync(screening);
 
             ToastService.ShowSuccess($"Credit check marked as {(creditCheckDisposition ? "PASSED" : "FAILED")}");
             showCreditCheckModal = false;

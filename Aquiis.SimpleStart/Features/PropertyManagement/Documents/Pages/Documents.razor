@@ -6,7 +6,9 @@
 @using Microsoft.AspNetCore.Components.Authorization
 
 @inject IJSRuntime JSRuntime
-@inject PropertyManagementService PropertyManagementService
+@inject Application.Services.DocumentService DocumentService
+@inject LeaseService LeaseService
+@inject PropertyService PropertyService
 @inject NavigationManager Navigation
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
@@ -382,7 +384,7 @@ else
             }
 
             // Get all documents from last 30 days for the user
-            var allUserDocs = await PropertyManagementService.GetDocumentsAsync();
+            var allUserDocs = await DocumentService.GetAllAsync();
             var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
             allDocuments = allUserDocs
                 .Where(d => d.CreatedOn >= thirtyDaysAgo && !d.IsDeleted)
@@ -390,10 +392,10 @@ else
                 .ToList();
 
             // Load all leases and properties
-            var allLeases = await PropertyManagementService.GetLeasesAsync();
+            var allLeases = await LeaseService.GetAllAsync();
             leases = allLeases.Where(l => !l.IsDeleted).ToList();
             
-            var allProperties = await PropertyManagementService.GetPropertiesAsync();
+            var allProperties = await PropertyService.GetAllAsync();
             properties = allProperties.Where(p => !p.IsDeleted).ToList();
 
             ApplyFilters();
@@ -547,7 +549,7 @@ else
         {
             try
             {
-                await PropertyManagementService.DeleteDocumentAsync(doc);
+                await DocumentService.DeleteAsync(doc.Id);
                 await LoadDocuments();
             }
             catch (Exception ex)

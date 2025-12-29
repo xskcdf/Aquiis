@@ -7,7 +7,8 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
 @inject NavigationManager NavigationManager
-@inject PropertyManagementService PropertyManagementService
+@inject InvoiceService InvoiceService
+@inject LeaseService LeaseService
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
@@ -196,7 +197,7 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadLeases();
-        invoiceModel.InvoiceNumber = await PropertyManagementService.GenerateInvoiceNumberAsync();
+        invoiceModel.InvoiceNumber = await InvoiceService.GenerateInvoiceNumberAsync();
         invoiceModel.InvoicedOn = DateTime.Now;
         invoiceModel.DueOn = DateTime.Now.AddDays(30);
         if (LeaseId.HasValue)
@@ -208,7 +209,7 @@
 
     private async Task LoadLeases()
     {
-        var allLeases = await PropertyManagementService.GetLeasesAsync();
+        var allLeases = await LeaseService.GetAllAsync();
         leases = allLeases.Where(l => l.Status == "Active").ToList();
     }
 
@@ -259,7 +260,7 @@
                 Notes = invoiceModel.Notes ?? string.Empty
             };
 
-            await PropertyManagementService.AddInvoiceAsync(invoice);
+            await InvoiceService.CreateAsync(invoice);
 
             NavigationManager.NavigateTo("/propertymanagement/invoices");
         }

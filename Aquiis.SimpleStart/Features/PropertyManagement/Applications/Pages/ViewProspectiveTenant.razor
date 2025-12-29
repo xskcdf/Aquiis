@@ -10,7 +10,10 @@
 @using Microsoft.AspNetCore.Authorization
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
-@inject PropertyManagementService PropertyService
+@inject ProspectiveTenantService ProspectiveTenantService
+@inject TourService TourService
+@inject RentalApplicationService RentalApplicationService
+@inject PropertyService PropertyService
 @inject UserContextService UserContext
 @inject NavigationManager Navigation
 @inject ToastService ToastService
@@ -591,15 +594,15 @@
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             if (organizationId.HasValue)
             {
-                prospect = await PropertyService.GetProspectiveTenantByIdAsync(ProspectId);
+                prospect = await ProspectiveTenantService.GetByIdAsync(ProspectId);
                 
                 if (prospect != null)
                 {
-                    tours = await PropertyService.GetToursByProspectiveIdAsync(ProspectId);
-                    application = await PropertyService.GetApplicationByProspectiveIdAsync(ProspectId);
+                    tours = await TourService.GetByProspectiveIdAsync(ProspectId);
+                    application = await RentalApplicationService.GetApplicationByProspectiveIdAsync(ProspectId);
                     
                     // Load properties for edit dropdown
-                    availableProperties = await PropertyService.GetPropertiesAsync();
+                    availableProperties = await PropertyService.GetAllAsync();
                 }
             }
         }
@@ -662,7 +665,7 @@
             prospect.InterestedPropertyId = Guid.TryParse(editModel.InterestedPropertyId, out var propId) && propId != Guid.Empty ? propId : null;
             prospect.DesiredMoveInDate = editModel.DesiredMoveInDate;
 
-            await PropertyService.UpdateProspectiveTenantAsync(prospect);
+            await ProspectiveTenantService.UpdateAsync(prospect);
             
             ToastService.ShowSuccess("Prospect updated successfully");
             isEditing = false;

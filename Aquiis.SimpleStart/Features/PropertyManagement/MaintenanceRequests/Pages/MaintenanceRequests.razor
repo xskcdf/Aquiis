@@ -1,5 +1,5 @@
 @page "/propertymanagement/maintenance"
-@inject PropertyManagementService PropertyManagementService
+@inject MaintenanceService MaintenanceService
 @inject NavigationManager NavigationManager
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
@@ -265,7 +265,7 @@ else
         isLoading = true;
         try
         {
-            allRequests = await PropertyManagementService.GetMaintenanceRequestsAsync();
+            allRequests = await MaintenanceService.GetAllAsync();
             
             if (PropertyId.HasValue)
             {
@@ -277,7 +277,7 @@ else
             inProgressRequests = allRequests.Where(r => r.Status == "In Progress").ToList();
             submittedRequests = allRequests.Where(r => r.Status == "Submitted").ToList();
             completedRequests = allRequests.Where(r => r.Status == "Completed" && r.CompletedOn?.Month == DateTime.Today.Month).ToList();
-            overdueRequests = await PropertyManagementService.GetOverdueMaintenanceRequestsAsync();
+            overdueRequests = await MaintenanceService.GetOverdueMaintenanceRequestsAsync();
             
             ApplyFilters();
         }

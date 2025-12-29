@@ -4,7 +4,9 @@
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
 @using Microsoft.Extensions.Configuration.UserSecrets
 @using System.ComponentModel.DataAnnotations
-@inject PropertyManagementService PropertyManagementService
+@inject MaintenanceService MaintenanceService
+@inject PropertyService PropertyService
+@inject LeaseService LeaseService
 @inject NavigationManager NavigationManager
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
@@ -242,7 +244,7 @@
         isLoading = true;
         try
         {
-            properties = await PropertyManagementService.GetPropertiesAsync();
+            properties = await PropertyService.GetAllAsync();
             
             if (PropertyId.HasValue && PropertyId.Value != Guid.Empty)
             {
@@ -275,7 +277,7 @@
 
     private async Task LoadLeaseForProperty(Guid propertyId)
     {
-        var leases = await PropertyManagementService.GetCurrentAndUpcomingLeasesByPropertyIdAsync(propertyId);
+        var leases = await LeaseService.GetCurrentAndUpcomingLeasesByPropertyIdAsync(propertyId);
         currentLease = leases.FirstOrDefault();
         maintenanceRequest.LeaseId = currentLease?.Id;
     }
@@ -302,7 +304,7 @@
                 AssignedTo = maintenanceRequest.AssignedTo
             };
 
-            await PropertyManagementService.AddMaintenanceRequestAsync(request);
+            await MaintenanceService.CreateAsync(request);
             NavigationManager.NavigateTo("/propertymanagement/maintenance");
         }
         finally

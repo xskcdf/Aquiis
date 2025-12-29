@@ -6,7 +6,7 @@
 @using Aquiis.SimpleStart.Application.Services.PdfGenerators
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authorization
-@inject PropertyManagementService PropertyManagementService
+@inject TenantService TenantService
 @inject NavigationManager NavigationManager
 @inject ToastService ToastService
 @rendermode InteractiveServer
@@ -134,7 +134,7 @@
             // Check for duplicate identification number
             if (!string.IsNullOrWhiteSpace(tenantModel.IdentificationNumber))
             {
-                var existingTenant = await PropertyManagementService.GetTenantByIdentificationNumberAsync(tenantModel.IdentificationNumber);
+                var existingTenant = await TenantService.GetTenantByIdentificationNumberAsync(tenantModel.IdentificationNumber);
                 if (existingTenant != null)
                 {
                     errorMessage = $"A tenant with identification number <strong>{tenantModel.IdentificationNumber}</strong> already exists. " +
@@ -158,7 +158,7 @@
                 IsActive = true
             };
 
-            await PropertyManagementService.AddTenantAsync(tenant);
+            await TenantService.CreateAsync(tenant);
 
             ToastService.ShowSuccess($"Tenant {tenant.FullName} created successfully!");
             NavigationManager.NavigateTo("/propertymanagement/tenants");

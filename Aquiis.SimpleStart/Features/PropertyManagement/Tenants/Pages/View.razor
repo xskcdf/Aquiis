@@ -2,7 +2,8 @@
 @using Aquiis.SimpleStart.Core.Entities
 @using Microsoft.AspNetCore.Authorization
 @inject NavigationManager NavigationManager
-@inject PropertyManagementService PropertyManagementService
+@inject TenantService TenantService
+@inject LeaseService LeaseService
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
@@ -201,7 +202,7 @@ else
             return;
         }
 
-        tenant = await PropertyManagementService.GetTenantByIdAsync(Id);
+        tenant = await TenantService.GetByIdAsync(Id);
 
         if (tenant == null)
         {
@@ -210,7 +211,7 @@ else
         }
 
         // Load leases for this tenant
-        tenantLeases = await PropertyManagementService.GetLeasesByTenantIdAsync(Id);
+        tenantLeases = await LeaseService.GetLeasesByTenantIdAsync(Id);
     }
 
     private void EditTenant()

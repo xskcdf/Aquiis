@@ -11,7 +11,8 @@
 @inject UserContextService UserContext
 @inject NavigationManager Navigation
 @inject ToastService ToastService
-@inject PropertyManagementService PropertyService
+@inject ProspectiveTenantService ProspectiveTenantService
+@inject PropertyService PropertyService
 
 @rendermode InteractiveServer
 
@@ -293,12 +294,12 @@
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             if (organizationId.HasValue && organizationId != Guid.Empty)
             {
-                prospects = await PropertyService.GetAllProspectiveTenantsAsync();
+                prospects = await ProspectiveTenantService.GetAllAsync();
                 
                 // Load properties for dropdown
                 var dbContextFactory = Navigation.ToAbsoluteUri("/").ToString(); // Get service
                 // For now, we'll need to inject PropertyManagementService
-                var allProperties = await PropertyService.GetPropertiesAsync();
+                var allProperties = await PropertyService.GetAllAsync();
                 properties = allProperties.Where(p => p.IsAvailable).ToList();
             }
             else
@@ -358,7 +359,7 @@
                 OrganizationId = organizationId.Value,
             };
             
-            await PropertyService.CreateProspectiveTenantAsync(prospect);
+            await ProspectiveTenantService.CreateAsync(prospect);
             
             ToastService.ShowSuccess("Prospective tenant added successfully");
             showAddForm = false;
@@ -400,7 +401,7 @@
             
             if (organizationId.HasValue && organizationId != Guid.Empty && !string.IsNullOrEmpty(userId))
             {
-                await PropertyService.DeleteProspectiveTenantAsync(prospectId);
+                await ProspectiveTenantService.DeleteAsync(prospectId);
                 ToastService.ShowSuccess("Prospect deleted successfully");
                 await LoadData();
             }

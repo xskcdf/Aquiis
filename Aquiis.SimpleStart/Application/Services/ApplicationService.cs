@@ -7,16 +7,19 @@ namespace Aquiis.SimpleStart.Application.Services
     public class ApplicationService
     {
         private readonly ApplicationSettings _settings;
-        private readonly PropertyManagementService _propertyManagementService;
+        private readonly PaymentService _paymentService;
+        private readonly LeaseService _leaseService;
         
         public bool SoftDeleteEnabled { get; }
 
         public ApplicationService(
             IOptions<ApplicationSettings> settings,
-            PropertyManagementService propertyManagementService)
+            PaymentService paymentService,
+            LeaseService leaseService)
         {
             _settings = settings.Value;
-            _propertyManagementService = propertyManagementService;
+            _paymentService = paymentService;
+            _leaseService = leaseService;
             SoftDeleteEnabled = _settings.SoftDeleteEnabled;
         }
 
@@ -30,7 +33,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// </summary>
         public async Task<decimal> GetDailyPaymentTotalAsync(DateTime date)
         {
-            var payments = await _propertyManagementService.GetPaymentsAsync();
+            var payments = await _paymentService.GetAllAsync();
             return payments
                 .Where(p => p.PaidOn.Date == date.Date && !p.IsDeleted)
                 .Sum(p => p.Amount);
@@ -49,7 +52,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// </summary>
         public async Task<decimal> GetPaymentTotalForRangeAsync(DateTime startDate, DateTime endDate)
         {
-            var payments = await _propertyManagementService.GetPaymentsAsync();
+            var payments = await _paymentService.GetAllAsync();
             return payments
                 .Where(p => p.PaidOn.Date >= startDate.Date && 
                            p.PaidOn.Date <= endDate.Date && 
@@ -62,7 +65,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// </summary>
         public async Task<PaymentStatistics> GetPaymentStatisticsAsync(DateTime startDate, DateTime endDate)
         {
-            var payments = await _propertyManagementService.GetPaymentsAsync();
+            var payments = await _paymentService.GetAllAsync();
             var periodPayments = payments
                 .Where(p => p.PaidOn.Date >= startDate.Date && 
                            p.PaidOn.Date <= endDate.Date && 
@@ -87,7 +90,7 @@ namespace Aquiis.SimpleStart.Application.Services
         /// </summary>
         public async Task<int> GetLeasesExpiringCountAsync(int daysAhead)
         {
-            var leases = await _propertyManagementService.GetLeasesAsync();
+            var leases = await _leaseService.GetAllAsync();
             return leases
                 .Where(l => l.EndDate >= DateTime.Today && 
                            l.EndDate <= DateTime.Today.AddDays(daysAhead) && 
