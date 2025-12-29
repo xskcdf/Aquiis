@@ -362,34 +362,34 @@ namespace Aquiis.SimpleStart.Application.Services
                     // Update invoice status based on payment
                     if (totalPaid >= totalDue)
                     {
-                        invoice.Status = "Paid";
+                        invoice.Status = ApplicationConstants.InvoiceStatuses.Paid;
                         invoice.PaidOn = invoice.Payments
                             .Where(p => !p.IsDeleted)
                             .OrderByDescending(p => p.PaidOn)
                             .FirstOrDefault()?.PaidOn ?? DateTime.UtcNow;
                     }
-                    else if (totalPaid > 0 && invoice.Status != "Cancelled")
+                    else if (totalPaid > 0 && invoice.Status != ApplicationConstants.InvoiceStatuses.Cancelled)
                     {
                         // Invoice is partially paid
                         if (invoice.DueOn < DateTime.Today)
                         {
-                            invoice.Status = "Overdue";
+                            invoice.Status = ApplicationConstants.InvoiceStatuses.Overdue;
                         }
                         else
                         {
-                            invoice.Status = "Pending";
+                            invoice.Status = ApplicationConstants.InvoiceStatuses.Pending;
                         }
                     }
-                    else if (invoice.Status != "Cancelled")
+                    else if (invoice.Status != ApplicationConstants.InvoiceStatuses.Cancelled)
                     {
                         // No payments
                         if (invoice.DueOn < DateTime.Today)
                         {
-                            invoice.Status = "Overdue";
+                            invoice.Status = ApplicationConstants.InvoiceStatuses.Overdue;
                         }
                         else
                         {
-                            invoice.Status = "Pending";
+                            invoice.Status = ApplicationConstants.InvoiceStatuses.Pending;
                         }
                     }
 

@@ -152,6 +152,8 @@ namespace Aquiis.SimpleStart.Core.Constants
             public const string CreditCard = "Credit Card";
             public const string BankTransfer = "Bank Transfer";
             public const string CryptoCurrency = "Crypto Currency";
+            public const string Cash = "Cash";
+            public const string Check = "Check";
             public const string Other = "Other";
 
             public static IReadOnlyList<string> AllPaymentMethods { get; } = new List<string>
@@ -161,6 +163,8 @@ namespace Aquiis.SimpleStart.Core.Constants
                 CreditCard,
                 BankTransfer,
                 CryptoCurrency,
+                Cash,
+                Check,
                 Other
             };
         }

@@ -576,7 +576,7 @@ namespace Aquiis.SimpleStart.Tests
                 InvoiceId = _testInvoiceId,
                 Amount = 1500,
                 PaidOn = DateTime.Today,
-                PaymentMethod = "Check",
+                PaymentMethod = ApplicationConstants.PaymentMethods.Check,
                 CreatedBy = _testUserId,
                 CreatedOn = DateTime.UtcNow
             };
@@ -606,7 +606,7 @@ namespace Aquiis.SimpleStart.Tests
                 InvoiceId = _testInvoiceId,
                 Amount = 500,
                 PaidOn = DateTime.Today,
-                PaymentMethod = "Check",
+                PaymentMethod = ApplicationConstants.PaymentMethods.Check,
                 CreatedBy = _testUserId,
                 CreatedOn = DateTime.UtcNow
             };
@@ -618,7 +618,7 @@ namespace Aquiis.SimpleStart.Tests
                 InvoiceId = _testInvoiceId,
                 Amount = 750,
                 PaidOn = DateTime.Today,
-                PaymentMethod = "Cash",
+                PaymentMethod = ApplicationConstants.PaymentMethods.Cash,
                 CreatedBy = _testUserId,
                 CreatedOn = DateTime.UtcNow
             };
@@ -641,7 +641,7 @@ namespace Aquiis.SimpleStart.Tests
                 InvoiceId = _testInvoiceId,
                 Amount = 500,
                 PaidOn = DateTime.Today.AddMonths(-2),
-                PaymentMethod = "Check",
+                PaymentMethod = ApplicationConstants.PaymentMethods.Check,
                 CreatedBy = _testUserId,
                 CreatedOn = DateTime.UtcNow
             };
@@ -653,7 +653,7 @@ namespace Aquiis.SimpleStart.Tests
                 InvoiceId = _testInvoiceId,
                 Amount = 750,
                 PaidOn = DateTime.Today,
-                PaymentMethod = "Cash",
+                PaymentMethod = ApplicationConstants.PaymentMethods.Cash,
                 CreatedBy = _testUserId,
                 CreatedOn = DateTime.UtcNow
             };
@@ -690,7 +690,7 @@ namespace Aquiis.SimpleStart.Tests
                 InvoiceId = _testInvoiceId,
                 Amount = 300,
                 PaidOn = DateTime.Today,
-                PaymentMethod = "Check",
+                PaymentMethod = ApplicationConstants.PaymentMethods.Check,
                 CreatedBy = _testUserId,
                 CreatedOn = DateTime.UtcNow
             };
@@ -702,7 +702,7 @@ namespace Aquiis.SimpleStart.Tests
                 InvoiceId = _testInvoiceId,
                 Amount = 700,
                 PaidOn = DateTime.Today,
-                PaymentMethod = "Cash",
+                PaymentMethod = ApplicationConstants.PaymentMethods.Cash,
                 CreatedBy = _testUserId,
                 CreatedOn = DateTime.UtcNow
             };
@@ -727,7 +727,7 @@ namespace Aquiis.SimpleStart.Tests
                 InvoiceId = _testInvoiceId,
                 Amount = 500,
                 PaidOn = DateTime.Today,
-                PaymentMethod = "Check",
+                PaymentMethod = ApplicationConstants.PaymentMethods.OnlinePayment,
                 CreatedBy = _testUserId,
                 CreatedOn = DateTime.UtcNow
             };
@@ -739,7 +739,7 @@ namespace Aquiis.SimpleStart.Tests
                 InvoiceId = _testInvoiceId,
                 Amount = 750,
                 PaidOn = DateTime.Today,
-                PaymentMethod = "Cash",
+                PaymentMethod = ApplicationConstants.PaymentMethods.Cash,
                 CreatedBy = _testUserId,
                 CreatedOn = DateTime.UtcNow
             };
