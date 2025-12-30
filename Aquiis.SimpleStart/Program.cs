@@ -172,6 +172,12 @@ builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ISMSService, SMSService>();
 
+// Phase 2.5: Email/SMS Integration
+builder.Services.AddScoped<EmailSettingsService>();
+builder.Services.AddScoped<SMSSettingsService>();
+builder.Services.AddScoped<SendGridEmailService>();
+builder.Services.AddScoped<TwilioSMSService>();
+
 // Workflow services
 builder.Services.AddScoped<Aquiis.SimpleStart.Application.Services.Workflows.ApplicationWorkflowService>();
 builder.Services.AddScoped<SecurityDepositService>();

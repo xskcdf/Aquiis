@@ -60,6 +60,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data
         // Notification system
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<NotificationPreferences> NotificationPreferences { get; set; }
+        public DbSet<OrganizationEmailSettings> OrganizationEmailSettings { get; set; }
+        public DbSet<OrganizationSMSSettings> OrganizationSMSSettings { get; set; }
 
          protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -583,6 +585,39 @@ namespace Aquiis.SimpleStart.Infrastructure.Data
                     .WithMany()
                     .HasForeignKey(np => np.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure OrganizationEmailSettings entity
+            modelBuilder.Entity<OrganizationEmailSettings>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                
+                entity.HasIndex(e => e.OrganizationId).IsUnique();
+                
+                // Organization relationship - one settings record per organization
+                entity.HasOne(es => es.Organization)
+                    .WithMany()
+                    .HasForeignKey(es => es.OrganizationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+            });
+
+            // Configure OrganizationSMSSettings entity
+            modelBuilder.Entity<OrganizationSMSSettings>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                
+                entity.HasIndex(e => e.OrganizationId).IsUnique();
+                
+                // Organization relationship - one settings record per organization
+                entity.HasOne(ss => ss.Organization)
+                    .WithMany()
+                    .HasForeignKey(ss => ss.OrganizationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                // Precision for financial fields
+                entity.Property(e => e.AccountBalance).HasPrecision(18, 2);
+                entity.Property(e => e.CostPerSMS).HasPrecision(18, 4);
             });
 
             // Seed System Checklist Templates

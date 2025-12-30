@@ -1,5 +1,6 @@
 
 using Aquiis.SimpleStart.Core.Constants;
+using Aquiis.SimpleStart.Core.Entities;
 using Aquiis.SimpleStart.Core.Interfaces.Services;
 using Aquiis.SimpleStart.Core.Services;
 using Aquiis.SimpleStart.Infrastructure.Data;

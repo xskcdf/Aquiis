@@ -2026,6 +2026,185 @@ namespace Aquiis.SimpleStart.Migrations
                     b.ToTable("Organizations");
                 });
 
+            modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.OrganizationEmailSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DailyCountResetOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("DailyLimit")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("EmailsSentThisMonth")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("EmailsSentToday")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("FromEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FromName")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsEmailEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LastEmailSentOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastErrorOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastVerifiedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("MonthlyCountResetOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("MonthlyLimit")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PlanType")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SendGridApiKeyEncrypted")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("StatsLastUpdatedOn")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId")
+                        .IsUnique();
+
+                    b.ToTable("OrganizationEmailSettings");
+                });
+
+            modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.OrganizationSMSSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("AccountBalance")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AccountType")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("CostPerSMS")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DailyCountResetOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSMSEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastSMSSentOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastVerifiedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("MonthlyCountResetOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SMSSentThisMonth")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SMSSentToday")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("StatsLastUpdatedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TwilioAccountSidEncrypted")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TwilioAuthTokenEncrypted")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TwilioPhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId")
+                        .IsUnique();
+
+                    b.ToTable("OrganizationSMSSettings");
+                });
+
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.OrganizationSettings", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3786,6 +3965,28 @@ namespace Aquiis.SimpleStart.Migrations
                         .HasForeignKey("OwnerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.OrganizationEmailSettings", b =>
+                {
+                    b.HasOne("Aquiis.SimpleStart.Core.Entities.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.OrganizationSMSSettings", b =>
+                {
+                    b.HasOne("Aquiis.SimpleStart.Core.Entities.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("Aquiis.SimpleStart.Core.Entities.Payment", b =>

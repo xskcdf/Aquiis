@@ -98,6 +98,8 @@
     <button class="btn btn-info" @onclick="GoToDatabaseSettings">Manage Database</button>
     <button class="btn btn-success" @onclick="GoToCalendarSettings">Calendar Settings</button>
     <button class="btn btn-warning" @onclick="GoToUserManagement">User Management</button>
+    <button class="btn btn-warning" @onclick="GoToEmailSettings">Email Notification Settings</button>
+    <button class="btn btn-warning" @onclick="GoToSMSSettings">SMS Notification Settings</button>
 </div>
     </ChildContent>
     <NotAuthorized>
@@ -142,6 +144,18 @@
         if (string.IsNullOrEmpty(userId))
             return;
 
+    }
+
+    private void GoToEmailSettings()
+    {
+        // Logic to navigate to the email notification settings page
+        NavigationManager.NavigateTo("/administration/settings/email");
+    }
+
+    private void GoToSMSSettings()
+    {
+        // Logic to navigate to the SMS notification settings page
+        NavigationManager.NavigateTo("/administration/settings/sms");
     }
 
     private void GoToLateFeeSettings()
