@@ -329,10 +329,11 @@
     private async Task LoadSettings()
     {
         settings = await EmailSettingsService.GetOrCreateSettingsAsync();
-        if (settings.IsEmailEnabled)
-        {
-            stats = await EmailService.GetSendGridStatsAsync();
-        }
+        // TODO Phase 2.5: Uncomment when GetSendGridStatsAsync is implemented
+        // if (settings.IsEmailEnabled)
+        // {
+        //     stats = await EmailService.GetSendGridStatsAsync();
+        // }
     }
 
     private async Task SaveConfiguration()
@@ -408,9 +409,9 @@
     {
         return percent switch
         {
-            < 50 => "bg-success",
-            < 75 => "bg-info",
-            < 90 => "bg-warning",
+            ( < 50) => "bg-success",
+            ( < 75) => "bg-info",
+            ( < 90) => "bg-warning",
             _ => "bg-danger"
         };
     }

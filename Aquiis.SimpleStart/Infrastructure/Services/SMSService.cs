@@ -25,4 +25,5 @@ public class SMSService : ISMSService
         var digits = new string(phoneNumber.Where(char.IsDigit).ToArray());
         return await Task.FromResult(digits.Length >= 10);
     }
+
 }

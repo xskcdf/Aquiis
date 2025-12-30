@@ -147,6 +147,7 @@ namespace Aquiis.SimpleStart.Infrastructure.Services
 
         public async Task<bool> ValidateEmailAddressAsync(string email)
         {
+            await Task.CompletedTask;
             return !string.IsNullOrWhiteSpace(email) &&
                    email.Contains("@") &&
                    email.Contains(".");

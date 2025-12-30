@@ -60,6 +60,8 @@ namespace Aquiis.SimpleStart.Infrastructure.Data
         // Notification system
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<NotificationPreferences> NotificationPreferences { get; set; }
+        public DbSet<OrganizationEmailSettings> OrganizationEmailSettings { get; set; }
+        public DbSet<OrganizationSMSSettings> OrganizationSMSSettings { get; set; }
 
          protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

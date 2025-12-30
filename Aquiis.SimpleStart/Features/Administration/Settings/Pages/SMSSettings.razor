@@ -3,9 +3,7 @@
 @using Aquiis.SimpleStart.Infrastructure.Services
 @using SocketIOClient.Messages
 @using System.ComponentModel.DataAnnotations
-@inject EmailSettingsService EmailSettingsService
 @inject SMSSettingsService SMSSettingsService
-
 @inject TwilioSMSService TwilioSMSService
 
 @inject ToastService ToastService
@@ -18,7 +16,7 @@
     <div class="row">
         <div class="col-12">
             <h2>
-                <i class="bi bi-envelope-gear"></i> SMS Configuration
+                <i class="bi bi-phone-vibrate"></i> SMS Configuration
             </h2>
             <p class="text-muted">
                 Configure Twilio integration for automated SMS notifications
@@ -34,7 +32,7 @@
             </div>
         </div>
     }
-    else if (!settings.IsEmailEnabled)
+    else if (!settings.IsSMSEnabled)
     {
         <div class="row mt-4">
             <div class="col-lg-8">
@@ -44,9 +42,9 @@
 
                     <h5 class="mt-4">Why Use Twilio?</h5>
                     <ul>
-                        <li><strong>Free tier:</strong> 100 messages per day forever (perfect for getting started)</li>
+                        <li><strong>Free trial:</strong> $15 credit for testing (perfect for getting started)</li>
                         <li><strong>Reliable delivery:</strong> Industry-leading SMS infrastructure</li>
-                        <li><strong>Analytics:</strong> Track delivery, opens, and clicks</li>
+                        <li><strong>Analytics:</strong> Track message delivery and status</li>
                         <li><strong>Your account:</strong> You manage billing and usage directly</li>
                     </ul>
 
@@ -62,7 +60,7 @@
                     </ol>
 
                     <button class="btn btn-primary btn-lg" @onclick="() => showConfigModal = true">
-                        <i class="bi bi-envelope-plus"></i> Configure Twilio
+                        <i class="bi bi-phone-fill"></i> Configure Twilio
                     </button>
                 </div>
             </div>
@@ -75,10 +73,10 @@
                         <h6>Common Questions</h6>
                         <p class="small mb-2">
                             <strong>Do I need a paid account?</strong><br>
-                            No! The free tier (100 emails/day) is usually sufficient.
+                            You get $15 free trial credit. Pay-as-you-go after that.
                         </p>
                         <p class="small mb-2">
-                            <strong>What happens without email?</strong><br>
+                            <strong>What happens without SMS?</strong><br>
                             The app works fine. Notifications appear in-app only.
                         </p>
                         <p class="small mb-2">
@@ -86,7 +84,7 @@
                             Yes, it's encrypted and never shared.
                         </p>
                         <hr>
-                        <a href="https://docs.sendgrid.com/ui/account-and-settings/api-keys"
+                        <a href="https://www.twilio.com/docs/usage/api"
                            target="_blank"
                            class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-book"></i> API Key Guide
@@ -109,12 +107,8 @@
                             <div class="col-md-6">
                                 <h6>Configuration</h6>
                                 <p class="mb-1">
-                                    <strong>From Email:</strong><br>
-                                    <code>@settings.FromEmail</code>
-                                </p>
-                                <p class="mb-1">
-                                    <strong>From Name:</strong><br>
-                                    @settings.FromName
+                                    <strong>Twilio Phone Number:</strong><br>
+                                    <code>@settings.TwilioPhoneNumber</code>
                                 </p>
                                 <p class="mb-1 text-muted small">
                                     <i class="bi bi-check-circle-fill text-success"></i>
@@ -122,44 +116,12 @@
                                 </p>
                             </div>
                             <div class="col-md-6">
-                                @if (stats != null && stats.IsConfigured)
-                                {
-                                    <h6>Usage Statistics</h6>
-                                    <div class="mb-3">
-                                        <div class="d-flex justify-content-between mb-1">
-                                            <span><strong>Today:</strong></span>
-                                            <span>@stats.EmailsSentToday / @stats.DailyLimit</span>
-                                        </div>
-                                        <div class="progress" style="height: 20px;">
-                                            <div class="progress-bar @GetProgressBarClass(stats.DailyPercentUsed)"
-                                                 role="progressbar"
-                                                 style="width: @(stats.DailyPercentUsed)%">
-                                                @(stats.DailyPercentUsed)%
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <div class="d-flex justify-content-between mb-1">
-                                            <span><strong>This Month:</strong></span>
-                                            <span>@stats.EmailsSentThisMonth / @stats.MonthlyLimit</span>
-                                        </div>
-                                        <div class="progress" style="height: 20px;">
-                                            <div class="progress-bar @GetProgressBarClass(stats.MonthlyPercentUsed)"
-                                                 role="progressbar"
-                                                 style="width: @(stats.MonthlyPercentUsed)%">
-                                                @(stats.MonthlyPercentUsed)%
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <p class="mb-0 text-muted small">
-                                        <i class="bi bi-calendar-check"></i>
-                                        Plan: <strong>@stats.PlanType</strong>
-                                        @if (stats.LastEmailSentOn.HasValue)
-                                        {
-                                            <br><i class="bi bi-clock-history"></i> <text>Last sent:</text> @stats.LastEmailSentOn?.ToString("g")
-                                        }
-                                    </p>
-                                }
+                                @* TODO Phase 2.5: Implement SMS usage statistics display *@
+                                <h6>Usage Statistics</h6>
+                                <p class="text-muted">
+                                    <i class="bi bi-info-circle"></i>
+                                    SMS usage statistics will be available after Twilio integration (Phase 2.5)
+                                </p>
                             </div>
                         </div>
 
@@ -169,7 +131,7 @@
                                 <i class="bi bi-exclamation-triangle"></i>
                                 <strong>Recent Error:</strong> @settings.LastError
                                 <br>
-                                <small class="text-muted">Try updating your API key or contact SendGrid support</small>
+                                <small class="text-muted">Try updating your API key or contact Twilio support</small>
                             </div>
                         }
 
@@ -177,15 +139,15 @@
                             <button class="btn btn-primary" @onclick="() => showConfigModal = true">
                                 <i class="bi bi-key"></i> Update API Key
                             </button>
-                            <button class="btn btn-info" @onclick="SendTestEmail">
-                                <i class="bi bi-envelope-check"></i> Send Test Email
+                            <button class="btn btn-info" @onclick="SendTestSMS">
+                                <i class="bi bi-phone-check"></i> Send Test SMS
                             </button>
                             <button class="btn btn-secondary" @onclick="RefreshStats" disabled="@isRefreshing">
                                 <i class="bi bi-arrow-clockwise @(isRefreshing ? "spin" : "")"></i>
                                 Refresh Stats
                             </button>
-                            <button class="btn btn-warning" @onclick="DisableEmail">
-                                <i class="bi bi-x-circle"></i> Disable Email
+                            <button class="btn btn-warning" @onclick="DisableSMS">
+                                <i class="bi bi-x-circle"></i> Disable SMS
                             </button>
                         </div>
                     </div>
@@ -193,7 +155,7 @@
 
                 <div class="card">
                     <div class="card-header">
-                        <i class="bi bi-graph-up"></i> Email Activity
+                        <i class="bi bi-graph-up"></i> SMS Activity
                     </div>
                     <div class="card-body">
                         <p class="text-muted">
@@ -222,10 +184,10 @@
 
                         <h6>Twilio Features</h6>
                         <ul class="small mb-0">
-                            <li><strong>Templates:</strong> Create branded SMS templates</li>
-                            <li><strong>Analytics:</strong> Track opens and clicks</li>
+                            <li><strong>Templates:</strong> Use message templates and variables</li>
+                            <li><strong>Analytics:</strong> Track delivery and status</li>
                             <li><strong>Webhooks:</strong> Get delivery notifications</li>
-                            <li><strong>Lists:</strong> Manage recipient groups</li>
+                            <li><strong>Phone Numbers:</strong> Purchase dedicated numbers</li>
                         </ul>
                     </div>
                 </div>
@@ -242,7 +204,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="bi bi-envelope-gear"></i> Configure SendGrid
+                        <i class="bi bi-phone-vibrate"></i> Configure Twilio
                     </h5>
                     <button type="button" class="btn-close" @onclick="CloseModal"></button>
                 </div>
@@ -257,43 +219,44 @@
 
                         <div class="mb-3">
                             <label class="form-label">
-                                Twilio API Key *
-                                <a href="https://www.twilio.com/console/sms/dashboard/api-keys"
+                                Twilio Account SID *
+                                <a href="https://www.twilio.com/console"
                                    target="_blank"
                                    rel="noopener"
                                    class="small ms-2">
-                                    <i class="bi bi-box-arrow-up-right"></i> Get API Key
+                                    <i class="bi bi-box-arrow-up-right"></i> Get Credentials
                                 </a>
                             </label>
-                            <InputText @bind-Value="configModel.ApiKey"
+                            <InputText @bind-Value="configModel.AccountSid"
                                        class="form-control"
                                        type="password"
-                                       placeholder="TW.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
-                            <ValidationMessage For="@(() => configModel.ApiKey)" />
+                                       placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+                            <ValidationMessage For="@(() => configModel.AccountSid)" />
                             <small class="form-text text-muted">
-                                Create a new API key with <strong>SMS Send</strong> permissions
+                                Found in your Twilio Console dashboard
                             </small>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">From Phone Number *</label>
-                            <InputText @bind-Value="configModel.FromPhoneNumber"
+                            <label class="form-label">Twilio Auth Token *</label>
+                            <InputText @bind-Value="configModel.AuthToken"
+                                       class="form-control"
+                                       type="password"
+                                       placeholder="Auth Token from Twilio Console" />
+                            <ValidationMessage For="@(() => configModel.AuthToken)" />
+                            <small class="form-text text-muted">
+                                Your Auth Token (keep this secret!)
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Twilio Phone Number *</label>
+                            <InputText @bind-Value="configModel.PhoneNumber"
                                        class="form-control"
                                        placeholder="+1234567890" />
-                            <ValidationMessage For="@(() => configModel.FromPhoneNumber)" />
+                            <ValidationMessage For="@(() => configModel.PhoneNumber)" />
                             <small class="form-text text-muted">
-                                Use a phone number from a number you own. Verify sender in Twilio first.
-                            </small>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">From Name *</label>
-                            <InputText @bind-Value="configModel.FromName"
-                                       class="form-control"
-                                       placeholder="Your Property Management Company" />
-                            <ValidationMessage For="@(() => configModel.FromName)" />
-                            <small class="form-text text-muted">
-                                This name appears in recipients' inboxes
+                                Use a verified Twilio phone number. Must be in E.164 format (+1234567890).
                             </small>
                         </div>
                     </div>
@@ -316,8 +279,8 @@
 }
 
 @code {
-    private OrganizationEmailSettings? settings;
-    private SendGridStats? stats;
+    private OrganizationSMSSettings? settings;
+    private TwilioStats? stats;
     private bool showConfigModal;
     private bool isSaving;
     private bool isRefreshing;
@@ -330,11 +293,12 @@
 
     private async Task LoadSettings()
     {
-        settings = await EmailSettingsService.GetOrCreateSettingsAsync();
-        if (settings.IsEmailEnabled)
-        {
-            stats = await EmailService.GetSendGridStatsAsync();
-        }
+        settings = await SMSSettingsService.GetOrCreateSettingsAsync();
+        // TODO Phase 2.5: Uncomment when GetTwilioStatsAsync is implemented
+        // if (settings.IsSMSEnabled)
+        // {
+        //     stats = await SMSService.GetTwilioStatsAsync();
+        // }
     }
 
     private async Task SaveConfiguration()
@@ -342,9 +306,9 @@
         isSaving = true;
 
         var result = await SMSSettingsService.UpdateTwilioConfigAsync(
-            configModel.ApiKey!,
-            configModel.FromPhoneNumber!,
-            configModel.FromName!);
+            configModel.AccountSid!,
+            configModel.AuthToken!,
+            configModel.PhoneNumber!);
 
         if (result.Success)
         {
@@ -361,16 +325,15 @@
         isSaving = false;
     }
 
-    private async Task SendTestEmail()
+    private async Task SendTestSMS()
     {
-        var userEmail = await _userContext.GetUserEmailAsync();
-        var testEmail = await JSRuntime.InvokeAsync<string?>("prompt",
-            "Enter email address to send test email:",
-            userEmail ?? settings?.FromEmail ?? "");
+        var testPhone = await JSRuntime.InvokeAsync<string?>("prompt",
+            "Enter phone number to send test SMS (E.164 format, e.g., +1234567890):",
+            "");
 
-        if (!string.IsNullOrEmpty(testEmail))
+        if (!string.IsNullOrEmpty(testPhone))
         {
-            var result = await EmailSettingsService.TestEmailConfigurationAsync(testEmail);
+            var result = await SMSSettingsService.TestSMSConfigurationAsync(testPhone);
             if (result.Success)
                 ToastService.ShowSuccess(result.Message);
             else
@@ -378,15 +341,15 @@
         }
     }
 
-    private async Task DisableEmail()
+    private async Task DisableSMS()
     {
         var confirmed = await JSRuntime.InvokeAsync<bool>("confirm",
-            "Are you sure you want to disable email notifications?\n\n" +
-            "Notifications will only appear in-app until you re-enable email.");
+            "Are you sure you want to disable SMS notifications?\n\n" +
+            "Notifications will only appear in-app until you re-enable SMS.");
 
         if (confirmed)
         {
-            var result = await EmailSettingsService.DisableEmailAsync();
+            var result = await SMSSettingsService.DisableSMSAsync();
             ToastService.ShowInfo(result.Message);
             await LoadSettings();
         }
@@ -410,26 +373,26 @@
     {
         return percent switch
         {
-            < 50 => "bg-success",
-            < 75 => "bg-info",
-            < 90 => "bg-warning",
+            ( < 50) => "bg-success",
+            ( < 75) => "bg-info",
+            ( < 90) => "bg-warning",
             _ => "bg-danger"
         };
     }
 
     public class ConfigurationModel
     {
-        [Required(ErrorMessage = "SendGrid API key is required")]
-        [StringLength(100, MinimumLength = 32, ErrorMessage = "API key must be at least 32 characters")]
-        public string? ApiKey { get; set; }
+        [Required(ErrorMessage = "Twilio Account SID is required")]
+        [StringLength(100, MinimumLength = 34, ErrorMessage = "Account SID must be at least 34 characters")]
+        public string? AccountSid { get; set; }
 
-        [Required(ErrorMessage = "From phone number is required")]
-        [Phone(ErrorMessage = "Invalid phone number")]
-        public string? FromPhoneNumber { get; set; }
+        [Required(ErrorMessage = "Twilio Auth Token is required")]
+        [StringLength(100, MinimumLength = 32, ErrorMessage = "Auth Token must be at least 32 characters")]
+        public string? AuthToken { get; set; }
 
-        [Required(ErrorMessage = "From name is required")]
-        [StringLength(200, MinimumLength = 2, ErrorMessage = "From name must be 2-200 characters")]
-        public string? FromName { get; set; }
+        [Required(ErrorMessage = "Twilio phone number is required")]
+        [Phone(ErrorMessage = "Invalid phone number format")]
+        public string? PhoneNumber { get; set; }
     }
 }
 
