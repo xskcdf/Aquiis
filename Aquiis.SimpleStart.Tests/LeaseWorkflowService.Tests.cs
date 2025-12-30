@@ -38,7 +38,7 @@ public class LeaseWorkflowServiceTests
     {
         var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
         connection.Open();
-        var options = new DbContextOptionsBuilder<Infrastructure.Data.ApplicationDbContext>()
+        var options = new DbContextOptionsBuilder<SimpleStart.Infrastructure.Data.ApplicationDbContext>()
             .UseSqlite(connection)
             .Options;
 
@@ -61,7 +61,7 @@ public class LeaseWorkflowServiceTests
         var serviceProvider = new Mock<IServiceProvider>();
         var userContext = new UserContextService(mockAuth.Object, mockUserManager.Object, serviceProvider.Object);
 
-        var context = new Infrastructure.Data.ApplicationDbContext(options);
+        var context = new SimpleStart.Infrastructure.Data.ApplicationDbContext(options);
         await context.Database.EnsureCreatedAsync();
 
         var appUserEntity = new ApplicationUser { Id = testUserId, UserName = "testuser", Email = "t@t.com", ActiveOrganizationId = orgId };
@@ -176,7 +176,7 @@ public class LeaseWorkflowServiceTests
     private class TestContext : IAsyncDisposable
     {
         public required Microsoft.Data.Sqlite.SqliteConnection Connection { get; init; }
-        public required Infrastructure.Data.ApplicationDbContext Context { get; init; }
+        public required Aquiis.SimpleStart.Infrastructure.Data.ApplicationDbContext Context { get; init; }
         public required LeaseWorkflowService WorkflowService { get; init; }
         public required string UserId { get; init; }
         public required Guid OrgId { get; init; }

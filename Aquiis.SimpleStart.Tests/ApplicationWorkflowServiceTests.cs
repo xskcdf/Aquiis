@@ -24,7 +24,7 @@ public class ApplicationWorkflowServiceTests
         // Use SQLite in-memory to support transactions used by workflow base class
         var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
         connection.Open();
-        var options = new DbContextOptionsBuilder<Infrastructure.Data.ApplicationDbContext>()
+        var options = new DbContextOptionsBuilder<SimpleStart.Infrastructure.Data.ApplicationDbContext>()
             .UseSqlite(connection)
             .Options;
         // Create test user and org
@@ -52,7 +52,7 @@ public class ApplicationWorkflowServiceTests
         var userContext = new UserContextService(mockAuth.Object, mockUserManager.Object, serviceProvider.Object);
 
         // Create DbContext and seed prospect/property
-        await using var context = new Infrastructure.Data.ApplicationDbContext(options);
+        await using var context = new SimpleStart.Infrastructure.Data.ApplicationDbContext(options);
         // Ensure schema is created for SQLite in-memory
         await context.Database.EnsureCreatedAsync();
         var appUserEntity = new ApplicationUser { Id = testUserId, UserName = "testuser", Email = "t@t.com", ActiveOrganizationId = orgId };

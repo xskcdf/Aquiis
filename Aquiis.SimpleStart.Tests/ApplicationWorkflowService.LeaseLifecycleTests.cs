@@ -23,7 +23,7 @@ public class ApplicationWorkflowServiceLeaseLifecycleTests
         // Arrange - setup SQLite in-memory
         var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
         connection.Open();
-        var options = new DbContextOptionsBuilder<Infrastructure.Data.ApplicationDbContext>()
+        var options = new DbContextOptionsBuilder<SimpleStart.Infrastructure.Data.ApplicationDbContext>()
             .UseSqlite(connection)
             .Options;
 
@@ -49,7 +49,7 @@ public class ApplicationWorkflowServiceLeaseLifecycleTests
         var userContext = new UserContextService(mockAuth.Object, mockUserManager.Object, serviceProvider.Object);
 
         // Create DbContext and seed data
-        await using var context = new Infrastructure.Data.ApplicationDbContext(options);
+        await using var context = new SimpleStart.Infrastructure.Data.ApplicationDbContext(options);
         await context.Database.EnsureCreatedAsync();
 
         var appUserEntity = new ApplicationUser { Id = testUserId, UserName = "testuser", Email = "t@t.com", ActiveOrganizationId = orgId };

@@ -56,6 +56,11 @@ namespace Aquiis.SimpleStart.Infrastructure.Data
         // Workflow audit logging
         public DbSet<Aquiis.SimpleStart.Application.Services.Workflows.WorkflowAuditLog> WorkflowAuditLogs { get; set; }
 
+
+        // Notification system
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<NotificationPreferences> NotificationPreferences { get; set; }
+
          protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -529,6 +534,55 @@ namespace Aquiis.SimpleStart.Infrastructure.Data
                 entity.HasIndex(e => e.Action);
                 entity.HasIndex(e => e.PerformedOn);
                 entity.HasIndex(e => e.PerformedBy);
+            });
+
+            // Configure Notification entity
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                
+                entity.HasIndex(e => e.RecipientUserId);
+                entity.HasIndex(e => e.OrganizationId);
+                entity.HasIndex(e => e.SentOn);
+                entity.HasIndex(e => e.IsRead);
+                entity.HasIndex(e => e.Category);
+                
+                // Organization relationship
+                entity.HasOne(n => n.Organization)
+                    .WithMany()
+                    .HasForeignKey(n => n.OrganizationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                // User relationship (RecipientUserId)
+                entity.HasOne<ApplicationUser>()
+                    .WithMany()
+                    .HasForeignKey(n => n.RecipientUserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure NotificationPreferences entity
+            modelBuilder.Entity<NotificationPreferences>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.OrganizationId);
+                
+                // Unique constraint: one preference record per user per organization
+                entity.HasIndex(e => new { e.UserId, e.OrganizationId })
+                    .IsUnique();
+                
+                // Organization relationship
+                entity.HasOne(np => np.Organization)
+                    .WithMany()
+                    .HasForeignKey(np => np.OrganizationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                // User relationship
+                entity.HasOne<ApplicationUser>()
+                    .WithMany()
+                    .HasForeignKey(np => np.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Seed System Checklist Templates

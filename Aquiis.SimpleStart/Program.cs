@@ -14,6 +14,8 @@ using Aquiis.SimpleStart.Shared.Authorization;
 using ElectronNET.API;
 using Microsoft.Extensions.Options;
 using Aquiis.SimpleStart.Application.Services.Workflows;
+using Aquiis.SimpleStart.Core.Interfaces.Services;
+using Aquiis.SimpleStart.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -163,6 +165,12 @@ builder.Services.AddScoped<ICalendarEventService>(sp => sp.GetRequiredService<Ca
 builder.Services.AddScoped<TenantConversionService>();
 builder.Services.AddScoped<UserContextService>();
 builder.Services.AddScoped<NoteService>();
+// Add to service registration section
+builder.Services.AddScoped<NotificationService>();
+
+// Phase 2.4: Notification Infrastructure
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ISMSService, SMSService>();
 
 // Workflow services
 builder.Services.AddScoped<Aquiis.SimpleStart.Application.Services.Workflows.ApplicationWorkflowService>();
