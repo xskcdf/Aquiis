@@ -18,6 +18,8 @@ node_modules/
 
 Data/Backups/**
 /Data/Backups/**
+Data/Migrations/**
+/Data/Migrations/**
 
 /Data/app*
 
