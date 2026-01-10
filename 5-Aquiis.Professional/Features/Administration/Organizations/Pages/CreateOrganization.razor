@@ -1,0 +1,197 @@
+@page "/administration/organizations/create"
+
+@using Aquiis.Core.Entities
+@using Aquiis.Application.Services
+@using Aquiis.Professional.Shared.Services
+@using Aquiis.Core.Constants
+@using Microsoft.AspNetCore.Authorization
+@using System.ComponentModel.DataAnnotations
+
+@inject OrganizationService OrganizationService
+@inject UserContextService UserContext
+@inject NavigationManager Navigation
+@inject ToastService ToastService
+
+@attribute [OrganizationAuthorize("Owner")]
+@rendermode InteractiveServer
+
+<PageTitle>Create Organization - Administration</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-building"></i> Create Organization</h1>
+        <button class="btn btn-outline-secondary" @onclick="Cancel">
+            <i class="bi bi-arrow-left"></i> Back to Organizations
+        </button>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">New Organization</h5>
+                </div>
+                <div class="card-body">
+                    <EditForm Model="@model" OnValidSubmit="HandleSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger" role="alert">
+                                <i class="bi bi-exclamation-triangle"></i> @errorMessage
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Organization Name <span class="text-danger">*</span></label>
+                            <InputText id="name" class="form-control" @bind-Value="model.Name" placeholder="e.g., California Properties LLC" />
+                            <ValidationMessage For="@(() => model.Name)" />
+                            <small class="form-text text-muted">Official legal name of the organization</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="displayName" class="form-label">Display Name</label>
+                            <InputText id="displayName" class="form-control" @bind-Value="model.DisplayName" placeholder="e.g., CA Props" />
+                            <ValidationMessage For="@(() => model.DisplayName)" />
+                            <small class="form-text text-muted">Short name for UI display (optional)</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="state" class="form-label">State</label>
+                            <InputSelect id="state" class="form-select" @bind-Value="model.State">
+                                <option value="">-- Select State --</option>
+                                @foreach (var state in GetUsStates())
+                                {
+                                    <option value="@state.Code">@state.Name (@state.Code)</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="@(() => model.State)" />
+                            <small class="form-text text-muted">Primary state where organization operates</small>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                @if (isSubmitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                }
+                                <i class="bi bi-check-circle"></i> Create Organization
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Information</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>What happens when you create an organization?</strong></p>
+                    <ul class="small">
+                        <li>A new organization record is created</li>
+                        <li>You are automatically assigned as the Owner</li>
+                        <li>The organization will have its own independent settings</li>
+                        <li>You can grant access to other users</li>
+                        <li>All data will be isolated to this organization</li>
+                    </ul>
+                    <hr />
+                    <p class="small mb-0"><strong>Note:</strong> You can switch between your organizations using the organization switcher in the navigation menu.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private CreateOrganizationModel model = new();
+    private bool isSubmitting = false;
+    private string errorMessage = string.Empty;
+
+    private Organization? createdOrganization;
+
+    private async Task HandleSubmit()
+    {
+        isSubmitting = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            var userId = await UserContext.GetUserIdAsync();
+            if (string.IsNullOrEmpty(userId))
+            {
+                errorMessage = "User not found. Please log in again.";
+                return;
+            }
+            createdOrganization = new Organization
+            {
+                Name = model.Name!,
+                DisplayName = model.DisplayName,
+                State = model.State
+            };
+            var organization = await OrganizationService.CreateOrganizationAsync(createdOrganization);
+
+            if (organization != null)
+            {
+                ToastService.ShowSuccess($"Organization '{organization.Name}' created successfully!");
+                Navigation.NavigateTo("/administration/organizations");
+            }
+            else
+            {
+                errorMessage = "Failed to create organization. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error creating organization: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/administration/organizations");
+    }
+
+    private List<(string Code, string Name)> GetUsStates()
+    {
+        return new List<(string, string)>
+        {
+            ("AL", "Alabama"), ("AK", "Alaska"), ("AZ", "Arizona"), ("AR", "Arkansas"),
+            ("CA", "California"), ("CO", "Colorado"), ("CT", "Connecticut"), ("DE", "Delaware"),
+            ("FL", "Florida"), ("GA", "Georgia"), ("HI", "Hawaii"), ("ID", "Idaho"),
+            ("IL", "Illinois"), ("IN", "Indiana"), ("IA", "Iowa"), ("KS", "Kansas"),
+            ("KY", "Kentucky"), ("LA", "Louisiana"), ("ME", "Maine"), ("MD", "Maryland"),
+            ("MA", "Massachusetts"), ("MI", "Michigan"), ("MN", "Minnesota"), ("MS", "Mississippi"),
+            ("MO", "Missouri"), ("MT", "Montana"), ("NE", "Nebraska"), ("NV", "Nevada"),
+            ("NH", "New Hampshire"), ("NJ", "New Jersey"), ("NM", "New Mexico"), ("NY", "New York"),
+            ("NC", "North Carolina"), ("ND", "North Dakota"), ("OH", "Ohio"), ("OK", "Oklahoma"),
+            ("OR", "Oregon"), ("PA", "Pennsylvania"), ("RI", "Rhode Island"), ("SC", "South Carolina"),
+            ("SD", "South Dakota"), ("TN", "Tennessee"), ("TX", "Texas"), ("UT", "Utah"),
+            ("VT", "Vermont"), ("VA", "Virginia"), ("WA", "Washington"), ("WV", "West Virginia"),
+            ("WI", "Wisconsin"), ("WY", "Wyoming")
+        };
+    }
+
+    public class CreateOrganizationModel
+    {
+        [Required(ErrorMessage = "Organization name is required")]
+        [StringLength(200, ErrorMessage = "Organization name cannot exceed 200 characters")]
+        public string? Name { get; set; } 
+
+        [StringLength(200, ErrorMessage = "Display name cannot exceed 200 characters")]
+        public string? DisplayName { get; set; }
+
+        [StringLength(2, ErrorMessage = "State code must be 2 characters")]
+        public string? State { get; set; }
+    }
+}

@@ -1,0 +1,62 @@
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.Core.Constants
+
+@inject UserContextService UserContextService
+
+@if (_isAuthorized)
+{
+    @ChildContent
+}
+else if (NotAuthorized != null)
+{
+    @NotAuthorized
+}
+
+@code {
+    [Parameter]
+    public string Roles { get; set; } = string.Empty;
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? NotAuthorized { get; set; }
+
+    private bool _isAuthorized = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckAuthorizationAsync();
+    }
+
+    private async Task CheckAuthorizationAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Roles))
+        {
+            _isAuthorized = false;
+            return;
+        }
+
+        try
+        {
+            var userRole = await UserContextService.GetCurrentOrganizationRoleAsync();
+            
+            if (string.IsNullOrEmpty(userRole))
+            {
+                _isAuthorized = false;
+                return;
+            }
+
+            var allowedRoles = Roles.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                    .Select(r => r.Trim())
+                                    .ToArray();
+
+            _isAuthorized = allowedRoles.Contains(userRole);
+        }
+        catch (InvalidOperationException)
+        {
+            // User doesn't have an active organization
+            _isAuthorized = false;
+        }
+    }
+}

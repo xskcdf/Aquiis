@@ -1,0 +1,76 @@
+@namespace Aquiis.UI.Shared.Components.Common
+@typeparam TItem
+
+<div class="table-responsive">
+    <table class="table @TableCssClass">
+        @if (ShowHeader)
+        {
+            <thead>
+                <tr>
+                    @HeaderTemplate
+                </tr>
+            </thead>
+        }
+        <tbody>
+            @if (Items != null && Items.Any())
+            {
+                foreach (var item in Items)
+                {
+                    <tr>
+                        @if (RowTemplate != null)
+                        {
+                            @RowTemplate(item)
+                        }
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="100" class="text-center text-muted py-4">
+                        @if (EmptyMessage != null)
+                        {
+                            @EmptyMessage
+                        }
+                        else
+                        {
+                            <span>No data available.</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    /// <summary>
+    /// The collection of items to display
+    /// </summary>
+    [Parameter] public IEnumerable<TItem>? Items { get; set; }
+    
+    /// <summary>
+    /// Template for the table header row
+    /// </summary>
+    [Parameter] public RenderFragment? HeaderTemplate { get; set; }
+    
+    /// <summary>
+    /// Template for each data row (receives the item as context)
+    /// </summary>
+    [Parameter] public RenderFragment<TItem>? RowTemplate { get; set; }
+    
+    /// <summary>
+    /// Message or content to show when no items are available
+    /// </summary>
+    [Parameter] public RenderFragment? EmptyMessage { get; set; }
+    
+    /// <summary>
+    /// Whether to show the header row
+    /// </summary>
+    [Parameter] public bool ShowHeader { get; set; } = true;
+    
+    /// <summary>
+    /// Additional CSS classes for the table
+    /// </summary>
+    [Parameter] public string TableCssClass { get; set; } = "table-striped table-hover";
+}

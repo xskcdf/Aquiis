@@ -1,0 +1,347 @@
+@page "/propertymanagement/leases/{LeaseId:guid}/documents"
+
+@using Aquiis.SimpleStart.Features.PropertyManagement
+@using Aquiis.Core.Entities
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager Navigation
+@inject Application.Services.DocumentService DocumentService
+@inject LeaseService LeaseService
+@inject UserContextService UserContext
+@inject IJSRuntime JSRuntime
+
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
+@rendermode InteractiveServer
+
+<PageTitle>Lease Documents - Property Management</PageTitle>
+
+@if (lease == null)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1><span class="bi bi-files" aria-hidden="true"></span> Lease Documents</h1>
+            <p class="text-muted mb-0">
+                <strong>Property:</strong> @lease.Property?.Address | 
+                <strong>Tenant:</strong> @lease.Tenant?.FullName |
+                <strong>Lease Period:</strong> @lease.StartDate.ToString("MMM dd, yyyy") - @lease.EndDate.ToString("MMM dd, yyyy")
+            </p>
+        </div>
+        <div>
+            <button class="btn btn-outline-secondary me-2" @onclick="GoToLease">
+                <i class="bi bi-arrow-left"></i> Back to Lease
+            </button>
+            <button class="btn btn-primary" @onclick="ShowUploadDialog">
+                <i class="bi bi-upload"></i> Upload Document
+            </button>
+        </div>
+    </div>
+
+    @if (showUploadDialog)
+    {
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Upload New Document</h5>
+            </div>
+            <div class="card-body">
+                <EditForm Model="uploadModel" OnValidSubmit="HandleUpload" FormName="UploadDocument">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="documentType" class="form-label">Document Type *</label>
+                            <InputSelect id="documentType" class="form-select" @bind-Value="uploadModel.DocumentType">
+                                <option value="">-- Select Type --</option>
+                                <option value="Lease Agreement">Lease Agreement</option>
+                                <option value="Addendum">Addendum</option>
+                                <option value="Move-In Inspection">Move-In Inspection</option>
+                                <option value="Move-Out Inspection">Move-Out Inspection</option>
+                                <option value="Insurance">Insurance</option>
+                                <option value="Pet Agreement">Pet Agreement</option>
+                                <option value="Parking Agreement">Parking Agreement</option>
+                                <option value="Correspondence">Correspondence</option>
+                                <option value="Notice">Notice</option>
+                                <option value="Other">Other</option>
+                            </InputSelect>
+                            <ValidationMessage For="() => uploadModel.DocumentType" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="file" class="form-label">File *</label>
+                            <InputFile id="file" class="form-control" OnChange="HandleFileSelected" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.txt" />
+                            @if (!string.IsNullOrEmpty(selectedFileName))
+                            {
+                                <small class="text-muted">Selected: @selectedFileName (@selectedFileSize)</small>
+                            }
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <InputTextArea id="description" class="form-control" rows="2" @bind-Value="uploadModel.Description" />
+                        <ValidationMessage For="() => uploadModel.Description" />
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CancelUpload">Cancel</button>
+                        <button type="submit" class="btn btn-primary" disabled="@(selectedFile == null || isUploading)">
+                            @if (isUploading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                <span>Uploading...</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-upload"></i>
+                                <span> Upload</span>
+                            }
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+
+    @if (documents == null)
+    {
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading documents...</span>
+            </div>
+        </div>
+    }
+    else if (!documents.Any())
+    {
+        <div class="alert alert-info">
+            <h4>No Documents Found</h4>
+            <p>No documents have been uploaded for this lease yet.</p>
+            <button class="btn btn-primary" @onclick="ShowUploadDialog">Upload First Document</button>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Document</th>
+                                <th>Type</th>
+                                <th>Size</th>
+                                <th>Uploaded By</th>
+                                <th>Upload Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var doc in documents)
+                            {
+                                <tr>
+                                    <td>
+                                        <i class="bi @GetFileIcon(doc.FileExtension) me-2"></i>
+                                        <strong>@doc.FileName</strong>
+                                        @if (!string.IsNullOrEmpty(doc.Description))
+                                        {
+                                            <br />
+                                            <small class="text-muted">@doc.Description</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">@doc.DocumentType</span>
+                                    </td>
+                                    <td>@doc.FileSizeFormatted</td>
+                                    <td>@doc.CreatedBy</td>
+                                    <td>@doc.CreatedOn.ToString("MMM dd, yyyy h:mm tt")</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-info" @onclick="() => ViewDocument(doc)" title="View">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => DownloadDocument(doc)" title="Download">
+                                                <i class="bi bi-download"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteDocument(doc)" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public Guid LeaseId { get; set; }
+
+    private Lease? lease;
+    private List<Document>? documents;
+    private bool showUploadDialog = false;
+    private bool isUploading = false;
+    private UploadModel uploadModel = new();
+    private IBrowserFile? selectedFile;
+    private string selectedFileName = string.Empty;
+    private string selectedFileSize = string.Empty;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLease();
+        await LoadDocuments();
+    }
+
+    private async Task LoadLease()
+    {
+        lease = await LeaseService.GetByIdAsync(LeaseId);
+        if (lease == null)
+        {
+            Navigation.NavigateTo("/propertymanagement/leases");
+        }
+    }
+
+    private async Task LoadDocuments()
+    {
+        documents = await DocumentService.GetDocumentsByLeaseIdAsync(LeaseId);
+    }
+
+    private void ShowUploadDialog()
+    {
+        showUploadDialog = true;
+        uploadModel = new UploadModel();
+        selectedFile = null;
+        selectedFileName = string.Empty;
+        selectedFileSize = string.Empty;
+    }
+
+    private void CancelUpload()
+    {
+        showUploadDialog = false;
+        uploadModel = new UploadModel();
+        selectedFile = null;
+        selectedFileName = string.Empty;
+        selectedFileSize = string.Empty;
+    }
+
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        selectedFileName = selectedFile.Name;
+        selectedFileSize = FormatFileSize(selectedFile.Size);
+    }
+
+    private async Task HandleUpload()
+    {
+        if (selectedFile == null) return;
+
+        isUploading = true;
+        try
+        {
+           var organizationId = await UserContext.GetActiveOrganizationIdAsync() ?? Guid.Empty;
+
+            // Read file data
+            using var memoryStream = new MemoryStream();
+            await selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(memoryStream); // 10MB max
+            
+            var document = new Document
+            {
+                OrganizationId = organizationId,
+                FileName = selectedFile.Name,
+                FileExtension = Path.GetExtension(selectedFile.Name),
+                FileData = memoryStream.ToArray(),
+                FileSize = selectedFile.Size,
+                FileType = selectedFile.ContentType,
+                DocumentType = uploadModel.DocumentType,
+                FilePath = string.Empty,
+                Description = uploadModel.Description ?? string.Empty,
+                LeaseId = LeaseId,
+            };
+
+            await DocumentService.CreateAsync(document);
+            await LoadDocuments();
+            CancelUpload();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error uploading file: {ex.Message}");
+        }
+        finally
+        {
+            isUploading = false;
+        }
+    }
+
+    private async Task ViewDocument(Document doc)
+    {
+        var base64Data = Convert.ToBase64String(doc.FileData);
+        await JSRuntime.InvokeVoidAsync("viewFile", base64Data, doc.FileType);
+    }
+
+    private async Task DownloadDocument(Document doc)
+    {
+        var fileName = doc.FileName;
+        var fileData = doc.FileData;
+        var mimeType = doc.FileType;
+
+        await JSRuntime.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(fileData), mimeType);
+    }
+
+    private async Task DeleteDocument(Document doc)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete '{doc.FileName}'?"))
+        {
+            await DocumentService.DeleteAsync(doc.Id);
+            await LoadDocuments();
+        }
+    }
+
+    private void GoToLease()
+    {
+        Navigation.NavigateTo($"/propertymanagement/leases/{LeaseId}");
+    }
+
+    private string GetFileIcon(string extension)
+    {
+        return extension.ToLower() switch
+        {
+            ".pdf" => "bi-file-pdf text-danger",
+            ".doc" or ".docx" => "bi-file-word text-primary",
+            ".jpg" or ".jpeg" or ".png" => "bi-file-image text-success",
+            ".txt" => "bi-file-text",
+            _ => "bi-file-earmark"
+        };
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    public class UploadModel
+    {
+        [Required(ErrorMessage = "Document type is required.")]
+        public string DocumentType { get; set; } = string.Empty;
+
+        [MaxLength(500)]
+        public string? Description { get; set; }
+    }
+}

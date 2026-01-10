@@ -1,0 +1,45 @@
+﻿@inherits LayoutComponentBase
+@using Aquiis.Professional.Shared.Components
+@using Aquiis.Professional.Shared.Services
+@using Aquiis.UI.Shared.Components.Layout
+@inject ThemeService ThemeService
+@implements IDisposable
+
+<SharedMainLayout Theme="@ThemeService.CurrentTheme">
+    <SidebarContent>
+        <NavMenu @rendermode="InteractiveServer" />
+    </SidebarContent>
+    
+    <NotAuthorizedContent>
+        <a href="about" target="_blank">About</a>
+    </NotAuthorizedContent>
+    
+    <AuthorizedHeaderContent>
+        <AuthorizedHeaderSection />
+    </AuthorizedHeaderContent>
+    
+    <ChildContent>
+        @Body
+    </ChildContent>
+    
+    <FooterContent>
+        <ToastContainer />
+        <AuthorizeView>
+            <Authorized>
+                <SessionTimeoutModal @rendermode="InteractiveServer" />
+            </Authorized>
+        </AuthorizeView>
+    </FooterContent>
+</SharedMainLayout>
+
+@code {
+    protected override void OnInitialized()
+    {
+        ThemeService.OnThemeChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= StateHasChanged;
+    }
+}

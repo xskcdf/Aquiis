@@ -1,0 +1,352 @@
+@page "/propertymanagement/checklists/create"
+
+@using Aquiis.Professional.Features.PropertyManagement
+@using Aquiis.Core.Entities
+@using Aquiis.Application.Services
+@using Aquiis.Professional.Shared.Services
+@using Aquiis.Application.Services.PdfGenerators
+@using Aquiis.Core.Constants
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components
+
+@inject ChecklistService ChecklistService
+@inject UserContextService UserContext
+@inject NavigationManager NavigationManager
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
+@rendermode InteractiveServer
+
+<PageTitle>Create Checklist</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-list-check"></i> Create Checklist</h1>
+        <button class="btn btn-outline-secondary" @onclick="Cancel">
+            <i class="bi bi-x-circle"></i> Cancel
+        </button>
+    </div>
+
+    @if (errorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> @errorMessage
+            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+        </div>
+    }
+
+    @if (successMessage != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i> @successMessage
+            <button type="button" class="btn-close" @onclick="@(() => successMessage = null)"></button>
+        </div>
+    }
+
+    @if (loading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <EditForm Model="checklist" OnValidSubmit="SaveChecklist" FormName="createChecklist">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" />
+
+            <div class="row">
+                <div class="col-md-8">
+                    <!-- Basic Information -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="bi bi-info-circle"></i> Checklist Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Template</label>
+                                    <select class="form-select" @bind="selectedTemplateId" @bind:after="OnTemplateChanged" required>
+                                        <option value="@Guid.Empty">Select a template...</option>
+                                        <option value="@Guid.Empty + 1)">Manage Templates</option>
+                                        @foreach (var template in templates)
+                                        {
+                                            <option value="@template.Id">@template.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Checklist Name</label>
+                                    <InputText @bind-Value="checklist.Name" class="form-control" placeholder="e.g., Move-In Checklist - Unit 2A" required />
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                <small>Property and lease will be assigned when you complete this checklist.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Checklist Items -->
+                    @if (!checklistItems.Any() && selectedTemplateId != Guid.Empty)
+                    {
+                        <div class="card mb-3">
+                            <div class="card-body text-center py-5">
+                                <i class="bi bi-plus-circle" style="font-size: 3rem; color: #ccc;"></i>
+                                <p class="text-muted mt-3 mb-3">This template has no items. Click below to add your custom items.</p>
+                                <button type="button" class="btn btn-primary" @onclick="AddCustomItem">
+                                    <i class="bi bi-plus"></i> Add First Item
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else if (checklistItems.Any())
+                    {
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Checklist Items</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" @onclick="AddCustomItem">
+                                        <i class="bi bi-plus"></i> Add Custom Item
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                @{
+                                    var sections = checklistItems
+                                        .OrderBy(i => i.SectionOrder)
+                                        .ThenBy(i => i.ItemOrder)
+                                        .GroupBy(i => i.CategorySection ?? "General");
+                                }
+
+                                @foreach (var itemSection in sections)
+                                {
+                                    <h6 class="text-primary mt-3 mb-2">@itemSection.Key</h6>
+                                    @foreach (var item in itemSection)
+                                    {
+                                        <div class="card mb-2">
+                                            <div class="card-body py-2">
+                                                <div class="row align-items-center">
+                                                    <div class="col-md-7">
+                                                        <input type="text" class="form-control form-control-sm" @bind="item.ItemText" placeholder="Item description" />
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <input type="text" class="form-control form-control-sm" @bind="item.CategorySection" placeholder="Section" />
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" @bind="item.RequiresValue" id="reqValue_@item.ItemOrder" />
+                                                            <label class="form-check-label small" for="reqValue_@item.ItemOrder">
+                                                                Needs value
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-1 text-end">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveItem(item)">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Actions -->
+                    <div class="d-flex gap-2 mb-4">
+                        <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                            @if (isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            <i class="bi bi-check-circle"></i> Create Checklist
+                        </button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancel">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="col-md-4">
+                    <div class="card sticky-top" style="top: 20px;">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="bi bi-info-circle"></i> Template Information</h6>
+                        </div>
+                        <div class="card-body">
+                            @if (selectedTemplate != null)
+                            {
+                                <p><strong>@selectedTemplate.Name</strong></p>
+                                @if (!string.IsNullOrEmpty(selectedTemplate.Description))
+                                {
+                                    <p class="text-muted small">@selectedTemplate.Description</p>
+                                }
+                                <p class="mb-0">
+                                    <small>
+                                        <strong>Type:</strong> @selectedTemplate.Category<br/>
+                                        <strong>Items:</strong> @selectedTemplate.Items.Count
+                                    </small>
+                                </p>
+                            }
+                            else
+                            {
+                                <p class="text-muted">Select a template to view details</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private Checklist checklist = new();
+    private List<ChecklistTemplate> templates = new();
+    private List<ChecklistItem> checklistItems = new();
+    
+    private Guid selectedTemplateId = Guid.Empty;
+    private ChecklistTemplate? selectedTemplate;
+    private bool loading = true;
+    private bool isSaving = false;
+    private string? errorMessage;
+    private string? successMessage;
+
+    [SupplyParameterFromQuery(Name = "templateId")]
+    public Guid? TemplateIdFromQuery { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            loading = true;
+
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            var userId = await UserContext.GetUserIdAsync();
+
+            if (organizationId == null || string.IsNullOrEmpty(userId))
+            {
+                errorMessage = "Unable to determine user context. Please log in again.";
+                return;
+            }
+
+            // Set initial status
+            checklist.Status = ApplicationConstants.ChecklistStatuses.Draft;
+
+            // Load templates
+            templates = await ChecklistService.GetChecklistTemplatesAsync();
+
+            // Pre-select template if provided in query string
+            if (TemplateIdFromQuery.HasValue)
+            {
+                selectedTemplateId = TemplateIdFromQuery.Value;
+                await OnTemplateChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading data: {ex.Message}";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task OnTemplateChanged()
+    {
+        if (selectedTemplateId == Guid.Empty)
+        {
+            selectedTemplate = null;
+            checklistItems.Clear();
+            return;
+        }
+
+        if (selectedTemplateId.ToString() == (Guid.Empty + "1").ToString()) // Manage Templates option
+        {
+            NavigationManager.NavigateTo("/propertymanagement/checklists/templates");
+            return;
+        }
+
+        selectedTemplate = await ChecklistService.GetChecklistTemplateByIdAsync(selectedTemplateId);
+        if (selectedTemplate != null)
+        {
+            checklist.ChecklistTemplateId = selectedTemplate.Id;
+            checklist.ChecklistType = selectedTemplate.Category;
+            checklist.Name = selectedTemplate.Name;
+
+            // Copy template items to checklist items
+            checklistItems = selectedTemplate.Items.Select(ti => new ChecklistItem
+            {
+                Id = Guid.NewGuid(),
+                ItemText = ti.ItemText,
+                ItemOrder = ti.ItemOrder,
+                CategorySection = ti.CategorySection,
+                SectionOrder = ti.SectionOrder,
+                RequiresValue = ti.RequiresValue,
+                OrganizationId = checklist.OrganizationId
+            }).ToList();
+        }
+    }
+
+    private void AddCustomItem()
+    {
+        var maxOrder = checklistItems.Any() ? checklistItems.Max(i => i.ItemOrder) : 0;
+        var maxSectionOrder = checklistItems.Any() ? checklistItems.Max(i => i.SectionOrder) : 0;
+        checklistItems.Add(new ChecklistItem
+        {
+            Id = Guid.NewGuid(),
+            ItemText = "",
+            ItemOrder = maxOrder + 1,
+            CategorySection = "Custom",
+            SectionOrder = maxSectionOrder,
+            OrganizationId = checklist.OrganizationId
+        });
+    }
+
+    private void RemoveItem(ChecklistItem item)
+    {
+        checklistItems.Remove(item);
+    }
+
+    private async Task SaveChecklist()
+    {
+        try
+        {
+            isSaving = true;
+            errorMessage = null;
+
+            // Create the checklist
+            var savedChecklist = await ChecklistService.AddChecklistAsync(checklist);
+
+            // Add the items
+            foreach (var item in checklistItems)
+            {
+                item.ChecklistId = savedChecklist.Id;
+                await ChecklistService.AddChecklistItemAsync(item);
+            }
+
+            successMessage = "Checklist created successfully!";
+            await Task.Delay(500);
+            NavigationManager.NavigateTo($"/propertymanagement/checklists/complete/{savedChecklist.Id}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving checklist: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/checklists");
+    }
+}

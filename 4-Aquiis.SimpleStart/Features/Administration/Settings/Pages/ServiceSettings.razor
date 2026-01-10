@@ -1,0 +1,464 @@
+@page "/administration/settings/services"
+@using Aquiis.SimpleStart.Features.PropertyManagement
+@using Aquiis.Infrastructure.Data
+@using Aquiis.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.Application.Services.PdfGenerators
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+
+@inject ApplicationDbContext DbContext
+@inject PropertyManagementService PropertyService
+@inject UserContextService UserContext
+@inject ToastService ToastService
+@inject ILogger<ServiceSettings> Logger
+@inject NavigationManager Navigation
+
+@rendermode InteractiveServer
+
+@attribute [OrganizationAuthorize("Owner", "Administrator")]
+
+<PageTitle>Service Settings</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-gear-fill"></i> Background Service Settings</h1>
+    <button class="btn btn-secondary" @onclick="BackToDashboard">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </button>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Run Scheduled Tasks Manually</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Note:</strong> These tasks normally run automatically on a schedule. Use these buttons to run them immediately for testing or administrative purposes.
+                </div>
+
+                <div class="list-group">
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Apply Late Fees</h6>
+                                <small class="text-muted">Process overdue invoices and apply late fees based on organization settings</small>
+                            </div>
+                            <button class="btn btn-primary" @onclick="() => RunTask(TaskType.ApplyLateFees)" disabled="@isRunning">
+                                @if (runningTask == TaskType.ApplyLateFees)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                <i class="bi bi-play-fill"></i> Run Now
+                            </button>
+                        </div>
+                        @if (taskResults.ContainsKey(TaskType.ApplyLateFees))
+                        {
+                            <div class="alert alert-success mt-2 mb-0">
+                                <small>@taskResults[TaskType.ApplyLateFees]</small>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Update Invoice Statuses</h6>
+                                <small class="text-muted">Mark pending invoices as overdue based on due dates</small>
+                            </div>
+                            <button class="btn btn-primary" @onclick="() => RunTask(TaskType.UpdateInvoiceStatuses)" disabled="@isRunning">
+                                @if (runningTask == TaskType.UpdateInvoiceStatuses)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                <i class="bi bi-play-fill"></i> Run Now
+                            </button>
+                        </div>
+                        @if (taskResults.ContainsKey(TaskType.UpdateInvoiceStatuses))
+                        {
+                            <div class="alert alert-success mt-2 mb-0">
+                                <small>@taskResults[TaskType.UpdateInvoiceStatuses]</small>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Send Payment Reminders</h6>
+                                <small class="text-muted">Mark invoices for payment reminders based on reminder settings</small>
+                            </div>
+                            <button class="btn btn-primary" @onclick="() => RunTask(TaskType.SendPaymentReminders)" disabled="@isRunning">
+                                @if (runningTask == TaskType.SendPaymentReminders)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                <i class="bi bi-play-fill"></i> Run Now
+                            </button>
+                        </div>
+                        @if (taskResults.ContainsKey(TaskType.SendPaymentReminders))
+                        {
+                            <div class="alert alert-success mt-2 mb-0">
+                                <small>@taskResults[TaskType.SendPaymentReminders]</small>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Check Lease Renewals</h6>
+                                <small class="text-muted">Process lease expiration notifications and update expired leases</small>
+                            </div>
+                            <button class="btn btn-primary" @onclick="() => RunTask(TaskType.CheckLeaseRenewals)" disabled="@isRunning">
+                                @if (runningTask == TaskType.CheckLeaseRenewals)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                <i class="bi bi-play-fill"></i> Run Now
+                            </button>
+                        </div>
+                        @if (taskResults.ContainsKey(TaskType.CheckLeaseRenewals))
+                        {
+                            <div class="alert alert-success mt-2 mb-0">
+                                <small>@taskResults[TaskType.CheckLeaseRenewals]</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button class="btn btn-success" @onclick="RunAllTasks" disabled="@isRunning">
+                        @if (runningTask == TaskType.All)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        <i class="bi bi-play-circle-fill"></i> Run All Tasks
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Schedule Information</h5>
+            </div>
+            <div class="card-body">
+                <dl>
+                    <dt>Scheduled Run Time</dt>
+                    <dd>Daily at 2:00 AM</dd>
+
+                    <dt>Next Scheduled Run</dt>
+                    <dd>@GetNextRunTime()</dd>
+
+                    <dt>Last Manual Run</dt>
+                    <dd>@(lastRunTime?.ToString("MMM dd, yyyy h:mm tt") ?? "Never")</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">Task Details</h5>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <p><strong>Apply Late Fees:</strong> Applies late fees to invoices that are past the grace period based on organization-specific settings.</p>
+                    <p><strong>Update Invoice Statuses:</strong> Changes invoice status from "Pending" to "Overdue" for invoices past their due date.</p>
+                    <p><strong>Send Payment Reminders:</strong> Marks invoices for payment reminders when they're approaching their due date.</p>
+                    <p><strong>Check Lease Renewals:</strong> Processes lease expiration notifications at 90, 60, and 30 days, and marks expired leases.</p>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool isRunning = false;
+    private TaskType? runningTask = null;
+    private Dictionary<TaskType, string> taskResults = new();
+    private DateTime? lastRunTime = null;
+
+    private enum TaskType
+    {
+        ApplyLateFees,
+        UpdateInvoiceStatuses,
+        SendPaymentReminders,
+        CheckLeaseRenewals,
+        All
+    }
+
+    private void BackToDashboard()
+    {
+        Navigation.NavigateTo("/administration/dashboard");
+    }
+
+    private async Task RunTask(TaskType taskType)
+    {
+        try
+        {
+            isRunning = true;
+            runningTask = taskType;
+            taskResults.Clear();
+
+            Guid? organizationId = await GetActiveOrganizationIdAsync();
+            if (!organizationId.HasValue)
+            {
+                ToastService.ShowError("Could not determine organization ID");
+                return;
+            }
+
+            switch (taskType)
+            {
+                case TaskType.ApplyLateFees:
+                    await ApplyLateFees(organizationId.Value);
+                    break;
+                case TaskType.UpdateInvoiceStatuses:
+                    await UpdateInvoiceStatuses(organizationId.Value);
+                    break;
+                case TaskType.SendPaymentReminders:
+                    await SendPaymentReminders(organizationId.Value);
+                    break;
+                case TaskType.CheckLeaseRenewals:
+                    await CheckLeaseRenewals(organizationId.Value);
+                    break;
+            }
+
+            lastRunTime = DateTime.Now;
+            ToastService.ShowSuccess("Task completed successfully");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error running task {TaskType}", taskType);
+            ToastService.ShowError($"Error running task: {ex.Message}");
+        }
+        finally
+        {
+            isRunning = false;
+            runningTask = null;
+        }
+    }
+
+    private async Task RunAllTasks()
+    {
+        try
+        {
+            isRunning = true;
+            runningTask = TaskType.All;
+            taskResults.Clear();
+
+            var organizationId = await GetActiveOrganizationIdAsync();
+            if (organizationId == null)
+            {
+                ToastService.ShowError("Could not determine organization ID");
+                return;
+            }
+
+            await ApplyLateFees(organizationId.Value);
+            await UpdateInvoiceStatuses(organizationId.Value);
+            await SendPaymentReminders(organizationId.Value);
+            await CheckLeaseRenewals(organizationId.Value);
+
+            lastRunTime = DateTime.Now;
+            ToastService.ShowSuccess("All tasks completed successfully");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error running all tasks");
+            ToastService.ShowError($"Error running tasks: {ex.Message}");
+        }
+        finally
+        {
+            isRunning = false;
+            runningTask = null;
+        }
+    }
+
+    private async Task<Guid?> GetActiveOrganizationIdAsync()
+    {
+        // Get organization ID from UserContext
+        return await UserContext.GetActiveOrganizationIdAsync();
+    }
+
+    private async Task ApplyLateFees(Guid organizationId)
+    {
+        var settings = await PropertyService.GetOrganizationSettingsByOrgIdAsync(organizationId);
+        
+        if (settings == null || !settings.LateFeeEnabled || !settings.LateFeeAutoApply)
+        {
+            var reason = settings == null ? "Settings not found" 
+                : !settings.LateFeeEnabled ? "Late fees disabled" 
+                : "Auto-apply disabled";
+            taskResults[TaskType.ApplyLateFees] = $"No late fees applied: {reason} (OrgId: {organizationId})";
+            return;
+        }
+
+        var today = DateTime.Today;
+        var overdueInvoices = await DbContext.Invoices
+            .Include(i => i.Lease)
+            .Where(i => !i.IsDeleted &&
+                       i.OrganizationId == organizationId &&
+                       i.Status == "Pending" &&
+                       i.DueOn < today.AddDays(-settings.LateFeeGracePeriodDays) &&
+                       (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
+            .ToListAsync();
+
+        foreach (var invoice in overdueInvoices)
+        {
+            var lateFee = Math.Min(invoice.Amount * settings.LateFeePercentage, settings.MaxLateFeeAmount);
+            invoice.LateFeeAmount = lateFee;
+            invoice.LateFeeApplied = true;
+            invoice.LateFeeAppliedOn = DateTime.UtcNow;
+            invoice.Amount += lateFee;
+            invoice.Status = "Overdue";
+            invoice.LastModifiedOn = DateTime.UtcNow;
+            invoice.LastModifiedBy = ApplicationConstants.SystemUser.Id;
+            invoice.Notes = string.IsNullOrEmpty(invoice.Notes)
+                ? $"Late fee of {lateFee:C} applied on {DateTime.Now:MMM dd, yyyy}"
+                : $"{invoice.Notes}\nLate fee of {lateFee:C} applied on {DateTime.Now:MMM dd, yyyy}";
+        }
+
+        if (overdueInvoices.Any())
+        {
+            await DbContext.SaveChangesAsync();
+        }
+
+        taskResults[TaskType.ApplyLateFees] = $"Applied late fees to {overdueInvoices.Count} invoice(s)";
+    }
+
+    private async Task UpdateInvoiceStatuses(Guid organizationId)
+    {
+        var today = DateTime.Today;
+        var newlyOverdueInvoices = await DbContext.Invoices
+            .Where(i => !i.IsDeleted &&
+                       i.OrganizationId == organizationId &&
+                       i.Status == "Pending" &&
+                       i.DueOn < today &&
+                       (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
+            .ToListAsync();
+
+        foreach (var invoice in newlyOverdueInvoices)
+        {
+            invoice.Status = "Overdue";
+            invoice.LastModifiedOn = DateTime.UtcNow;
+            invoice.LastModifiedBy = ApplicationConstants.SystemUser.Id;
+        }
+
+        if (newlyOverdueInvoices.Any())
+        {
+            await DbContext.SaveChangesAsync();
+        }
+
+        taskResults[TaskType.UpdateInvoiceStatuses] = $"Updated {newlyOverdueInvoices.Count} invoice(s) to Overdue status";
+    }
+
+    private async Task SendPaymentReminders(Guid organizationId)
+    {
+        var settings = await PropertyService.GetOrganizationSettingsByOrgIdAsync(organizationId);
+        if (settings == null || !settings.PaymentReminderEnabled)
+        {
+            var reason = settings == null ? "Settings not found" : "Payment reminders disabled";
+            taskResults[TaskType.SendPaymentReminders] = $"No reminders sent: {reason}";
+            return;
+        }
+
+        var today = DateTime.Today;
+        var upcomingInvoices = await DbContext.Invoices
+            .Include(i => i.Lease)
+                .ThenInclude(l => l.Tenant)
+            .Include(i => i.Lease)
+                .ThenInclude(l => l.Property)
+            .Where(i => !i.IsDeleted &&
+                       i.OrganizationId == organizationId &&
+                       i.Status == "Pending" &&
+                       i.DueOn >= today &&
+                       i.DueOn <= today.AddDays(settings.PaymentReminderDaysBefore) &&
+                       (i.ReminderSent == null || !i.ReminderSent.Value))
+            .ToListAsync();
+
+        foreach (var invoice in upcomingInvoices)
+        {
+            invoice.ReminderSent = true;
+            invoice.ReminderSentOn = DateTime.UtcNow;
+            invoice.LastModifiedOn = DateTime.UtcNow;
+            invoice.LastModifiedBy = ApplicationConstants.SystemUser.Id;
+        }
+
+        if (upcomingInvoices.Any())
+        {
+            await DbContext.SaveChangesAsync();
+        }
+
+        taskResults[TaskType.SendPaymentReminders] = $"Marked {upcomingInvoices.Count} invoice(s) for payment reminders";
+    }
+
+    private async Task CheckLeaseRenewals(Guid organizationId)
+    {
+        var today = DateTime.Today;
+        int totalProcessed = 0;
+
+        // 90-day notifications
+        var leasesExpiring90Days = await DbContext.Leases
+            .Include(l => l.Tenant)
+            .Include(l => l.Property)
+            .Where(l => !l.IsDeleted &&
+                       l.OrganizationId == organizationId &&
+                       l.Status == "Active" &&
+                       l.EndDate >= today.AddDays(85) &&
+                       l.EndDate <= today.AddDays(95) &&
+                       (l.RenewalNotificationSent == null || !l.RenewalNotificationSent.Value))
+            .ToListAsync();
+
+        foreach (var lease in leasesExpiring90Days)
+        {
+            lease.RenewalNotificationSent = true;
+            lease.RenewalNotificationSentOn = DateTime.UtcNow;
+            lease.RenewalStatus = "Pending";
+            lease.LastModifiedOn = DateTime.UtcNow;
+            lease.LastModifiedBy = ApplicationConstants.SystemUser.Id;
+            totalProcessed++;
+        }
+
+        // Expired leases
+        var expiredLeases = await DbContext.Leases
+            .Where(l => !l.IsDeleted &&
+                       l.OrganizationId == organizationId &&
+                       l.Status == "Active" &&
+                       l.EndDate < today &&
+                       (l.RenewalStatus == null || l.RenewalStatus == "Pending"))
+            .ToListAsync();
+
+        foreach (var lease in expiredLeases)
+        {
+            lease.Status = "Expired";
+            lease.RenewalStatus = "Expired";
+            lease.LastModifiedOn = DateTime.UtcNow;
+            lease.LastModifiedBy = ApplicationConstants.SystemUser.Id;
+            totalProcessed++;
+        }
+
+        if (totalProcessed > 0)
+        {
+            await DbContext.SaveChangesAsync();
+        }
+
+        taskResults[TaskType.CheckLeaseRenewals] = $"Processed {totalProcessed} lease renewal(s)";
+    }
+
+    private string GetNextRunTime()
+    {
+        var now = DateTime.Now;
+        var next2AM = DateTime.Today.AddDays(1).AddHours(2);
+        
+        if (now.Hour < 2)
+        {
+            next2AM = DateTime.Today.AddHours(2);
+        }
+
+        return next2AM.ToString("MMM dd, yyyy h:mm tt");
+    }
+}

@@ -1,0 +1,164 @@
+@using Aquiis.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.Application.Services.PdfGenerators
+@implements IDisposable
+@inject ToastService ToastService
+@rendermode InteractiveServer
+
+<style>
+    .toast-slide-in {
+        animation: slideInRight 0.3s ease-out;
+    }
+
+    .toast-slide-out {
+        animation: slideOutRight 0.3s ease-in;
+    }
+
+    @@keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+</style>
+
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+    @foreach (var toast in _toasts)
+    {
+        <div class="toast show @GetToastClass(toast.Type) @GetAnimationClass(toast.Id)" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="bi @GetIconClass(toast.Type) me-2"></i>
+                <strong class="me-auto">@toast.Title</strong>
+                <small>@GetTimeAgo(toast.Timestamp)</small>
+                <button type="button" class="btn-close" @onclick="() => RemoveToast(toast.Id)" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                @toast.Message
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<ToastMessage> _toasts = new();
+    private Dictionary<string, System.Threading.Timer> _timers = new();
+    private HashSet<string> _removingToasts = new();
+
+    protected override void OnInitialized()
+    {
+        ToastService.OnShow += ShowToast;
+    }
+
+    private void ShowToast(ToastMessage toast)
+    {
+        InvokeAsync(() =>
+        {
+            _toasts.Add(toast);
+            StateHasChanged();
+
+            // Auto-remove after duration
+            var timer = new System.Threading.Timer(_ =>
+            {
+                RemoveToast(toast.Id);
+            }, null, toast.Duration, System.Threading.Timeout.Infinite);
+
+            _timers[toast.Id] = timer;
+        });
+    }
+
+    private void RemoveToast(string toastId)
+    {
+        InvokeAsync(async () =>
+        {
+            var toast = _toasts.FirstOrDefault(t => t.Id == toastId);
+            if (toast != null && !_removingToasts.Contains(toastId))
+            {
+                _removingToasts.Add(toastId);
+                StateHasChanged();
+                
+                // Wait for slide-out animation to complete
+                await Task.Delay(300);
+                
+                _toasts.Remove(toast);
+                _removingToasts.Remove(toastId);
+                
+                if (_timers.ContainsKey(toastId))
+                {
+                    _timers[toastId].Dispose();
+                    _timers.Remove(toastId);
+                }
+                
+                StateHasChanged();
+            }
+        });
+    }
+
+    private string GetAnimationClass(string toastId)
+    {
+        return _removingToasts.Contains(toastId) ? "toast-slide-out" : "toast-slide-in";
+    }
+
+    private string GetToastClass(ToastType type)
+    {
+        return type switch
+        {
+            ToastType.Success => "bg-success text-white",
+            ToastType.Error => "bg-danger text-white",
+            ToastType.Warning => "bg-warning text-dark",
+            ToastType.Info => "bg-info text-white",
+            _ => "bg-secondary text-white"
+        };
+    }
+
+    private string GetIconClass(ToastType type)
+    {
+        return type switch
+        {
+            ToastType.Success => "bi-check-circle-fill text-white",
+            ToastType.Error => "bi-exclamation-circle-fill text-white",
+            ToastType.Warning => "bi-exclamation-triangle-fill text-dark",
+            ToastType.Info => "bi-info-circle-fill text-white",
+            _ => "bi-bell-fill text-white"
+        };
+    }
+
+    private string GetTimeAgo(DateTime timestamp)
+    {
+        var timeSpan = DateTime.Now - timestamp;
+        
+        if (timeSpan.TotalSeconds < 60)
+            return "just now";
+        if (timeSpan.TotalMinutes < 60)
+            return $"{(int)timeSpan.TotalMinutes}m ago";
+        if (timeSpan.TotalHours < 24)
+            return $"{(int)timeSpan.TotalHours}h ago";
+        
+        return timestamp.ToString("MMM d");
+    }
+
+    public void Dispose()
+    {
+        ToastService.OnShow -= ShowToast;
+        
+        foreach (var timer in _timers.Values)
+        {
+            timer.Dispose();
+        }
+        _timers.Clear();
+    }
+}

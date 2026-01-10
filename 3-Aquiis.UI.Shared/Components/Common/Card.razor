@@ -1,0 +1,73 @@
+@namespace Aquiis.UI.Shared.Components.Common
+
+<div class="card @CssClass @(FullHeight ? "h-100" : "")">
+    @if (HeaderContent != null || !string.IsNullOrEmpty(Title))
+    {
+        <div class="card-header @HeaderCssClass">
+            @if (HeaderContent != null)
+            {
+                @HeaderContent
+            }
+            else
+            {
+                <h5 class="card-title mb-0">@Title</h5>
+            }
+        </div>
+    }
+    <div class="card-body @BodyCssClass">
+        @ChildContent
+    </div>
+    @if (FooterContent != null)
+    {
+        <div class="card-footer @FooterCssClass">
+            @FooterContent
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Card title (only used if HeaderContent is not provided)
+    /// </summary>
+    [Parameter] public string? Title { get; set; }
+    
+    /// <summary>
+    /// Whether the card should take full height of its container
+    /// </summary>
+    [Parameter] public bool FullHeight { get; set; }
+    
+    /// <summary>
+    /// Additional CSS classes for the card container
+    /// </summary>
+    [Parameter] public string CssClass { get; set; } = "";
+    
+    /// <summary>
+    /// Additional CSS classes for the header
+    /// </summary>
+    [Parameter] public string HeaderCssClass { get; set; } = "";
+    
+    /// <summary>
+    /// Additional CSS classes for the body
+    /// </summary>
+    [Parameter] public string BodyCssClass { get; set; } = "";
+    
+    /// <summary>
+    /// Additional CSS classes for the footer
+    /// </summary>
+    [Parameter] public string FooterCssClass { get; set; } = "";
+    
+    /// <summary>
+    /// Custom header content (overrides Title)
+    /// </summary>
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+    
+    /// <summary>
+    /// Main card body content
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    /// <summary>
+    /// Footer content
+    /// </summary>
+    [Parameter] public RenderFragment? FooterContent { get; set; }
+}

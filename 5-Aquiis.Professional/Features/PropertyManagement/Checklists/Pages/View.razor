@@ -1,0 +1,588 @@
+@page "/propertymanagement/checklists/{ChecklistId:guid}"
+
+@using Aquiis.Core.Entities
+@using Aquiis.Professional.Features.PropertyManagement
+@using Aquiis.Core.Constants
+@using Aquiis.Application.Services
+@using Aquiis.Application.Services.PdfGenerators
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.JSInterop
+
+@inject ChecklistService ChecklistService
+@inject UserContextService UserContext
+@inject NavigationManager NavigationManager
+@inject ChecklistPdfGenerator PdfGenerator
+@inject Application.Services.DocumentService DocumentService
+@inject IJSRuntime JSRuntime
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
+@rendermode InteractiveServer
+
+<PageTitle>View Checklist</PageTitle>
+
+@if (checklist == null)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-list-check"></i> Checklist Report</h1>
+        <div class="btn-group">
+            @if (checklist.Status != ApplicationConstants.ChecklistStatuses.Completed)
+            {
+                <button class="btn btn-primary" @onclick="ContinueEditing">
+                    <i class="bi bi-pencil"></i> Continue Editing
+                </button>
+            }
+            <button class="btn btn-outline-primary" @onclick="ShowSaveTemplateModal">
+                <i class="bi bi-save"></i> Save as Template
+            </button>
+            @if (checklist.DocumentId.HasValue)
+            {
+                <div class="btn-group">
+                    <button class="btn btn-success" @onclick="ViewPdf" disabled="@isGeneratingPdf">
+                        @if (isGeneratingPdf)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        <i class="bi bi-eye"></i> View PDF
+                    </button>
+                    <button class="btn btn-outline-success" @onclick="DownloadPdf" disabled="@isGeneratingPdf">
+                        <i class="bi bi-download"></i> Download PDF
+                    </button>
+                </div>
+            }
+            else
+            {
+                <button class="btn btn-success" @onclick="GeneratePdf" disabled="@isGeneratingPdf">
+                    @if (isGeneratingPdf)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                    }
+                    <i class="bi bi-file-pdf"></i> Generate PDF
+                </button>
+            }
+            <button class="btn btn-outline-secondary" @onclick="BackToList">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    <!-- Save as Template Modal -->
+    @if (showSaveTemplateModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-save"></i> Save as Template</h5>
+                        <button type="button" class="btn-close" @onclick="CloseSaveTemplateModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <EditForm Model="saveTemplateModel" OnValidSubmit="SaveAsTemplate">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger" />
+
+                            <div class="mb-3">
+                                <label for="templateName" class="form-label">Template Name <span class="text-danger">*</span></label>
+                                <InputText id="templateName" class="form-control" @bind-Value="saveTemplateModel.TemplateName" 
+                                          placeholder="Enter template name" />
+                                <ValidationMessage For="@(() => saveTemplateModel.TemplateName)" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="templateDescription" class="form-label">Description (Optional)</label>
+                                <InputTextArea id="templateDescription" class="form-control" rows="3" 
+                                              @bind-Value="saveTemplateModel.TemplateDescription" 
+                                              placeholder="Enter template description" />
+                            </div>
+
+                            <div class="text-muted small mb-3">
+                                <i class="bi bi-info-circle"></i> This will create a new template with @(checklist?.Items?.Count ?? 0) items that you can reuse for future checklists.
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" @onclick="CloseSaveTemplateModal">Cancel</button>
+                                <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                                    @if (isSaving)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    Save Template
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Property Information -->
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-building"></i> Property Information</h5>
+                </div>
+                <div class="card-body">
+                    @if (checklist.Property != null)
+                    {
+                        <p class="mb-1"><strong>@checklist.Property.Address</strong></p>
+                        <p class="text-muted mb-0">@checklist.Property.City, @checklist.Property.State @checklist.Property.ZipCode</p>
+                    }
+                    @if (checklist.Lease != null)
+                    {
+                        <hr />
+                        <p class="mb-0"><strong>Lease:</strong> @(checklist.Lease.Tenant?.FirstName ?? "Unknown") @(checklist.Lease.Tenant?.LastName ?? "") (Starts: @checklist.Lease.StartDate.ToString("MM/dd/yyyy"))</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Checklist Details -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Checklist Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <strong>Name:</strong>
+                            <p>@checklist.Name</p>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <strong>Type:</strong>
+                            <p><span class="badge bg-info">@checklist.ChecklistType</span></p>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <strong>Status:</strong>
+                            <p><span class="badge @GetStatusBadge()">@checklist.Status</span></p>
+                        </div>
+                    </div>
+                    @if (checklist.Status == ApplicationConstants.ChecklistStatuses.Completed)
+                    {
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <strong>Completed By:</strong>
+                                <p>@checklist.CompletedBy</p>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <strong>Completed On:</strong>
+                                <p>@checklist.CompletedOn?.ToString("MMMM dd, yyyy h:mm tt")</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Checklist Items Grouped by Section -->
+            @if (checklist.Items != null && checklist.Items.Any())
+            {
+                var groupedItems = checklist.Items
+                    .OrderBy(i => i.SectionOrder)
+                    .ThenBy(i => i.ItemOrder)
+                    .GroupBy(i => i.CategorySection ?? "General");
+                
+                @foreach (var group in groupedItems)
+                {
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-folder"></i> @group.Key</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 5%;"></th>
+                                            <th style="width: 35%;">Item</th>
+                                            <th style="width: 15%;">Value</th>
+                                            <th style="width: 45%;">Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in group)
+                                        {
+                                            <tr>
+                                                <td class="text-center">
+                                                    @if (item.IsChecked)
+                                                    {
+                                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="bi bi-circle text-muted"></i>
+                                                    }
+                                                </td>
+                                                <td>@item.ItemText</td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(item.Value))
+                                                    {
+                                                        <strong>@item.Value</strong>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">-</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(item.Notes))
+                                                    {
+                                                        <small>@item.Notes</small>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">-</span>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(item.PhotoUrl))
+                                                    {
+                                                        <div class="mt-1">
+                                                            <img src="@item.PhotoUrl" alt="Item photo" class="img-thumbnail" style="max-width: 150px;" />
+                                                        </div>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+
+            <!-- General Notes -->
+            @if (!string.IsNullOrWhiteSpace(checklist.GeneralNotes))
+            {
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-sticky"></i> General Notes</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0" style="white-space: pre-wrap;">@checklist.GeneralNotes</p>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <div class="card sticky-top" style="top: 1rem;">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> Summary</h5>
+                </div>
+                <div class="card-body">
+                    @if (checklist.Items != null && checklist.Items.Any())
+                    {
+                        var totalItems = checklist.Items.Count;
+                        var checkedItems = checklist.Items.Count(i => i.IsChecked);
+                        var itemsWithValues = checklist.Items.Count(i => !string.IsNullOrEmpty(i.Value));
+                        var itemsWithNotes = checklist.Items.Count(i => !string.IsNullOrEmpty(i.Notes));
+                        var progressPercent = totalItems > 0 ? (int)((checkedItems * 100.0) / totalItems) : 0;
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Completion</span>
+                                <span><strong>@checkedItems / @totalItems</strong></span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar @(progressPercent == 100 ? "bg-success" : "")" 
+                                     role="progressbar" 
+                                     style="width: @progressPercent%" 
+                                     aria-valuenow="@progressPercent" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    @progressPercent%
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <div class="mb-2">
+                            <i class="bi bi-check-circle text-success"></i> Checked: <strong>@checkedItems</strong>
+                        </div>
+                        <div class="mb-2">
+                            <i class="bi bi-circle text-muted"></i> Unchecked: <strong>@(totalItems - checkedItems)</strong>
+                        </div>
+                        <div class="mb-2">
+                            <i class="bi bi-input-cursor-text text-primary"></i> With Values: <strong>@itemsWithValues</strong>
+                        </div>
+                        <div class="mb-2">
+                            <i class="bi bi-sticky text-info"></i> With Notes: <strong>@itemsWithNotes</strong>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid ChecklistId { get; set; }
+
+    private Checklist? checklist;
+    private string? successMessage;
+    private string? errorMessage;
+    private bool showSaveTemplateModal = false;
+    private bool isSaving = false;
+    private bool isGeneratingPdf = false;
+    private SaveTemplateModel saveTemplateModel = new();
+
+    public class SaveTemplateModel
+    {
+        [Required(ErrorMessage = "Template name is required")]
+        [StringLength(100, ErrorMessage = "Template name must be less than 100 characters")]
+        public string TemplateName { get; set; } = string.Empty;
+
+        [StringLength(500, ErrorMessage = "Description must be less than 500 characters")]
+        public string? TemplateDescription { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadChecklist();
+    }
+
+    private async Task LoadChecklist()
+    {
+        try
+        {
+            checklist = await ChecklistService.GetChecklistByIdAsync(ChecklistId);
+            
+            if (checklist == null)
+            {
+                errorMessage = "Checklist not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading checklist: {ex.Message}";
+        }
+    }
+
+    private void ShowSaveTemplateModal()
+    {
+        saveTemplateModel = new SaveTemplateModel();
+        showSaveTemplateModal = true;
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    private void CloseSaveTemplateModal()
+    {
+        showSaveTemplateModal = false;
+        saveTemplateModel = new SaveTemplateModel();
+    }
+
+    private async Task SaveAsTemplate()
+    {
+        try
+        {
+            isSaving = true;
+            errorMessage = null;
+
+            await ChecklistService.SaveChecklistAsTemplateAsync(
+                ChecklistId,
+                saveTemplateModel.TemplateName,
+                saveTemplateModel.TemplateDescription
+            );
+
+            successMessage = $"Checklist saved as template '{saveTemplateModel.TemplateName}' successfully!";
+            CloseSaveTemplateModal();
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Duplicate name error
+            errorMessage = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving template: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task HandlePdfAction()
+    {
+        if (checklist == null) return;
+
+        if (checklist.DocumentId.HasValue)
+        {
+            // View existing PDF
+            await ViewPdf();
+        }
+        else
+        {
+            // Generate new PDF
+            await GeneratePdf();
+        }
+    }
+
+    private async Task DownloadPdf()
+    {
+        if (checklist?.DocumentId == null) return;
+
+        try
+        {
+            isGeneratingPdf = true;
+            errorMessage = null;
+
+            var document = await DocumentService.GetByIdAsync(checklist.DocumentId.Value);
+            if (document != null)
+            {
+                var filename = $"Checklist_{checklist.Name.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf";
+                await JSRuntime.InvokeVoidAsync("downloadFile", filename, Convert.ToBase64String(document.FileData), document.FileType);
+            }
+            else
+            {
+                errorMessage = "PDF document not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error downloading PDF: {ex.Message}";
+        }
+        finally
+        {
+            isGeneratingPdf = false;
+        }
+    }
+
+    private async Task ViewPdf()
+    {
+        if (checklist?.DocumentId == null) return;
+
+        try
+        {
+            isGeneratingPdf = true;
+            errorMessage = null;
+
+            var document = await DocumentService.GetByIdAsync(checklist.DocumentId.Value);
+            if (document != null)
+            {
+                await JSRuntime.InvokeVoidAsync("viewFile", Convert.ToBase64String(document.FileData), document.FileType);
+            }
+            else
+            {
+                errorMessage = "PDF document not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error viewing PDF: {ex.Message}";
+        }
+        finally
+        {
+            isGeneratingPdf = false;
+        }
+    }
+
+    private async Task GeneratePdf()
+    {
+        if (checklist == null) return;
+
+        try
+        {
+            isGeneratingPdf = true;
+            errorMessage = null;
+
+            var userId = await UserContext.GetUserIdAsync();
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+
+            // Generate PDF
+            var pdfBytes = PdfGenerator.GenerateChecklistPdf(checklist);
+
+            // Create document record
+            var document = new Document
+            {
+                Id = Guid.NewGuid(),
+                OrganizationId = organizationId!.Value,
+                FileName = $"Checklist_{checklist.Name.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf",
+                FileExtension = ".pdf",
+                FileData = pdfBytes,
+                ContentType = "application/pdf",
+                FileType = "application/pdf",
+                FileSize = pdfBytes.Length,
+                DocumentType = "Checklist Report",
+                Description = $"Checklist report for {checklist.Name}",
+                PropertyId = checklist.PropertyId,
+                LeaseId = checklist.LeaseId,
+                CreatedBy = userId!,
+                CreatedOn = DateTime.UtcNow
+            };
+
+            // Save document to database
+            var savedDocument = await DocumentService.CreateAsync(document);
+
+            // Update checklist with document reference
+            checklist.DocumentId = savedDocument.Id;
+            await ChecklistService.UpdateChecklistAsync(checklist);
+
+            // View the PDF
+            //await JSRuntime.InvokeVoidAsync("viewFile", Convert.ToBase64String(pdfBytes), "application/pdf");
+
+            successMessage = "PDF generated and saved successfully!";
+            
+            // Reload checklist to update button text
+            await LoadChecklist();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error generating PDF: {ex.Message}";
+        }
+        finally
+        {
+            isGeneratingPdf = false;
+        }
+    }
+
+    private string GetStatusBadge()
+    {
+        if (checklist == null) return "bg-secondary";
+
+        return checklist.Status switch
+        {
+            var s when s == ApplicationConstants.ChecklistStatuses.Completed => "bg-success",
+            var s when s == ApplicationConstants.ChecklistStatuses.InProgress => "bg-warning text-dark",
+            var s when s == ApplicationConstants.ChecklistStatuses.Draft => "bg-secondary",
+            _ => "bg-secondary"
+        };
+    }
+
+    private void ContinueEditing()
+    {
+        NavigationManager.NavigateTo($"/propertymanagement/checklists/complete/{ChecklistId}");
+    }
+
+    private void BackToList()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/checklists");
+    }
+}

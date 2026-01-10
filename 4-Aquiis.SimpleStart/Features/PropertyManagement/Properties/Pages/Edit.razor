@@ -1,0 +1,399 @@
+@page "/propertymanagement/properties/edit/{PropertyId:guid}"
+
+@using System.ComponentModel.DataAnnotations
+@using Aquiis.Core.Entities
+@using Aquiis.Core.Constants
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Authorization
+
+@rendermode InteractiveServer
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
+@inject PropertyService PropertyService
+@inject NavigationManager NavigationManager
+
+@if (property == null)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else if (!isAuthorized)
+{
+    <div class="alert alert-danger">
+        <h4>Access Denied</h4>
+        <p>You don't have permission to edit this property.</p>
+        <a href="/properties" class="btn btn-primary">Back to Properties</a>
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Edit Property</h3>
+                </div>
+                <div class="card-body">
+                    <EditForm Model="propertyModel" OnValidSubmit="UpdatePropertyAsync" FormName="edit-property">
+                        <DataAnnotationsValidator />
+                        
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger" role="alert">
+                                @errorMessage
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(successMessage))
+                        {
+                            <div class="alert alert-success" role="alert">
+                                @successMessage
+                            </div>
+                        }
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Address *</label>
+                                <InputText @bind-Value="propertyModel.Address" class="form-control" placeholder="Enter property address" />
+                                <ValidationMessage For="() => propertyModel.Address" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label">Unit Number</label>
+                                <InputText @bind-Value="propertyModel.UnitNumber" class="form-control" placeholder="e.g., Apt 2B, Unit 101" />
+                                <ValidationMessage For="() => propertyModel.UnitNumber" class="text-danger" />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Zip Code</label>
+                                <InputText @bind-Value="propertyModel.ZipCode" class="form-control" placeholder="Zip Code" />
+                                <ValidationMessage For="() => propertyModel.ZipCode" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">City</label>
+                                <InputText @bind-Value="propertyModel.City" class="form-control" placeholder="City" />
+                                <ValidationMessage For="() => propertyModel.City" class="text-danger" />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">State</label>
+                                <InputSelect @bind-Value="propertyModel.State" class="form-select">
+                                    <option value="">Select State</option>
+                                    @foreach (var state in States.StatesArray())
+                                    {
+                                        <option value="@state.Abbreviation">@state.Name</option>
+                                    }
+                                </InputSelect>
+                                <ValidationMessage For="() => propertyModel.State" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Property Type *</label>
+                                <InputSelect @bind-Value="propertyModel.PropertyType" class="form-select">
+                                    <option value="">Select property type</option>
+                                    <option value="House">House</option>
+                                    <option value="Apartment">Apartment</option>
+                                    <option value="Condo">Condo</option>
+                                    <option value="Townhouse">Townhouse</option>
+                                    <option value="Duplex">Duplex</option>
+                                    <option value="Commercial">Commercial</option>
+                                    <option value="Other">Other</option>
+                                </InputSelect>
+                                <ValidationMessage For="() => propertyModel.PropertyType" class="text-danger" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Monthly Rent *</label>
+                                <InputNumber @bind-Value="propertyModel.MonthlyRent" class="form-control" placeholder="0.00" />
+                                <ValidationMessage For="() => propertyModel.MonthlyRent" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Status *</label>
+                                <InputSelect @bind-Value="propertyModel.Status" class="form-select">
+                                    <option value="@ApplicationConstants.PropertyStatuses.Available">Available</option>
+                                    <option value="@ApplicationConstants.PropertyStatuses.ApplicationPending">Application Pending</option>
+                                    <option value="@ApplicationConstants.PropertyStatuses.LeasePending">Lease Pending</option>
+                                    <option value="@ApplicationConstants.PropertyStatuses.Occupied">Occupied</option>
+                                    <option value="@ApplicationConstants.PropertyStatuses.UnderRenovation">Under Renovation</option>
+                                    <option value="@ApplicationConstants.PropertyStatuses.OffMarket">Off Market</option>
+                                </InputSelect>
+                                <ValidationMessage For="() => propertyModel.Status" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Bedrooms</label>
+                                <InputNumber @bind-Value="propertyModel.Bedrooms" class="form-control" />
+                                <ValidationMessage For="() => propertyModel.Bedrooms" class="text-danger" />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Bathrooms</label>
+                                <InputNumber @bind-Value="propertyModel.Bathrooms" class="form-control" />
+                                <ValidationMessage For="() => propertyModel.Bathrooms" class="text-danger" />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Square Feet</label>
+                                <InputNumber @bind-Value="propertyModel.SquareFeet" class="form-control" />
+                                <ValidationMessage For="() => propertyModel.SquareFeet" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Description</label>
+                                <InputTextArea @bind-Value="propertyModel.Description" class="form-control" rows="4" placeholder="Property description and features" />
+                                <ValidationMessage For="() => propertyModel.Description" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <div class="form-check">
+                                    <InputCheckbox @bind-Value="propertyModel.IsAvailable" class="form-check-input" />
+                                    <label class="form-check-label">
+                                        Property is available for rent
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                @if (isSubmitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                Update Property
+                            </button>
+                            <button type="button" class="btn btn-secondary" @onclick="ViewProperty">View Property</button>
+                            <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">Cancel</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Property Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" @onclick="ViewProperty">
+                            <i class="bi bi-eye"></i> View Property
+                        </button>
+                        <button class="btn btn-outline-danger" @onclick="DeleteProperty">
+                            <i class="bi bi-trash"></i> Delete Property
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Property Information</h5>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <strong>Created:</strong> @property.CreatedOn.ToString("MMMM dd, yyyy")
+                        <br />
+                        @if (property.LastModifiedOn.HasValue)
+                        {
+                            <strong>Last Modified:</strong> @property.LastModifiedOn.Value.ToString("MMMM dd, yyyy")
+                        }
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+@code {
+    [Parameter]
+    public Guid PropertyId { get; set; }
+
+    private string currentUserId = string.Empty;
+    private string errorMessage = string.Empty;
+
+    private Property? property;
+        private PropertyModel propertyModel = new();
+    private bool isSubmitting = false;
+    private bool isAuthorized = true;
+    private string successMessage = string.Empty;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPropertyAsync();
+    }
+
+    private async Task LoadPropertyAsync()
+    {
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            isAuthorized = false;
+            return;
+        }
+
+        property = await PropertyService.GetByIdAsync(PropertyId);
+
+        if (property == null)
+        {
+            isAuthorized = false;
+            return;
+        }
+
+        // Map property to model
+        propertyModel = new PropertyModel
+        {
+            Address = property.Address,
+            UnitNumber = property.UnitNumber,
+            City = property.City,
+            State = property.State,
+            ZipCode = property.ZipCode,
+            PropertyType = property.PropertyType,
+            MonthlyRent = property.MonthlyRent,
+            Bedrooms = property.Bedrooms,
+            Bathrooms = property.Bathrooms,
+            SquareFeet = property.SquareFeet,
+            Description = property.Description,
+            Status = property.Status,
+            IsAvailable = property.IsAvailable
+        };
+    }
+
+    private async Task SavePropertyAsync()
+    {
+        if (property != null)
+        {
+            await PropertyService.UpdateAsync(property);
+            NavigationManager.NavigateTo("/propertymanagement/properties");
+        }
+    }
+
+    private async Task DeleteProperty()
+    {
+        if (property != null)
+        {
+            await PropertyService.DeleteAsync(property.Id);
+            NavigationManager.NavigateTo("/propertymanagement/properties");
+        }
+    }
+
+    private void ViewProperty()
+    {
+        if (property != null)
+        {
+            NavigationManager.NavigateTo($"/propertymanagement/properties/{property.Id}");
+        }
+    }
+
+    private async Task UpdatePropertyAsync()
+    {
+        
+        if (property != null)
+        {
+            try {
+            isSubmitting = true;
+            errorMessage = string.Empty;
+            successMessage = string.Empty;
+
+            // Update property with form data
+            property!.Address = propertyModel.Address;
+            property.UnitNumber = propertyModel.UnitNumber;
+            property.City = propertyModel.City;
+            property.State = propertyModel.State;
+            property.ZipCode = propertyModel.ZipCode;
+            property.PropertyType = propertyModel.PropertyType;
+            property.MonthlyRent = propertyModel.MonthlyRent;
+            property.Bedrooms = propertyModel.Bedrooms;
+            property.Bathrooms = propertyModel.Bathrooms;
+            property.SquareFeet = propertyModel.SquareFeet;
+            property.Description = propertyModel.Description;
+            property.Status = propertyModel.Status;
+            property.IsAvailable = propertyModel.IsAvailable;
+
+            await PropertyService.UpdateAsync(property);
+            } catch (Exception ex)
+            {
+                errorMessage = $"An error occurred while updating the property: {ex.Message}";
+            }
+            finally
+            {
+                isSubmitting = false;
+            }
+            NavigationManager.NavigateTo("/propertymanagement/properties");
+        }
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/properties");
+    }
+
+    public class PropertyModel
+    {
+        [Required(ErrorMessage = "Address is required")]
+        [StringLength(200, ErrorMessage = "Address cannot exceed 200 characters")]
+        public string Address { get; set; } = string.Empty;
+
+        [StringLength(50, ErrorMessage = "Unit number cannot exceed 50 characters")]
+        public string? UnitNumber { get; set; }
+
+        [StringLength(100, ErrorMessage = "City cannot exceed 100 characters")]
+        public string City { get; set; } = string.Empty;
+
+        [StringLength(50, ErrorMessage = "State cannot exceed 50 characters")]
+        public string State { get; set; } = string.Empty;
+
+        [StringLength(20, ErrorMessage = "Zip Code cannot exceed 20 characters")]
+        public string ZipCode { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Property type is required")]
+        [StringLength(50, ErrorMessage = "Property type cannot exceed 50 characters")]
+        public string PropertyType { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Monthly rent is required")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Monthly rent must be greater than 0")]
+        public decimal MonthlyRent { get; set; }
+
+        [Range(0, int.MaxValue, ErrorMessage = "Bedrooms cannot be negative")]
+        public int Bedrooms { get; set; }
+
+        [Range(0.0, double.MaxValue, ErrorMessage = "Bathrooms cannot be negative")]
+        public decimal Bathrooms { get; set; }
+
+        [Range(0, int.MaxValue, ErrorMessage = "Square feet cannot be negative")]
+        public int SquareFeet { get; set; }
+
+        [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters")]
+        public string Description { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Status is required")]
+        [StringLength(50, ErrorMessage = "Status cannot exceed 50 characters")]
+        public string Status { get; set; } = ApplicationConstants.PropertyStatuses.Available;
+
+        public bool IsAvailable { get; set; } = true;
+    }
+}

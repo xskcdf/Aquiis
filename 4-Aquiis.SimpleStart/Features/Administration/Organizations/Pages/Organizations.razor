@@ -1,0 +1,214 @@
+@page "/administration/organizations"
+
+@using Aquiis.Core.Entities
+@using Aquiis.Application.Services
+@using Aquiis.SimpleStart.Shared.Components.Shared
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.Core.Constants
+@using Microsoft.AspNetCore.Authorization
+
+@inject OrganizationService OrganizationService
+@inject UserContextService UserContext
+@inject NavigationManager Navigation
+@inject ToastService ToastService
+
+@attribute [OrganizationAuthorize("Owner", "Administrator")]
+@rendermode InteractiveServer
+
+<PageTitle>Organizations - Administration</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1><i class="bi bi-building"></i> Organizations</h1>
+            <p class="text-muted mb-0">Manage your organizations and access</p>
+        </div>
+        <OrganizationAuthorizeView Roles="Owner">
+            <button class="btn btn-primary" @onclick="NavigateToCreate">
+                <i class="bi bi-plus-circle"></i> Create Organization
+            </button>
+        </OrganizationAuthorizeView>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (!organizations.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No organizations found.
+            <OrganizationAuthorizeView Roles="Owner">
+                <a href="/administration/organizations/create" class="alert-link">Create your first organization</a>
+            </OrganizationAuthorizeView>
+        </div>
+    }
+    else
+    {
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" placeholder="Search organizations..." @bind="searchTerm" @bind:event="oninput" @onkeyup="ApplyFilters" />
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Organization Name</th>
+                                <th>Display Name</th>
+                                <th>State</th>
+                                <th>Your Role</th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var userOrg in filteredOrganizations)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@userOrg.Organization.Name</strong>
+                                    </td>
+                                    <td>@(userOrg.Organization.DisplayName ?? "-")</td>
+                                    <td>@(userOrg.Organization.State ?? "-")</td>
+                                    <td>
+                                        <span class="badge @GetRoleBadgeClass(userOrg.Role)">
+                                            @userOrg.Role
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (userOrg.Organization.IsActive)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" @onclick="() => NavigateToView(userOrg.OrganizationId)" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            @if (userOrg.Role == ApplicationConstants.OrganizationRoles.Owner)
+                                            {
+                                                <button class="btn btn-outline-secondary" @onclick="() => NavigateToEdit(userOrg.OrganizationId)" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                            }
+                                            @if (userOrg.Role == ApplicationConstants.OrganizationRoles.Owner || userOrg.Role == ApplicationConstants.OrganizationRoles.Administrator)
+                                            {
+                                                <button class="btn btn-outline-info" @onclick="() => NavigateToManageUsers(userOrg.OrganizationId)" title="Manage Users">
+                                                    <i class="bi bi-people"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3 text-muted">
+            <small>Showing @filteredOrganizations.Count of @organizations.Count organization(s)</small>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private List<UserOrganization> organizations = new();
+    private List<UserOrganization> filteredOrganizations = new();
+    private string searchTerm = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrganizations();
+    }
+
+    private async Task LoadOrganizations()
+    {
+        isLoading = true;
+        try
+        {
+            var userId = await UserContext.GetUserIdAsync();
+            if (!string.IsNullOrEmpty(userId))
+            {
+                organizations = await OrganizationService.GetActiveUserAssignmentsAsync();
+                filteredOrganizations = organizations;
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading organizations: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredOrganizations = organizations;
+        }
+        else
+        {
+            var search = searchTerm.ToLower();
+            filteredOrganizations = organizations.Where(o =>
+                (o.Organization.Name?.ToLower().Contains(search) ?? false) ||
+                (o.Organization.DisplayName?.ToLower().Contains(search) ?? false) ||
+                (o.Organization.State?.ToLower().Contains(search) ?? false) ||
+                (o.Role?.ToLower().Contains(search) ?? false)
+            ).ToList();
+        }
+    }
+
+    private string GetRoleBadgeClass(string role)
+    {
+        return role switch
+        {
+            ApplicationConstants.OrganizationRoles.Owner => "bg-primary",
+            ApplicationConstants.OrganizationRoles.Administrator => "bg-info",
+            ApplicationConstants.OrganizationRoles.PropertyManager => "bg-success",
+            ApplicationConstants.OrganizationRoles.User => "bg-secondary",
+            _ => "bg-secondary"
+        };
+    }
+
+    private void NavigateToCreate()
+    {
+        Navigation.NavigateTo("/administration/organizations/create");
+    }
+
+    private void NavigateToView(Guid organizationId)
+    {
+        Navigation.NavigateTo($"/administration/organizations/view/{organizationId}");
+    }
+
+    private void NavigateToEdit(Guid organizationId)
+    {
+        Navigation.NavigateTo($"/administration/organizations/edit/{organizationId}");
+    }
+
+    private void NavigateToManageUsers(Guid organizationId)
+    {
+        Navigation.NavigateTo($"/administration/organizations/{organizationId}/users");
+    }
+}

@@ -1,0 +1,778 @@
+@page "/administration/application/database"
+@using Aquiis.Application.Services
+@using Aquiis.Professional.Shared.Services
+@using Aquiis.Professional.Services
+@using Aquiis.Application.Services.PdfGenerators
+@using Aquiis.Core.Constants
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Options
+@using ElectronNET.API
+@inject DatabaseBackupService BackupService
+@inject ElectronPathService ElectronPathService
+@inject NavigationManager Navigation
+@inject SchemaValidationService SchemaService
+@inject IOptions<ApplicationSettings> AppSettings
+@inject IJSRuntime JSRuntime
+@inject IHostApplicationLifetime AppLifetime
+@attribute [OrganizationAuthorize("Owner", "Administrator")]
+@rendermode InteractiveServer
+
+<PageTitle>Database Backup & Recovery</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>
+                <i class="bi bi-database-fill-gear"></i> Database Backup & Recovery</h1>
+            <p class="text-muted">Manage database backups and recover from corruption</p>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-secondary" @onclick="BackToDashboard">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i> @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    <!-- Database Health Status -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-heart-pulse"></i> Database Health</h5>
+                </div>
+                <div class="card-body">
+                    @if (isCheckingHealth)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Checking health...</span>
+                            </div>
+                            <p class="mt-2">Checking database health...</p>
+                        </div>
+                    }
+                    else if (healthCheckResult != null)
+                    {
+                        <div class="d-flex align-items-center mb-3">
+                            @if (healthCheckResult.Value.IsHealthy)
+                            {
+                                <i class="bi bi-check-circle-fill text-success fs-1 me-3"></i>
+                                <div>
+                                    <h5 class="mb-0 text-success">Healthy</h5>
+                                    <p class="text-muted mb-0">@healthCheckResult.Value.Message</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <i class="bi bi-exclamation-triangle-fill text-danger fs-1 me-3"></i>
+                                <div>
+                                    <h5 class="mb-0 text-danger">Unhealthy</h5>
+                                    <p class="text-muted mb-0">@healthCheckResult.Value.Message</p>
+                                </div>
+                            }
+                        </div>
+                        <small class="text-muted">Last checked: @lastHealthCheck?.ToString("g")</small>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Click "Check Health" to validate database integrity</p>
+                    }
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-outline-primary" @onclick="CheckDatabaseHealth" disabled="@isCheckingHealth">
+                            <i class="bi bi-heart-pulse"></i> Check Health
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-shield-check"></i> Backup Actions</h5>
+                </div>
+                <div class="card-body">
+                    <p>Create manual backups or recover from corruption</p>
+                    
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success" @onclick="CreateManualBackup" disabled="@isCreatingBackup">
+                            @if (isCreatingBackup)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-save me-2"></i>
+                            }
+                            Create Manual Backup
+                        </button>
+                        
+                        <button class="btn btn-info" @onclick="TriggerFileUpload" disabled="@isUploading">
+                            @if (isUploading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-upload me-2"></i>
+                            }
+                            Upload Backup File
+                        </button>
+                        <InputFile id="backupFileInput" OnChange="HandleFileUpload" style="display:none;" accept=".db" />
+                        
+                        <button class="btn btn-warning" @onclick="AttemptAutoRecovery" disabled="@isRecovering">
+                            @if (isRecovering)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-arrow-clockwise me-2"></i>
+                            }
+                            Auto-Recover from Corruption
+                        </button>
+                        
+                        <button class="btn btn-danger" @onclick="ResetDatabase" disabled="@isResetting">
+                            @if (isResetting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-trash me-2"></i>
+                            }
+                            Reset Database (Create New Blank)
+                        </button>
+                        
+                        @if (!HybridSupport.IsElectronActive)
+                        {
+                            <button class="btn btn-secondary" @onclick="RestartApplication" disabled="@isRestarting">
+                                @if (isRestarting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-arrow-repeat me-2"></i>
+                                }
+                                Restart Application
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup List -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-folder-fill"></i> Available Backups</h5>
+                </div>
+                <div class="card-body">
+                    @if (isLoadingBackups)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading backups...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (backups.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>File Name</th>
+                                        <th>Created Date</th>
+                                        <th>Size</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var backup in backups)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <i class="bi bi-file-earmark-zip"></i>
+                                                @backup.FileName
+                                            </td>
+                                            <td>@backup.CreatedDate.ToString("g")</td>
+                                            <td>@backup.SizeFormatted</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-success me-2" 
+                                                        @onclick="() => DownloadBackup(backup)"
+                                                        disabled="@isDownloading">
+                                                    <i class="bi bi-download"></i> Download
+                                                </button>
+                                                <button class="btn btn-sm btn-primary me-2" 
+                                                        @onclick="() => RestoreBackup(backup)"
+                                                        disabled="@isRestoring">
+                                                    <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                                </button>
+                                                <button class="btn btn-sm btn-danger" 
+                                                        @onclick="() => DeleteBackup(backup)"
+                                                        disabled="@isDeleting">
+                                                    <i class="bi bi-trash"></i> Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-1"></i>
+                            <p class="mt-2">No backup files found</p>
+                        </div>
+                    }
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-outline-secondary" @onclick="LoadBackups" disabled="@isLoadingBackups">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh List
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+        <div class="row">
+            <div class="col-12">
+                <h3>Initialize Schema Version</h3>
+                <p>This page will manually insert the initial schema version record into the database.</p>
+                
+                @if (!string.IsNullOrEmpty(message))
+                {
+                    <div class="alert @(isSuccess ? "alert-success" : "alert-danger")">
+                        @message
+                    </div>
+                }
+                
+                <div class="card">
+                    <div class="card-body">
+                        <p><strong>Application Schema Version:</strong> @AppSettings.Value.SchemaVersion</p>
+                        <button class="btn btn-primary" @onclick="InitializeSchema">
+                            Initialize Schema Version
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Info Box -->
+        <div class="row mt-4">
+            <div class="col">
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> Important Information</h6>
+                    <ul class="mb-0">
+                        <li><strong>Automatic Backups:</strong> Created before each migration</li>
+                        <li><strong>Health Check:</strong> Validates database integrity using SQLite's built-in PRAGMA integrity_check</li>
+                        <li><strong>Auto-Recovery:</strong> Attempts to restore from the most recent valid backup</li>
+                        <li><strong>Retention:</strong> Last 10 backups are kept automatically, older ones are deleted</li>
+                        <li><strong>Restore:</strong> Creates a copy of the current database before restoring (saved as .corrupted)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+@code {
+    private List<BackupInfo> backups = new();
+    private string? successMessage;
+    private string? errorMessage;
+    private bool isLoadingBackups = false;
+    private bool isCreatingBackup = false;
+    private bool isRestoring = false;
+    private bool isRecovering = false;
+    private bool isCheckingHealth = false;
+    private bool isDownloading = false;
+    private bool isUploading = false;
+    private bool isResetting = false;
+    private bool isDeleting = false;
+    private bool isRestarting = false;
+    private (bool IsHealthy, string Message)? healthCheckResult;
+    private DateTime? lastHealthCheck;
+
+     private string message = "";
+    private bool isSuccess = false;
+
+    private async Task InitializeSchema()
+    {
+        try
+        {
+            await SchemaService.UpdateSchemaVersionAsync(
+                AppSettings.Value.SchemaVersion, 
+                "Manual initialization via admin page");
+            
+            message = $"Schema version {AppSettings.Value.SchemaVersion} has been initialized successfully!";
+            isSuccess = true;
+            
+            // Reload page after 2 seconds
+            await Task.Delay(2000);
+            Navigation.NavigateTo("/", true);
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+            isSuccess = false;
+        }
+    }
+    
+    private async Task ResetDatabase()
+    {
+        // Show confirmation dialog
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+            "WARNING: This will delete the current database and create a new blank one. All data will be lost!\n\n" +
+            "A backup will be created before deletion.\n\n" +
+            "Are you absolutely sure you want to continue?");
+        
+        if (!confirmed)
+            return;
+            
+        try
+        {
+            isResetting = true;
+            errorMessage = null;
+            successMessage = null;
+            StateHasChanged();
+            
+            // Create backup of current database before deletion
+            var backupPath = await BackupService.CreateBackupAsync("BeforeReset");
+            
+            if (string.IsNullOrEmpty(backupPath))
+            {
+                errorMessage = "Failed to create backup before reset. Reset cancelled.";
+                return;
+            }
+            
+            // Verify backup was created successfully
+            if (!File.Exists(backupPath))
+            {
+                errorMessage = $"Backup file not found at {backupPath}. Reset cancelled.";
+                return;
+            }
+            
+            var backupSize = new FileInfo(backupPath).Length;
+            if (backupSize == 0)
+            {
+                errorMessage = "Backup file is empty. Reset cancelled.";
+                File.Delete(backupPath); // Clean up empty backup
+                return;
+            }
+            
+            successMessage = $"Backup created successfully ({FormatFileSize(backupSize)}). Deleting database...";
+            StateHasChanged();
+            await Task.Delay(1000);
+            
+            // Get database path
+            var dbPath = await ElectronPathService.GetDatabasePathAsync();
+            
+            if (File.Exists(dbPath))
+            {
+                File.Delete(dbPath);
+                successMessage = "Database deleted successfully. Application will restart to create a new blank database.";
+                StateHasChanged();
+                
+                // Wait a moment for user to see message
+                await Task.Delay(2000);
+                
+                // Restart the application using Electron API
+                if (HybridSupport.IsElectronActive)
+                {
+                    Electron.App.Relaunch();
+                    Electron.App.Exit();
+                }
+                else
+                {
+                    Navigation.NavigateTo("/", true);
+                }
+            }
+            else
+            {
+                errorMessage = "Database file not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error resetting database: {ex.Message}";
+        }
+        finally
+        {
+            isResetting = false;
+        }
+    }
+    
+    private async Task RestartApplication()
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+            "Are you sure you want to restart the application?\n\n" +
+            "All users will be disconnected and the application will reload.");
+        
+        if (!confirmed) return;
+        
+        isRestarting = true;
+        successMessage = "Restarting application...";
+        StateHasChanged();
+        
+        try
+        {
+            await Task.Delay(1000); // Give time for the message to display
+            
+            // Stop the application - the host will automatically restart it
+            AppLifetime.StopApplication();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error restarting application: {ex.Message}";
+            isRestarting = false;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBackups();
+        await CheckDatabaseHealth();
+    }
+
+    private async Task LoadBackups()
+    {
+        isLoadingBackups = true;
+        errorMessage = null;
+        
+        try
+        {
+            backups = await BackupService.GetAvailableBackupsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load backups: {ex.Message}";
+        }
+        finally
+        {
+            isLoadingBackups = false;
+        }
+    }
+
+    private void BackToDashboard()
+    {
+        Navigation.NavigateTo("/administration/dashboard");
+    }
+
+    private async Task CreateManualBackup()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("console.log", "CreateManualBackup called");
+            
+            isCreatingBackup = true;
+            errorMessage = null;
+            successMessage = null;
+            StateHasChanged(); // Force UI update to show spinner
+            
+            await JSRuntime.InvokeVoidAsync("console.log", "About to call BackupService.CreateBackupAsync");
+            
+            await Task.Delay(100); // Small delay to ensure UI updates
+            var backupPath = await BackupService.CreateBackupAsync("Manual");
+            
+            await JSRuntime.InvokeVoidAsync("console.log", $"Backup result: {backupPath ?? "null"}");
+            
+            if (backupPath != null)
+            {
+                successMessage = $"Backup created successfully: {Path.GetFileName(backupPath)}";
+                await LoadBackups();
+                StateHasChanged(); // Force UI update to show success message
+            }
+            else
+            {
+                errorMessage = "Failed to create backup - no path returned";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error creating backup: {ex.Message}";
+            await JSRuntime.InvokeVoidAsync("console.error", $"Backup error: {ex}");
+            Console.WriteLine($"Backup error: {ex}"); // Log full exception to console
+        }
+        finally
+        {
+            isCreatingBackup = false;
+            StateHasChanged(); // Force UI update
+        }
+    }
+
+    private async Task RestoreBackup(BackupInfo backup)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+            $"Are you sure you want to restore from '{backup.FileName}'?\n\n" +
+            $"This will replace your current database and the application will restart automatically.\n\n" +
+            $"Current database will be saved as .beforeRestore backup.");
+        
+        if (!confirmed) return;
+
+        isRestoring = true;
+        errorMessage = null;
+        successMessage = null;
+        
+        try
+        {
+            // Get database path (works for both Electron and web mode)
+            var dbPath = await BackupService.GetDatabasePathAsync();
+            var stagedRestorePath = $"{dbPath}.restore_pending";
+            
+            // Verify backup exists
+            if (!File.Exists(backup.FilePath))
+            {
+                errorMessage = $"Backup file not found: {backup.FileName}";
+                return;
+            }
+            
+            // Copy backup to staged restore location
+            // On next startup, Program.cs will move this into place BEFORE opening any connections
+            File.Copy(backup.FilePath, stagedRestorePath, overwrite: true);
+            
+            successMessage = $"Restore staged successfully! Restarting application...";
+            StateHasChanged();
+            
+            // Wait for user to see message
+            await Task.Delay(1500);
+            
+            // Restart the application - on startup it will apply the staged restore
+            if (HybridSupport.IsElectronActive)
+            {
+                Electron.App.Relaunch();
+                Electron.App.Exit();
+            }
+            else
+            {
+                // Web mode - stop the application, which will trigger a restart by the host
+                AppLifetime.StopApplication();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error staging restore: {ex.Message}";
+        }
+        finally
+        {
+            isRestoring = false;
+        }
+    }
+
+    private async Task DeleteBackup(BackupInfo backup)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+            $"Are you sure you want to delete '{backup.FileName}'?\n\nThis cannot be undone.");
+        
+        if (!confirmed) return;
+
+        isDeleting = true;
+        errorMessage = null;
+        successMessage = null;
+        
+        try
+        {
+            // Delete the backup file
+            if (File.Exists(backup.FilePath))
+            {
+                File.Delete(backup.FilePath);
+                successMessage = $"Backup '{backup.FileName}' deleted successfully.";
+                
+                // Refresh the backup list
+                await LoadBackups();
+            }
+            else
+            {
+                errorMessage = $"Backup file not found: {backup.FileName}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error deleting backup: {ex.Message}";
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
+
+    private async Task AttemptAutoRecovery()
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+            "This will attempt to restore from the most recent valid backup. Continue?");
+        
+        if (!confirmed) return;
+
+        isRecovering = true;
+        errorMessage = null;
+        successMessage = null;
+        
+        try
+        {
+            var (success, message) = await BackupService.AutoRecoverFromCorruptionAsync();
+            if (success)
+            {
+                successMessage = message;
+                await CheckDatabaseHealth();
+            }
+            else
+            {
+                errorMessage = message;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Recovery error: {ex.Message}";
+        }
+        finally
+        {
+            isRecovering = false;
+        }
+    }
+
+    private async Task CheckDatabaseHealth()
+    {
+        isCheckingHealth = true;
+        errorMessage = null;
+        
+        try
+        {
+            healthCheckResult = await BackupService.ValidateDatabaseHealthAsync();
+            lastHealthCheck = DateTime.Now;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Health check error: {ex.Message}";
+        }
+        finally
+        {
+            isCheckingHealth = false;
+        }
+    }
+
+    private async Task DownloadBackup(BackupInfo backup)
+    {
+        isDownloading = true;
+        errorMessage = null;
+        
+        try
+        {
+            // Read the backup file
+            var fileBytes = await File.ReadAllBytesAsync(backup.FilePath);
+            var base64 = Convert.ToBase64String(fileBytes);
+            
+            // Trigger download in browser
+            await JSRuntime.InvokeVoidAsync("downloadFile", backup.FileName, base64, "application/x-sqlite3");
+            
+            successMessage = $"Backup '{backup.FileName}' downloaded successfully";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error downloading backup: {ex.Message}";
+        }
+        finally
+        {
+            isDownloading = false;
+        }
+    }
+
+    private async Task TriggerFileUpload()
+    {
+        await JSRuntime.InvokeVoidAsync("document.getElementById('backupFileInput').click");
+    }
+
+    private async Task HandleFileUpload(InputFileChangeEventArgs e)
+    {
+        isUploading = true;
+        errorMessage = null;
+        successMessage = null;
+        StateHasChanged();
+        
+        try
+        {
+            var file = e.File;
+            
+            // Validate file extension
+            if (!file.Name.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
+            {
+                errorMessage = "Invalid file type. Please upload a .db file.";
+                return;
+            }
+            
+            // Limit file size to 500MB
+            if (file.Size > 500 * 1024 * 1024)
+            {
+                errorMessage = "File too large. Maximum size is 500MB.";
+                return;
+            }
+            
+            // Read the file
+            using var stream = file.OpenReadStream(maxAllowedSize: 500 * 1024 * 1024);
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            var fileBytes = memoryStream.ToArray();
+            
+            // Get database path and backup directory
+            var dbPath = HybridSupport.IsElectronActive 
+                ? await ElectronPathService.GetDatabasePathAsync()
+                : Path.Combine(Directory.GetCurrentDirectory(), "Data/app.db");
+            var backupDir = Path.Combine(Path.GetDirectoryName(dbPath)!, "Backups");
+            Directory.CreateDirectory(backupDir);
+            
+            // Create filename with timestamp
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var uploadedFileName = Path.GetFileNameWithoutExtension(file.Name);
+            var backupFileName = $"Aquiis_Backup_Uploaded_{uploadedFileName}_{timestamp}.db";
+            var backupPath = Path.Combine(backupDir, backupFileName);
+            
+            // Save the uploaded file
+            await File.WriteAllBytesAsync(backupPath, fileBytes);
+            
+            successMessage = $"Backup '{file.Name}' uploaded successfully as '{backupFileName}'";
+            await LoadBackups();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error uploading backup: {ex.Message}";
+            await JSRuntime.InvokeVoidAsync("console.error", $"Upload error: {ex}");
+        }
+        finally
+        {
+            isUploading = false;
+            StateHasChanged();
+        }
+    }
+    
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}

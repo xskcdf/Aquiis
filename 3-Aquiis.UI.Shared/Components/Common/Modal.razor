@@ -1,0 +1,133 @@
+@namespace Aquiis.UI.Shared.Components.Common
+
+@if (IsVisible)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" @onclick="HandleBackdropClick">
+        <div class="modal-dialog @GetModalSizeClass() @GetModalPositionClass()" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                @if (HeaderContent != null || !string.IsNullOrEmpty(Title))
+                {
+                    <div class="modal-header @HeaderCssClass">
+                        @if (HeaderContent != null)
+                        {
+                            @HeaderContent
+                        }
+                        else
+                        {
+                            <h5 class="modal-title">@Title</h5>
+                        }
+                        @if (ShowCloseButton)
+                        {
+                            <button type="button" class="btn-close @(HeaderCssClass.Contains("text-white") || HeaderCssClass.Contains("text-dark") ? "btn-close-white" : "")" @onclick="HandleClose"></button>
+                        }
+                    </div>
+                }
+                <div class="modal-body @BodyCssClass">
+                    @ChildContent
+                </div>
+                @if (FooterContent != null)
+                {
+                    <div class="modal-footer @FooterCssClass">
+                        @FooterContent
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Controls the visibility of the modal
+    /// </summary>
+    [Parameter] public bool IsVisible { get; set; }
+    
+    /// <summary>
+    /// Modal title text (only used if HeaderContent is not provided)
+    /// </summary>
+    [Parameter] public string? Title { get; set; }
+    
+    /// <summary>
+    /// Modal size: sm, default (md), lg, xl
+    /// </summary>
+    [Parameter] public ModalSize Size { get; set; } = ModalSize.Default;
+    
+    /// <summary>
+    /// Modal position: default (top), centered
+    /// </summary>
+    [Parameter] public ModalPosition Position { get; set; } = ModalPosition.Top;
+    
+    /// <summary>
+    /// Whether to show the close button in header
+    /// </summary>
+    [Parameter] public bool ShowCloseButton { get; set; } = true;
+    
+    /// <summary>
+    /// Whether clicking the backdrop closes the modal
+    /// </summary>
+    [Parameter] public bool CloseOnBackdropClick { get; set; } = true;
+    
+    /// <summary>
+    /// Additional CSS classes for the header
+    /// </summary>
+    [Parameter] public string HeaderCssClass { get; set; } = "";
+    
+    /// <summary>
+    /// Additional CSS classes for the body
+    /// </summary>
+    [Parameter] public string BodyCssClass { get; set; } = "";
+    
+    /// <summary>
+    /// Additional CSS classes for the footer
+    /// </summary>
+    [Parameter] public string FooterCssClass { get; set; } = "";
+    
+    /// <summary>
+    /// Custom header content (overrides Title)
+    /// </summary>
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+    
+    /// <summary>
+    /// Main modal body content
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    /// <summary>
+    /// Footer content (typically buttons)
+    /// </summary>
+    [Parameter] public RenderFragment? FooterContent { get; set; }
+    
+    /// <summary>
+    /// Event callback when modal is closed
+    /// </summary>
+    [Parameter] public EventCallback OnClose { get; set; }
+    
+    private string GetModalSizeClass()
+    {
+        return Size switch
+        {
+            ModalSize.Small => "modal-sm",
+            ModalSize.Large => "modal-lg",
+            ModalSize.ExtraLarge => "modal-xl",
+            _ => ""
+        };
+    }
+    
+    private string GetModalPositionClass()
+    {
+        return Position == ModalPosition.Centered ? "modal-dialog-centered" : "";
+    }
+    
+    private async Task HandleClose()
+    {
+        await OnClose.InvokeAsync();
+    }
+    
+    private async Task HandleBackdropClick()
+    {
+        if (CloseOnBackdropClick)
+        {
+            await HandleClose();
+        }
+    }
+}

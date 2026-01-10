@@ -1,0 +1,51 @@
+@namespace Aquiis.UI.Shared.Components.Common
+
+<div class="mb-3 @CssClass">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="form-label @LabelCssClass">
+            @Label
+            @if (Required)
+            {
+                <span class="text-danger">*</span>
+            }
+        </label>
+    }
+    @ChildContent
+    @if (!string.IsNullOrEmpty(HelpText))
+    {
+        <div class="form-text">@HelpText</div>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Label text for the form field
+    /// </summary>
+    [Parameter] public string? Label { get; set; }
+    
+    /// <summary>
+    /// Whether the field is required (adds asterisk to label)
+    /// </summary>
+    [Parameter] public bool Required { get; set; }
+    
+    /// <summary>
+    /// Help text to display below the input
+    /// </summary>
+    [Parameter] public string? HelpText { get; set; }
+    
+    /// <summary>
+    /// Additional CSS classes for the container div
+    /// </summary>
+    [Parameter] public string CssClass { get; set; } = "";
+    
+    /// <summary>
+    /// Additional CSS classes for the label
+    /// </summary>
+    [Parameter] public string LabelCssClass { get; set; } = "";
+    
+    /// <summary>
+    /// The input control content
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

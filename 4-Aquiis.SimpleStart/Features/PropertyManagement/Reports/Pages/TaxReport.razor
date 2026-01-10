@@ -1,0 +1,287 @@
+@page "/reports/tax-report"
+
+@using Aquiis.Core.Entities
+@using Aquiis.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.Application.Services.PdfGenerators
+@using Microsoft.AspNetCore.Authorization
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
+@inject FinancialReportService FinancialReportService
+@inject PropertyService PropertyService
+@inject FinancialReportPdfGenerator PdfGenerator
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@inject UserContextService UserContextService
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Tax Report - Aquiis</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h3>Tax Report (Schedule E)</h3>
+            <p class="text-muted">IRS Schedule E - Supplemental Income and Loss from rental real estate</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <label for="taxYear" class="form-label">Tax Year</label>
+            <input type="number" class="form-control" id="taxYear" @bind="taxYear" min="2000" max="@DateTime.Now.Year" />
+        </div>
+        <div class="col-md-4">
+            <label for="propertyFilter" class="form-label">Property (Optional)</label>
+            <select class="form-select" id="propertyFilter" @bind="selectedPropertyId">
+                <option value="">All Properties</option>
+                @foreach (var property in properties)
+                {
+                    <option value="@property.Id">@property.Address</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button class="btn btn-primary w-100" @onclick="GenerateReport">
+                <i class="bi bi-file-earmark-bar-graph"></i> Generate
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Generating report...</p>
+        </div>
+    }
+    else if (taxReports.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            <strong>Note:</strong> This report provides estimated tax information for Schedule E. 
+            Please consult with a tax professional for accurate filing. Depreciation is calculated using simplified residential rental property method (27.5 years).
+        </div>
+
+        @foreach (var report in taxReports)
+        {
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">@report.PropertyName - Tax Year @report.Year</h5>
+                    <button class="btn btn-light btn-sm" @onclick="() => ExportToPdf(report)">
+                        <i class="bi bi-file-pdf"></i> Export PDF
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h6 class="text-primary border-bottom pb-2">INCOME</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td>3. Rents received</td>
+                                    <td class="text-end"><strong>@report.TotalRentIncome.ToString("C")</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h6 class="text-primary border-bottom pb-2">EXPENSES</h6>
+                            <table class="table table-sm table-striped">
+                                <tr>
+                                    <td>5. Advertising</td>
+                                    <td class="text-end">@report.Advertising.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>6. Auto and travel</td>
+                                    <td class="text-end">@report.Auto.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>7. Cleaning and maintenance</td>
+                                    <td class="text-end">@report.Cleaning.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>9. Insurance</td>
+                                    <td class="text-end">@report.Insurance.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>11. Legal and other professional fees</td>
+                                    <td class="text-end">@report.Legal.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>12. Management fees</td>
+                                    <td class="text-end">@report.Management.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>13. Mortgage interest paid to banks, etc.</td>
+                                    <td class="text-end">@report.MortgageInterest.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>14. Repairs</td>
+                                    <td class="text-end">@report.Repairs.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>15. Supplies</td>
+                                    <td class="text-end">@report.Supplies.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>16. Taxes</td>
+                                    <td class="text-end">@report.Taxes.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>17. Utilities</td>
+                                    <td class="text-end">@report.Utilities.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>18. Depreciation expense</td>
+                                    <td class="text-end">@report.DepreciationAmount.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>19. Other (specify)</td>
+                                    <td class="text-end">@report.Other.ToString("C")</td>
+                                </tr>
+                                <tr class="table-info">
+                                    <td><strong>20. Total expenses</strong></td>
+                                    <td class="text-end"><strong>@report.TotalExpenses.ToString("C")</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h6 class="text-primary border-bottom pb-2">SUMMARY</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td>Total Income</td>
+                                    <td class="text-end">@report.TotalRentIncome.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td>Total Expenses (including depreciation)</td>
+                                    <td class="text-end">@((report.TotalExpenses + report.DepreciationAmount).ToString("C"))</td>
+                                </tr>
+                                <tr class="table-primary">
+                                    <td><strong>21. Net rental income or (loss)</strong></td>
+                                    <td class="text-end">
+                                        <strong class="@(report.TaxableIncome >= 0 ? "text-success" : "text-danger")">
+                                            @report.TaxableIncome.ToString("C")
+                                        </strong>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (taxReports.Count > 1)
+        {
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">All Properties Summary - Tax Year @taxYear</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tr>
+                            <td>Total Rental Income (All Properties)</td>
+                            <td class="text-end"><strong>@taxReports.Sum(r => r.TotalRentIncome).ToString("C")</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Total Expenses (All Properties)</td>
+                            <td class="text-end"><strong>@taxReports.Sum(r => r.TotalExpenses).ToString("C")</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Total Depreciation</td>
+                            <td class="text-end"><strong>@taxReports.Sum(r => r.DepreciationAmount).ToString("C")</strong></td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td><strong>Net Rental Income or (Loss)</strong></td>
+                            <td class="text-end">
+                                <strong class="@(taxReports.Sum(r => r.TaxableIncome) >= 0 ? "text-success" : "text-danger")">
+                                    @taxReports.Sum(r => r.TaxableIncome).ToString("C")
+                                </strong>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private int taxYear = DateTime.Now.Month >= 11 ? DateTime.Now.Year : DateTime.Now.Year - 1;
+    private Guid? selectedPropertyId;
+    private List<Property> properties = new();
+    private List<TaxReportData> taxReports = new();
+    private bool isLoading = false;
+
+    private Guid? organizationId = Guid.Empty;
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthenticationStateTask == null) return;
+
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        organizationId = await UserContextService.GetActiveOrganizationIdAsync();
+
+        if (!string.IsNullOrEmpty(userId))
+        {
+            properties = await PropertyService.GetAllAsync();
+        }
+    }
+
+    private async Task GenerateReport()
+    {
+        if (AuthenticationStateTask == null) return;
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var authState = await AuthenticationStateTask;
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (!string.IsNullOrEmpty(userId) && organizationId.HasValue)
+            {
+
+                taxReports = await FinancialReportService.GenerateTaxReportAsync(organizationId.Value, taxYear, selectedPropertyId);
+            }
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExportToPdf(TaxReportData report)
+    {
+        if (!taxReports.Any()) return;
+
+        try
+        {
+            // Export single property or all
+            var reportsToExport = report != null ? new List<TaxReportData> { report } : taxReports;
+            var pdfBytes = PdfGenerator.GenerateTaxReportPdf(reportsToExport);
+            var fileName = report != null 
+                ? $"TaxReport_{report.Year}_{report.PropertyName?.Replace(" ", "_")}.pdf"
+                : $"TaxReport_{taxYear}_AllProperties.pdf";
+            
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(pdfBytes), "application/pdf");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error generating PDF: {ex.Message}");
+        }
+    }
+}

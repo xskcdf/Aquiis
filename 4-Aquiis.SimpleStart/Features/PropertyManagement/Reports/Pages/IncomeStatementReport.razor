@@ -1,0 +1,240 @@
+@page "/reports/income-statement"
+
+@using Aquiis.Core.Entities
+@using Aquiis.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.Application.Services.PdfGenerators
+@using Microsoft.AspNetCore.Authorization
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
+@inject FinancialReportService FinancialReportService
+@inject PropertyService PropertyService
+@inject FinancialReportPdfGenerator PdfGenerator
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@inject UserContextService UserContextService
+
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Income Statement - Aquiis</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h3>Income Statement</h3>
+            <p class="text-muted">View income and expenses for a specific period</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <label for="startDate" class="form-label">Start Date</label>
+            <input type="date" class="form-control" id="startDate" @bind="startDate" />
+        </div>
+        <div class="col-md-3">
+            <label for="endDate" class="form-label">End Date</label>
+            <input type="date" class="form-control" id="endDate" @bind="endDate" />
+        </div>
+        <div class="col-md-4">
+            <label for="propertyFilter" class="form-label">Property (Optional)</label>
+            <select class="form-select" id="propertyFilter" @bind="selectedPropertyId">
+                <option value="">All Properties</option>
+                @foreach (var property in properties)
+                {
+                    <option value="@property.Id">@property.Address</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button class="btn btn-primary w-100" @onclick="GenerateReport">
+                <i class="bi bi-file-earmark-bar-graph"></i> Generate
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Generating report...</p>
+        </div>
+    }
+    else if (statement != null)
+    {
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    @if (statement.PropertyId.HasValue)
+                    {
+                        <span>@statement.PropertyName</span>
+                    }
+                    else
+                    {
+                        <span>All Properties</span>
+                    }
+                    - Income Statement
+                </h5>
+                <button class="btn btn-light btn-sm" @onclick="ExportToPdf">
+                    <i class="bi bi-file-pdf"></i> Export PDF
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col">
+                        <strong>Period:</strong> @statement.StartDate.ToString("MMM dd, yyyy") - @statement.EndDate.ToString("MMM dd, yyyy")
+                    </div>
+                </div>
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="table-success">
+                            <td colspan="2"><strong>INCOME</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="ps-4">Rent Income</td>
+                            <td class="text-end">@statement.TotalRentIncome.ToString("C")</td>
+                        </tr>
+                        <tr>
+                            <td class="ps-4">Other Income</td>
+                            <td class="text-end">@statement.TotalOtherIncome.ToString("C")</td>
+                        </tr>
+                        <tr class="table-info">
+                            <td><strong>Total Income</strong></td>
+                            <td class="text-end"><strong>@statement.TotalIncome.ToString("C")</strong></td>
+                        </tr>
+
+                        <tr class="table-warning">
+                            <td colspan="2" class="pt-3"><strong>EXPENSES</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="ps-4">Maintenance & Repairs</td>
+                            <td class="text-end">@statement.MaintenanceExpenses.ToString("C")</td>
+                        </tr>
+                        <tr>
+                            <td class="ps-4">Utilities</td>
+                            <td class="text-end">@statement.UtilityExpenses.ToString("C")</td>
+                        </tr>
+                        <tr>
+                            <td class="ps-4">Insurance</td>
+                            <td class="text-end">@statement.InsuranceExpenses.ToString("C")</td>
+                        </tr>
+                        <tr>
+                            <td class="ps-4">Property Taxes</td>
+                            <td class="text-end">@statement.TaxExpenses.ToString("C")</td>
+                        </tr>
+                        <tr>
+                            <td class="ps-4">Management Fees</td>
+                            <td class="text-end">@statement.ManagementFees.ToString("C")</td>
+                        </tr>
+                        <tr>
+                            <td class="ps-4">Other Expenses</td>
+                            <td class="text-end">@statement.OtherExpenses.ToString("C")</td>
+                        </tr>
+                        <tr class="table-info">
+                            <td><strong>Total Expenses</strong></td>
+                            <td class="text-end"><strong>@statement.TotalExpenses.ToString("C")</strong></td>
+                        </tr>
+
+                        <tr class="table-primary">
+                            <td colspan="2" class="pt-3"></td>
+                        </tr>
+                        <tr class="@(statement.NetIncome >= 0 ? "table-success" : "table-danger")">
+                            <td><strong>NET INCOME</strong></td>
+                            <td class="text-end"><strong>@statement.NetIncome.ToString("C")</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Profit Margin</td>
+                            <td class="text-end">@statement.ProfitMargin.ToString("F2")%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private DateTime startDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+    private DateTime endDate = DateTime.Now;
+    private Guid? selectedPropertyId;
+    private List<Property> properties = new();
+    private IncomeStatement? statement;
+    private bool isLoading = false;
+
+    private Guid? organizationId = Guid.Empty;
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthenticationStateTask == null) return;
+
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        organizationId = await UserContextService.GetActiveOrganizationIdAsync();
+
+        if (organizationId.HasValue)
+        {
+            properties = await PropertyService.GetAllAsync();
+        }
+    }
+
+    private async Task GenerateReport()
+    {
+        if (AuthenticationStateTask == null) return;
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var authState = await AuthenticationStateTask;
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (organizationId.HasValue)
+            {
+                @* Guid? propertyId = null;
+                if (selectedPropertyId.HasValue && Guid.TryParse(selectedPropertyId, out Guid pid))
+                {
+                    propertyId = pid;
+                } *@
+
+                statement = await FinancialReportService.GenerateIncomeStatementAsync(
+                    organizationId.Value, startDate, endDate, selectedPropertyId);
+            }
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExportToPdf()
+    {
+        if (statement == null) return;
+
+        try
+        {
+            var pdfBytes = PdfGenerator.GenerateIncomeStatementPdf(statement);
+            var fileName = $"IncomeStatement_{statement.StartDate:yyyyMMdd}_{statement.EndDate:yyyyMMdd}.pdf";
+            
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(pdfBytes), "application/pdf");
+        }
+        catch (Exception ex)
+        {
+            // Handle error
+            Console.WriteLine($"Error generating PDF: {ex.Message}");
+        }
+    }
+}

@@ -1,0 +1,9 @@
+@page "/notifications/preferences"
+@using Aquiis.Professional.Shared.Services
+@inject ToastService ToastService
+@attribute [OrganizationAuthorize]
+@rendermode InteractiveServer
+
+<PageTitle>Notification Preferences - Aquiis</PageTitle>
+
+<Aquiis.UI.Shared.Features.Notifications.NotificationPreferences ToastService="@ToastService" />

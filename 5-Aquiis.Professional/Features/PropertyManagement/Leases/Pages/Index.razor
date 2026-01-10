@@ -1,0 +1,837 @@
+@page "/propertymanagement/leases"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Aquiis.Infrastructure.Data
+@using Aquiis.Core.Entities
+@using Aquiis.Professional.Features.PropertyManagement
+@using Aquiis.Professional.Shared.Components.Account
+
+@inject NavigationManager NavigationManager
+@inject LeaseService LeaseService
+@inject TenantService TenantService
+@inject PropertyService PropertyService
+@inject IJSRuntime JSRuntime
+
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
+@rendermode InteractiveServer
+
+<PageTitle>Leases - Property Management</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1><span class="bi bi-file-earmark-text-fill" aria-hidden="true"></span> Leases</h1>
+        @if (filterTenant != null)
+        {
+            <p class="text-muted mb-0">
+                Showing leases for tenant: <strong>@filterTenant.FullName</strong>
+                <button class="btn btn-sm btn-outline-secondary ms-2" @onclick="ClearFilter">
+                    <i class="bi bi-x"></i> Clear Filter
+                </button>
+            </p>
+        }
+        else if (filterProperty != null)
+        {
+            <p class="text-muted mb-0">
+                Showing leases for property: <strong>@filterProperty.Address</strong>
+                <button class="btn btn-sm btn-outline-secondary ms-2" @onclick="ClearFilter">
+                    <i class="bi bi-x"></i> Clear Filter
+                </button>
+            </p>
+        }
+    </div>
+    <div class="btn-group">
+        <button class="btn btn-outline-info" @onclick="ViewLeaseOffers">
+            <i class="bi bi-file-earmark-check"></i> View Lease Offers
+        </button>
+        <button class="btn btn-primary" @onclick="CreateLease">
+            <i class="bi bi-plus-lg"></i> Add Lease
+        </button>
+        @if (filterTenant != null)
+        {
+            <button class="btn btn-outline-success" @onclick="CreateLeaseForTenant">
+                <i class="bi bi-plus-lg"></i> Add Lease for @filterTenant.FullName
+            </button>
+        }
+        else if (filterProperty != null)
+        {
+            <button class="btn btn-outline-success" @onclick="CreateLeaseForProperty">
+                <i class="bi bi-plus-lg"></i> Add Lease for This Property
+            </button>
+        }
+    </div>
+</div>
+
+@if (leases == null)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else if (!leases.Any())
+{
+    <div class="alert alert-info">
+        @if (filterTenant != null)
+        {
+            <h4>No Leases Found for @filterTenant.FullName</h4>
+            <p>This tenant doesn't have any lease agreements yet.</p>
+            <button class="btn btn-primary" @onclick="CreateLeaseForTenant">Create First Lease for @filterTenant.FullName</button>
+            <button class="btn btn-outline-secondary ms-2" @onclick="ClearFilter">View All Leases</button>
+        }
+        else if (filterProperty != null)
+        {
+            <h4>No Leases Found for @filterProperty.Address</h4>
+            <p>This property doesn't have any lease agreements yet.</p>
+            <button class="btn btn-primary" @onclick="CreateLeaseForProperty">Create First Lease for This Property</button>
+            <button class="btn btn-outline-secondary ms-2" @onclick="ClearFilter">View All Leases</button>
+        }
+        else
+        {
+            <h4>No Leases Found</h4>
+            <p>Get started by converting a lease offer to your first lease agreement.</p>
+            <button class="btn btn-primary" @onclick="CreateLease">Create First Lease</button>
+        }
+    </div>
+}
+else
+{
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" placeholder="Search leases..." @bind="searchTerm" @onkeyup="FilterLeases" />
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="selectedLeaseStatus" @bind:after="FilterLeases">
+                <option value="">All Lease Statuses</option>
+                <option value="Active">Active</option>
+                <option value="Expired">Expired</option>
+                <option value="Terminated">Terminated</option>
+                <option value="Pending">Pending</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="selectedTenantId" @bind:after="FilterLeases">
+                <option value="">All Tenants</option>
+                @if (availableTenants != null)
+                {
+                    @foreach (var tenant in availableTenants)
+                    {
+                        <option value="@tenant.Id">@tenant.FullName</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <div class="form-check form-switch pt-2">
+                <input class="form-check-input" type="checkbox" id="groupByProperty" @bind="groupByProperty" @bind:after="FilterLeases">
+                <label class="form-check-label" for="groupByProperty">
+                    Group by Property
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h6>Active Leases</h6>
+                    <h4>@activeCount</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h6>Expiring Soon</h6>
+                    <h4>@expiringSoonCount</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h6>Total Rent/Month</h6>
+                    <h4>@totalMonthlyRent.ToString("C")</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h6>Total Leases</h6>
+                    <h4>@filteredLeases.Count</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (groupByProperty)
+            {
+                @foreach (var propertyGroup in groupedLeases)
+                {
+                    var property = propertyGroup.First().Property;
+                    var propertyLeaseCount = propertyGroup.Count();
+                    var activeLeaseCount = propertyGroup.Count(l => l.Status == "Active");
+                    var isExpanded = expandedProperties.Contains(propertyGroup.Key.GetHashCode());
+                    
+                    <div class="card mb-3">
+                        <div class="card-header" style="cursor: pointer;" @onclick="() => TogglePropertyGroup(propertyGroup.Key)">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="bi @(isExpanded ? "bi-chevron-down" : "bi-chevron-right")"></i>
+                                    <strong>@property?.Address</strong>
+                                    <span class="ms-3 text-muted">@property?.City, @property?.State @property?.ZipCode</span>
+                                </div>
+                                <div>
+                                    <span class="badge bg-success me-2">@activeLeaseCount active</span>
+                                    <span class="badge bg-secondary">@propertyLeaseCount total lease(s)</span>
+                                </div>
+                            </div>
+                        </div>
+                        @if (isExpanded)
+                        {
+                            <div class="card-body p-0">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Tenant</th>
+                                            <th>Start Date</th>
+                                            <th>End Date</th>
+                                            <th>Monthly Rent</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var lease in propertyGroup)
+                                        {
+                                            <tr class="@(lease.IsActive ? "" : "table-warning")">
+                                                <td>
+                                                    @if (lease.Tenant != null)
+                                                    {
+                                                        <strong>@lease.Tenant.FullName</strong>
+                                                        <br />
+                                                        <small class="text-muted">@lease.Tenant.Email</small>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-warning"><i class="bi bi-hourglass-split"></i> Pending Acceptance</span>
+                                                        <br />
+                                                        <small class="text-muted">Lease offer awaiting tenant</small>
+                                                    }
+                                                </td>
+                                                <td>@lease.StartDate.ToString("MMM dd, yyyy")</td>
+                                                <td>@lease.EndDate.ToString("MMM dd, yyyy")</td>
+                                                <td>@lease.MonthlyRent.ToString("C")</td>
+                                                <td>
+                                                    <span class="badge @GetStatusBadgeClass(lease.Status)">
+                                                        @lease.Status
+                                                    </span>
+                                                    @if (lease.IsActive && lease.DaysRemaining <= 30 && lease.DaysRemaining > 0)
+                                                    {
+                                                        <br />
+                                                        <small class="text-warning">@lease.DaysRemaining days remaining</small>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button class="btn btn-outline-primary" @onclick="() => ViewLease(lease.Id)" title="View">
+                                                            <i class="bi bi-eye"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-secondary" @onclick="() => EditLease(lease.Id)" title="Edit">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-danger" @onclick="() => DeleteLease(lease.Id)" title="Delete">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover"><thead><tr>
+                            <th>
+                                <button class="btn btn-link text-decoration-none p-0 text-dark fw-bold" @onclick="@(() => SortBy("Property"))">
+                                    Property 
+                                    @if (sortColumn == "Property")
+                                    {
+                                        @if (sortAscending)
+                                        {
+                                            <i class="bi bi-arrow-up text-primary"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-arrow-down text-primary"></i>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-arrow-down-up text-muted"></i>
+                                    }
+                                </button>
+                            </th>
+                            <th>
+                                <button class="btn btn-link text-decoration-none p-0 text-dark fw-bold" @onclick="@(() => SortBy("Tenant"))">
+                                    Tenant 
+                                    @if (sortColumn == "Tenant")
+                                    {
+                                        @if (sortAscending)
+                                        {
+                                            <i class="bi bi-arrow-up text-primary"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-arrow-down text-primary"></i>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-arrow-down-up text-muted"></i>
+                                    }
+                                </button>
+                            </th>
+                            <th>
+                                <button class="btn btn-link text-decoration-none p-0 text-dark fw-bold" @onclick="@(() => SortBy("StartDate"))">
+                                    Start Date 
+                                    @if (sortColumn == "StartDate")
+                                    {
+                                        @if (sortAscending)
+                                        {
+                                            <i class="bi bi-arrow-up text-primary"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-arrow-down text-primary"></i>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-arrow-down-up text-muted"></i>
+                                    }
+                                </button>
+                            </th>
+                            <th>
+                                <button class="btn btn-link text-decoration-none p-0 text-dark fw-bold" @onclick="@(() => SortBy("EndDate"))">
+                                    End Date 
+                                    @if (sortColumn == "EndDate")
+                                    {
+                                        @if (sortAscending)
+                                        {
+                                            <i class="bi bi-arrow-up text-primary"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-arrow-down text-primary"></i>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-arrow-down-up text-muted"></i>
+                                    }
+                                </button>
+                            </th>
+                            <th>
+                                <button class="btn btn-link text-decoration-none p-0 text-dark fw-bold" @onclick="@(() => SortBy("MonthlyRent"))">
+                                    Monthly Rent 
+                                    @if (sortColumn == "MonthlyRent")
+                                    {
+                                        @if (sortAscending)
+                                        {
+                                            <i class="bi bi-arrow-up text-primary"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-arrow-down text-primary"></i>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-arrow-down-up text-muted"></i>
+                                    }
+                                </button>
+                            </th>
+                            <th>
+                                <button class="btn btn-link text-decoration-none p-0 text-dark fw-bold" @onclick="@(() => SortBy("Status"))">
+                                    Status 
+                                    @if (sortColumn == "Status")
+                                    {
+                                        @if (sortAscending)
+                                        {
+                                            <i class="bi bi-arrow-up text-primary"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-arrow-down text-primary"></i>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-arrow-down-up text-muted"></i>
+                                    }
+                                </button>
+                            </th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var lease in pagedLeases)
+                        {
+                            <tr class="@(lease.IsActive ? "" : "table-warning")" id="lease-@lease.Id">
+                                <td>
+                                    <strong>@lease.Property?.Address</strong>
+                                    @if (lease.Property != null)
+                                    {
+                                        <br />
+                                        <small class="text-muted">@lease.Property.City, @lease.Property.State</small>
+                                    }
+                                </td>
+                                <td>
+                                    @if (lease.Tenant != null)
+                                    {
+                                        <strong>@lease.Tenant.FullName</strong>
+                                        <br />
+                                        <small class="text-muted">@lease.Tenant.Email</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-warning"><i class="bi bi-hourglass-split"></i> Pending Acceptance</span>
+                                        <br />
+                                        <small class="text-muted">Lease offer awaiting tenant</small>
+                                    }
+                                </td>
+                                <td>@lease.StartDate.ToString("MMM dd, yyyy")</td>
+                                <td>@lease.EndDate.ToString("MMM dd, yyyy")</td>
+                                <td>@lease.MonthlyRent.ToString("C")</td>
+                                <td>
+                                    <span class="badge @GetStatusBadgeClass(lease.Status)">
+                                        @lease.Status
+                                    </span>
+                                    @if (lease.IsActive && lease.DaysRemaining <= 30 && lease.DaysRemaining > 0)
+                                    {
+                                        <br />
+                                        <small class="text-warning">@lease.DaysRemaining days remaining</small>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" @onclick="() => ViewLease(lease.Id)" title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary" @onclick="() => EditLease(lease.Id)" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger" @onclick="() => DeleteLease(lease.Id)" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            }
+            @if (totalPages > 1 && !groupByProperty)
+            {
+                <div class="card-footer">
+                    <nav aria-label="Leases pagination">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                Showing @((currentPage - 1) * pageSize + 1) to @Math.Min(currentPage * pageSize, totalRecords) of @totalRecords leases
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <label class="me-2">Page size:</label>
+                                <select class="form-select form-select-sm me-3" style="width: auto;" @bind="pageSize" @bind:after="() => { currentPage = 1; FilterLeases(); }">
+                                    <option value="5">5</option>
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                </select>
+                                <ul class="pagination pagination-sm mb-0">
+                                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                        <button class="page-link" @onclick="() => GoToPage(1)" disabled="@(currentPage == 1)">First</button>
+                                    </li>
+                                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                        <button class="page-link" @onclick="() => GoToPage(currentPage - 1)" disabled="@(currentPage == 1)">Previous</button>
+                                    </li>
+                                    @for (int pageNum = Math.Max(1, currentPage - 2); pageNum <= Math.Min(totalPages, currentPage + 2); pageNum++)
+                                    {
+                                        var pageNumber = pageNum;
+                                        <li class="page-item @(currentPage == pageNumber ? "active" : "")">
+                                            <button class="page-link" @onclick="() => GoToPage(pageNumber)">@pageNumber</button>
+                                        </li>
+                                    }
+                                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                        <button class="page-link" @onclick="() => GoToPage(currentPage + 1)" disabled="@(currentPage == totalPages)">Next</button>
+                                    </li>
+                                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                        <button class="page-link" @onclick="() => GoToPage(totalPages)" disabled="@(currentPage == totalPages)">Last</button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </nav>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private List<Lease>? leases;
+    private List<Lease> filteredLeases = new();
+    private List<Lease> pagedLeases = new();
+    private IEnumerable<IGrouping<Guid, Lease>> groupedLeases = Enumerable.Empty<IGrouping<Guid, Lease>>();
+    private HashSet<int> expandedProperties = new();
+    private string searchTerm = string.Empty;
+    private string selectedLeaseStatus = string.Empty;
+    private Guid? selectedTenantId;
+    private List<Tenant>? availableTenants;
+    private int activeCount = 0;
+    private int expiringSoonCount = 0;
+    private decimal totalMonthlyRent = 0;
+    private Tenant? filterTenant;
+    private Property? filterProperty;
+    private bool groupByProperty = true;
+    
+    // Paging variables
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages = 1;
+    private int totalRecords = 0;
+    
+    // Sorting variables
+    private string sortColumn = "StartDate";
+    private bool sortAscending = false;
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public Guid? TenantId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public Guid? PropertyId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? LeaseId { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFilterEntities();
+        await LoadLeases();
+        LoadFilterOptions();
+        FilterLeases();
+        CalculateMetrics();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && LeaseId.HasValue)
+        {
+            await JSRuntime.InvokeVoidAsync("scrollToElement", $"lease-{LeaseId.Value}");
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadFilterEntities();
+        await LoadLeases();
+        LoadFilterOptions();
+        FilterLeases();
+        CalculateMetrics();
+        StateHasChanged();
+    }
+
+    private async Task LoadFilterEntities()
+    {
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userId)) return;
+
+        if (TenantId.HasValue)
+        {
+            filterTenant = await TenantService.GetByIdAsync(TenantId.Value);
+        }
+
+        if (PropertyId.HasValue)
+        {
+            filterProperty = await PropertyService.GetByIdAsync(PropertyId.Value);
+        }
+    }
+
+    private async Task LoadLeases()
+    {
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userId))
+        {
+            leases = new List<Lease>();
+            return;
+        }
+
+        var     allLeases = await LeaseService.GetAllAsync();
+        leases = allLeases
+            .Where(l => 
+                   (!TenantId.HasValue || l.TenantId == TenantId.Value) &&
+                   (!PropertyId.HasValue || l.PropertyId == PropertyId.Value))
+            .OrderByDescending(l => l.StartDate)
+            .ToList();
+    }
+
+    private void LoadFilterOptions()
+    {
+        if (leases != null)
+        {
+            // Load available tenants from leases
+            availableTenants = leases
+                .Where(l => l.Tenant != null)
+                .Select(l => l.Tenant!)
+                .DistinctBy(t => t.Id)
+                .OrderBy(t => t.FirstName)
+                .ThenBy(t => t.LastName)
+                .ToList();
+        }
+    }
+
+    private void FilterLeases()
+    {
+        if (leases == null)
+        {
+            filteredLeases = new();
+            pagedLeases = new();
+            CalculateMetrics();
+            return;
+        }
+
+        filteredLeases = leases.Where(l =>
+            (string.IsNullOrEmpty(searchTerm) ||
+             l.Property?.Address.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true ||
+             (l.Tenant != null && l.Tenant.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+             l.Notes.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+             l.Terms.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(selectedLeaseStatus) || l.Status == selectedLeaseStatus) &&
+            (!selectedTenantId.HasValue || l.TenantId == selectedTenantId.Value)
+        ).ToList();
+        
+        // Apply sorting
+        ApplySorting();
+        
+        if (groupByProperty)
+        {
+            groupedLeases = filteredLeases
+                .Where(l => l.PropertyId != Guid.Empty)
+                .GroupBy(l => l.PropertyId)
+                .OrderBy(g => g.First().Property?.Address)
+                .ToList();
+        }
+        else
+        {
+            // Apply paging
+            totalRecords = filteredLeases.Count;
+            totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+            if (currentPage > totalPages) currentPage = Math.Max(1, totalPages);
+            
+            pagedLeases = filteredLeases
+                .Skip((currentPage - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+        }
+        
+        CalculateMetrics();
+    }
+    
+    private void TogglePropertyGroup(Guid propertyId)
+    {
+        if (expandedProperties.Contains(propertyId.GetHashCode()))
+        {
+            expandedProperties.Remove(propertyId.GetHashCode());
+        }
+        else
+        {
+            expandedProperties.Add(propertyId.GetHashCode());
+        }
+    }
+    
+    private void ApplySorting()
+    {
+        filteredLeases = sortColumn switch
+        {
+            "Property" => sortAscending
+                ? filteredLeases.OrderBy(l => l.Property?.Address).ToList()
+                : filteredLeases.OrderByDescending(l => l.Property?.Address).ToList(),
+            "Tenant" => sortAscending
+                ? filteredLeases.OrderBy(l => l.Tenant?.FullName).ToList()
+                : filteredLeases.OrderByDescending(l => l.Tenant?.FullName).ToList(),
+            "StartDate" => sortAscending
+                ? filteredLeases.OrderBy(l => l.StartDate).ToList()
+                : filteredLeases.OrderByDescending(l => l.StartDate).ToList(),
+            "EndDate" => sortAscending
+                ? filteredLeases.OrderBy(l => l.EndDate).ToList()
+                : filteredLeases.OrderByDescending(l => l.EndDate).ToList(),
+            "MonthlyRent" => sortAscending
+                ? filteredLeases.OrderBy(l => l.MonthlyRent).ToList()
+                : filteredLeases.OrderByDescending(l => l.MonthlyRent).ToList(),
+            "Status" => sortAscending
+                ? filteredLeases.OrderBy(l => l.Status).ToList()
+                : filteredLeases.OrderByDescending(l => l.Status).ToList(),
+            _ => filteredLeases
+        };
+    }
+    
+    private void SortBy(string column)
+    {
+        if (sortColumn == column)
+        {
+            sortAscending = !sortAscending;
+        }
+        else
+        {
+            sortColumn = column;
+            sortAscending = true;
+        }
+        currentPage = 1;
+        FilterLeases();
+    }
+    
+    private void GoToPage(int page)
+    {
+        if (page >= 1 && page <= totalPages)
+        {
+            currentPage = page;
+            FilterLeases();
+        }
+    }
+
+    private void CalculateMetrics()
+    {
+        if (filteredLeases != null && filteredLeases.Any())
+        {
+            activeCount = filteredLeases.Count(l => l.Status == "Active");
+            
+            // Expiring within 30 days
+            var thirtyDaysFromNow = DateTime.Now.AddDays(30);
+            expiringSoonCount = filteredLeases.Count(l => 
+                l.Status == "Active" && l.EndDate <= thirtyDaysFromNow);
+            
+            totalMonthlyRent = filteredLeases
+                .Where(l => l.Status == "Active")
+                .Sum(l => l.MonthlyRent);
+        }
+        else
+        {
+            activeCount = 0;
+            expiringSoonCount = 0;
+            totalMonthlyRent = 0;
+        }
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Active" => "bg-success",
+            "Pending" => "bg-info",
+            "Expired" => "bg-warning",
+            "Terminated" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private void ViewLeaseOffers()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/leaseoffers");
+    }
+
+    private void CreateLease()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/leaseoffers");
+    }
+
+    private void CreateLeaseForTenant()
+    {
+        @* if (TenantId.HasValue)
+        {
+            NavigationManager.NavigateTo($"/propertymanagement/leases/create?tenantId={TenantId.Value}");
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/propertymanagement/leases/create");
+        } *@
+        NavigationManager.NavigateTo("/propertymanagement/leaseoffers");
+    }
+
+    private void CreateLeaseForProperty()
+    {
+        @* if (PropertyId.HasValue)
+        {
+            NavigationManager.NavigateTo($"/propertymanagement/leases/create?propertyId={PropertyId.Value}");
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/propertymanagement/leases/create");
+        } *@
+        NavigationManager.NavigateTo("/propertymanagement/leaseoffers");
+    }
+
+    private void ClearFilter()
+    {
+        TenantId = null;
+        PropertyId = null;
+        filterTenant = null;
+        filterProperty = null;
+        selectedLeaseStatus = string.Empty;
+        selectedTenantId = null;
+        searchTerm = string.Empty;
+        NavigationManager.NavigateTo("/propertymanagement/leases", forceLoad: true);
+    }
+
+    private void ViewLease(Guid id)
+    {
+        NavigationManager.NavigateTo($"/propertymanagement/leases/{id}");
+    }
+
+    private void EditLease(Guid id)
+    {
+        NavigationManager.NavigateTo($"/propertymanagement/leases/{id}/edit");
+    }
+
+    private async Task DeleteLease(Guid id)
+    {
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userId))
+            return;
+
+        // Add confirmation dialog in a real application
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete lease {id}?");
+        if (!confirmed)
+            return;
+
+        await LeaseService.DeleteAsync(id);
+        await LoadLeases();
+    }
+}

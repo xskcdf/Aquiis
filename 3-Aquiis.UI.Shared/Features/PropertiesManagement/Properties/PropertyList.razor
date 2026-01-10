@@ -1,0 +1,28 @@
+@using Aquiis.UI.Shared.Components.Common
+@using Aquiis.Core.Entities
+@using Aquiis.Application.Services
+
+@inject PropertyService PropertyService
+
+<div>
+    <h3>Property List</h3>
+    <DataTable Items="@properties" TItem="Aquiis.Core.Entities.Property" TableCssClass="table table-hover mb-0">
+        <HeaderTemplate>
+            <th style="cursor:pointer">Property</th>
+            <th>Status</th>
+        </HeaderTemplate>
+        <RowTemplate Context="prop">
+            <td>@prop.Address</td>
+            <td>@prop.Status</td>
+        </RowTemplate>
+    </DataTable>
+</div>
+
+@code {
+    private IEnumerable<Property> properties = new List<Property>();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        properties = await PropertyService.GetPropertiesWithRelationsAsync();
+    }
+}

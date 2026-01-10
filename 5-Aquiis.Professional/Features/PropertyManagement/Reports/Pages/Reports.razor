@@ -1,0 +1,278 @@
+@page "/reports"
+@using Microsoft.AspNetCore.Authorization
+@using Aquiis.Application.Services
+@using Aquiis.Professional.Shared.Services
+@using Aquiis.Application.Services.PdfGenerators
+@using Aquiis.Core.Constants
+
+@inject ApplicationService ApplicationService
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
+
+
+<PageTitle>Financial Reports - Aquiis</PageTitle>
+
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-calendar-check"></i> Daily Payment Report</h1>
+    <button class="btn btn-primary" @onclick="RefreshReport">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+</div>
+
+@if (isLoading)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h6>Today's Total</h6>
+                    <h3>$@todayTotal.ToString("N2")</h3>
+                    <small>@DateTime.Today.ToString("MMM dd, yyyy")</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h6>This Week</h6>
+                    <h3>$@weekTotal.ToString("N2")</h3>
+                    <small>Last 7 days</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h6>This Month</h6>
+                    <h3>$@monthTotal.ToString("N2")</h3>
+                    <small>@DateTime.Today.ToString("MMM yyyy")</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h6>Expiring Leases</h6>
+                    <h3>@expiringLeases</h3>
+                    <small>Next 30 days</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (statistics != null)
+    {
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Payment Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong>Period:</strong> @statistics.StartDate.ToString("MMM dd, yyyy") - @statistics.EndDate.ToString("MMM dd, yyyy")</p>
+                        <p><strong>Total Payments:</strong> @statistics.PaymentCount</p>
+                        <p><strong>Average Payment:</strong> $@statistics.AveragePayment.ToString("N2")</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Payment Methods</h6>
+                        @if (statistics.PaymentsByMethod.Any())
+                        {
+                            <ul class="list-unstyled">
+                                @foreach (var method in statistics.PaymentsByMethod)
+                                {
+                                    <li>
+                                        <strong>@method.Key:</strong> $@method.Value.ToString("N2")
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No payment methods recorded</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+
+<div class="container-fluid">
+    <div class="row mb-4 mt-5">
+        <div class="col">
+            <h3>Financial Reports</h3>
+            <p class="text-muted">Generate comprehensive financial reports for your properties</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100 shadow-sm hover-card">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-file-earmark-spreadsheet text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Income Statement</h5>
+                    <p class="card-text text-muted">
+                        View income and expenses for a specific period with detailed breakdowns
+                    </p>
+                    <a href="/reports/income-statement" class="btn btn-primary">
+                        <i class="bi bi-arrow-right-circle"></i> Generate
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100 shadow-sm hover-card">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-list-check text-success" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Rent Roll</h5>
+                    <p class="card-text text-muted">
+                        Current tenant status, rent amounts, and payment details across all properties
+                    </p>
+                    <a href="/reports/rentroll" class="btn btn-success">
+                        <i class="bi bi-arrow-right-circle"></i> Generate
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100 shadow-sm hover-card">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-graph-up-arrow text-info" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Property Performance</h5>
+                    <p class="card-text text-muted">
+                        Compare income, expenses, ROI, and occupancy rates across all properties
+                    </p>
+                    <a href="/reports/property-performance" class="btn btn-info">
+                        <i class="bi bi-arrow-right-circle"></i> Generate
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100 shadow-sm hover-card">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-file-earmark-text text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Tax Report</h5>
+                    <p class="card-text text-muted">
+                        Schedule E data for tax filing with detailed expense categorization
+                    </p>
+                    <a href="/reports/tax-report" class="btn btn-warning">
+                        <i class="bi bi-arrow-right-circle"></i> Generate
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Report Features</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary"><i class="bi bi-check-circle-fill"></i> Available Features</h6>
+                            <ul>
+                                <li>Customizable date ranges</li>
+                                <li>Property-specific or portfolio-wide reports</li>
+                                <li>Export to PDF for record keeping</li>
+                                <li>Real-time data from your database</li>
+                                <li>Professional formatting for tax purposes</li>
+                                <li>Detailed expense categorization</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-info"><i class="bi bi-lightbulb-fill"></i> Tips</h6>
+                            <ul>
+                                <li>Generate reports regularly for better tracking</li>
+                                <li>Use income statements for monthly reviews</li>
+                                <li>Rent roll helps identify payment issues</li>
+                                <li>Property performance guides investment decisions</li>
+                                <li>Tax reports simplify year-end filing</li>
+                                <li>Keep PDF copies for audit trail</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+</style>
+
+@code {
+    private bool isLoading = true;
+    private decimal todayTotal = 0;
+    private decimal weekTotal = 0;
+    private decimal monthTotal = 0;
+    private int expiringLeases = 0;
+    private PaymentStatistics? statistics;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReport();
+    }
+
+    private async Task LoadReport()
+    {
+        isLoading = true;
+        try
+        {
+            var today = DateTime.Today;
+            var weekStart = today.AddDays(-7);
+            var monthStart = new DateTime(today.Year, today.Month, 1);
+
+            // Get payment totals
+            todayTotal = await ApplicationService.GetTodayPaymentTotalAsync();
+            weekTotal = await ApplicationService.GetPaymentTotalForRangeAsync(weekStart, today);
+            monthTotal = await ApplicationService.GetPaymentTotalForRangeAsync(monthStart, today);
+
+            // Get expiring leases count
+            expiringLeases = await ApplicationService.GetLeasesExpiringCountAsync(30);
+
+            // Get detailed statistics for this month
+            statistics = await ApplicationService.GetPaymentStatisticsAsync(monthStart, today);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task RefreshReport()
+    {
+        await LoadReport();
+    }
+}

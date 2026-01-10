@@ -1,0 +1,311 @@
+@page "/Administration/Users/Create"
+
+@using Aquiis.SimpleStart.Shared.Components.Account
+@using Aquiis.Core.Constants
+@using Aquiis.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@inject NavigationManager Navigation
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject OrganizationService OrganizationService
+@inject UserContextService UserContext
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode InteractiveServer
+
+@attribute [OrganizationAuthorize("Owner", "Administrator")]
+
+<PageTitle>Create User - Administration</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-person-plus"></i> Create User</h1>
+    <button class="btn btn-outline-secondary" @onclick="Cancel">
+        <i class="bi bi-arrow-left"></i> Back to Users
+    </button>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">New User Account</h5>
+            </div>
+            <div class="card-body">
+                <EditForm Model="userModel" OnValidSubmit="CreateUser" FormName="create-user">
+                    <DataAnnotationsValidator />
+                    
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @errorMessage
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success" role="alert">
+                            @successMessage
+                        </div>
+                    }
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name *</label>
+                            <InputText @bind-Value="userModel.FirstName" class="form-control" placeholder="First name" />
+                            <ValidationMessage For="() => userModel.FirstName" class="text-danger" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name *</label>
+                            <InputText @bind-Value="userModel.LastName" class="form-control" placeholder="Last name" />
+                            <ValidationMessage For="() => userModel.LastName" class="text-danger" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email / Username *</label>
+                            <InputText @bind-Value="userModel.Email" class="form-control" type="email" placeholder="email@example.com" />
+                            <ValidationMessage For="() => userModel.Email" class="text-danger" />
+                            <small class="text-muted">This will be used as the username</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone Number</label>
+                            <InputText @bind-Value="userModel.PhoneNumber" class="form-control" placeholder="(555) 123-4567" />
+                            <ValidationMessage For="() => userModel.PhoneNumber" class="text-danger" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Password *</label>
+                            <InputText @bind-Value="userModel.Password" class="form-control" type="password" placeholder="Enter password" />
+                            <ValidationMessage For="() => userModel.Password" class="text-danger" />
+                            <small class="text-muted">Min 6 characters, 1 uppercase, 1 lowercase, 1 digit</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Confirm Password *</label>
+                            <InputText @bind-Value="userModel.ConfirmPassword" class="form-control" type="password" placeholder="Confirm password" />
+                            <ValidationMessage For="() => userModel.ConfirmPassword" class="text-danger" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <InputCheckbox @bind-Value="userModel.EmailConfirmed" class="form-check-input" id="emailConfirmed" />
+                            <label class="form-check-label" for="emailConfirmed">
+                                Email Confirmed (Auto-approve account)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Organization Role *</label>
+                        @foreach (var role in ApplicationConstants.OrganizationRoles.AllRoles)
+                        {
+                            <div class="form-check">
+                                <input type="radio" class="form-check-input" id="role_@role" name="userRole"
+                                       checked="@(userModel.SelectedRole == role)"
+                                       @onchange="@(() => OnRoleChanged(role))" />
+                                <label class="form-check-label" for="role_@role">
+                                    @FormatRoleName(role)
+                                </label>
+                            </div>
+                        }
+                        @if (string.IsNullOrEmpty(userModel.SelectedRole))
+                        {
+                            <small class="text-danger">Role selection is required</small>
+                        }
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                            @if (isSubmitting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            }
+                            <i class="bi bi-person-plus"></i> Create User
+                        </button>
+                        <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Password Requirements</h6>
+            </div>
+            <div class="card-body">
+                <ul class="small mb-0">
+                    <li>Minimum 6 characters</li>
+                    <li>At least 1 uppercase letter</li>
+                    <li>At least 1 lowercase letter</li>
+                    <li>At least 1 digit (0-9)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Organization Roles</h6>
+            </div>
+            <div class="card-body">
+                <ul class="small mb-0">
+                    <li><strong>Owner:</strong> Full control including organization management</li>
+                    <li><strong>Administrator:</strong> Manage users and all features except organization settings</li>
+                    <li><strong>Property Manager:</strong> Manage properties, tenants, and leases</li>
+                    <li><strong>User:</strong> Limited access to view data</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private UserModel userModel = new UserModel();
+    private bool isSubmitting = false;
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.CompletedTask;
+    }
+
+    private void OnRoleChanged(string roleName)
+    {
+        userModel.SelectedRole = roleName;
+    }
+
+    private async Task CreateUser()
+    {
+        try
+        {
+            isSubmitting = true;
+            errorMessage = string.Empty;
+            successMessage = string.Empty;
+
+            // Validate role - user must have exactly one role
+            if (string.IsNullOrEmpty(userModel.SelectedRole))
+            {
+                errorMessage = "Please select a role for the user.";
+                return;
+            }
+
+            // Get current user's context
+            var currentUserId = await UserContext.GetUserIdAsync();
+            var currentOrganizationId = await UserContext.GetActiveOrganizationIdAsync();
+            
+            if (string.IsNullOrEmpty(currentUserId) || !currentOrganizationId.HasValue)
+            {
+                errorMessage = "User not authenticated or no active organization.";
+                return;
+            }
+
+            // Check if user already exists
+            var existingUser = await UserManager.FindByEmailAsync(userModel.Email);
+            if (existingUser != null)
+            {
+                errorMessage = "A user with this email already exists.";
+                return;
+            }
+
+            // Create new user
+            var newUser = new ApplicationUser
+            {
+                UserName = userModel.Email,
+                Email = userModel.Email,
+                EmailConfirmed = userModel.EmailConfirmed,
+                PhoneNumber = userModel.PhoneNumber,
+                FirstName = userModel.FirstName,
+                LastName = userModel.LastName,
+                OrganizationId = currentOrganizationId.Value,
+                ActiveOrganizationId = currentOrganizationId.Value
+            };
+
+            var createResult = await UserManager.CreateAsync(newUser, userModel.Password);
+            
+            if (!createResult.Succeeded)
+            {
+                errorMessage = $"Error creating user: {string.Join(", ", createResult.Errors.Select(e => e.Description))}";
+                return;
+            }
+
+            // Grant organization access with the selected role
+            var grantResult = await OrganizationService.GrantOrganizationAccessAsync(
+                newUser.Id, 
+                currentOrganizationId.Value, 
+                userModel.SelectedRole, 
+                currentUserId);
+
+            if (!grantResult)
+            {
+                errorMessage = "User created but failed to assign organization role.";
+                // Consider whether to delete the user here or leave it
+                return;
+            }
+
+            successMessage = $"User account created successfully! Username: {userModel.Email}, Role: {userModel.SelectedRole}";
+            
+            // Reset form
+            userModel = new UserModel();
+            
+            // Redirect after a brief delay
+            await Task.Delay(2000);
+            Navigation.NavigateTo("/administration/users/manage");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error creating user: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/administration/users/manage");
+    }
+
+    private string FormatRoleName(string role)
+    {
+        // Add spaces before capital letters (e.g., PropertyManager -> Property Manager)
+        return System.Text.RegularExpressions.Regex.Replace(role, "([a-z])([A-Z])", "$1 $2");
+    }
+
+    public class UserModel
+    {
+        [Required(ErrorMessage = "First name is required")]
+        [StringLength(100, ErrorMessage = "First name cannot exceed 100 characters")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Last name is required")]
+        [StringLength(100, ErrorMessage = "Last name cannot exceed 100 characters")]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address")]
+        public string Email { get; set; } = string.Empty;
+
+        [Phone(ErrorMessage = "Please enter a valid phone number")]
+        public string PhoneNumber { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Password is required")]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Please confirm the password")]
+        [Compare(nameof(Password), ErrorMessage = "Passwords do not match")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        public bool EmailConfirmed { get; set; } = true;
+
+        public string SelectedRole { get; set; } = ApplicationConstants.OrganizationRoles.User;
+    }
+}

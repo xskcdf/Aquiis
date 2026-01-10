@@ -25,5 +25,11 @@ jobs:
       - name: Build
         run: dotnet build Aquiis.sln --no-restore --configuration Release
 
-      - name: Run focused tests
-        run: dotnet test Aquiis.SimpleStart.Tests/Aquiis.SimpleStart.Tests.csproj --no-build --configuration Release --verbosity normal
+      - name: Test Core Layer
+        run: dotnet test 6-Tests/Aquiis.Core.Tests/Aquiis.Core.Tests.csproj --no-build --configuration Release --verbosity normal
+
+      - name: Test Application Layer
+        run: dotnet test 6-Tests/Aquiis.Application.Tests/Aquiis.Application.Tests.csproj --no-build --configuration Release --verbosity normal
+
+      - name: Test Shared UI Components (bUnit)
+        run: dotnet test 6-Tests/Aquiis.UI.Shared.Tests/Aquiis.UI.Shared.Tests.csproj --no-build --configuration Release --verbosity normal

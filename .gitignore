@@ -1,8 +1,8 @@
 /* Ignore file for Aquiis projects */
 
-# Build outputs - ignore bin/obj in project folders
-Aquiis.*/bin/
-Aquiis.*/obj/
+# Build outputs - ignore bin/obj in all project folders
+**/bin/
+**/obj/
 
 # Electron host - track the folder but ignore node_modules
 obj/Host/node_modules/
@@ -18,6 +18,8 @@ node_modules/
 
 Data/Backups/**
 /Data/Backups/**
+Data/Migrations/**
+/Data/Migrations/**
 
 /Data/app*
 

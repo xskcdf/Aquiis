@@ -1,0 +1,8 @@
+@page "/notifications"
+@using Aquiis.Professional.Shared.Services
+@attribute [OrganizationAuthorize]
+@rendermode InteractiveServer
+
+<PageTitle>Notification Center</PageTitle>
+
+<Aquiis.UI.Shared.Features.Notifications.NotificationCenter GetEntityRoute="@EntityRouteHelper.GetEntityRoute" />

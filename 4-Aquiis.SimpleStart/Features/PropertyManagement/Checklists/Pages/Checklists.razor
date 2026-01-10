@@ -1,0 +1,176 @@
+@page "/propertymanagement/checklists"
+
+@using Aquiis.Core.Entities
+@using Aquiis.Core.Constants
+@using Aquiis.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.Application.Services.PdfGenerators
+@using Microsoft.AspNetCore.Authorization
+@inject ChecklistService ChecklistService
+@inject UserContextService UserContext
+@inject NavigationManager NavigationManager
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
+
+@rendermode InteractiveServer
+
+<PageTitle>Available Checklists</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <h1><i class="bi bi-list-check"></i> Available Checklists</h1>
+            <p class="text-muted">Select a checklist template to complete for your property</p>
+        </div>
+        <div class="col-md-6 text-end">
+            <div class="btn-group">
+                <button class="btn btn-outline-primary" @onclick="NavigateToMyChecklists">
+                    <i class="bi bi-list-task"></i> My Checklists
+                </button>
+                <button class="btn btn-outline-secondary" @onclick="NavigateToTemplates">
+                    <i class="bi bi-card-checklist"></i> Manage Templates
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (errorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+        </div>
+    }
+
+    @if (templates == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (!templates.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No checklist templates available. Contact your administrator to create templates.
+        </div>
+    }
+    else
+    {
+        <!-- Filter -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <input type="text" class="form-control" placeholder="Search templates..." @bind="searchText" @bind:event="oninput" />
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" @bind="filterCategory">
+                    <option value="">All Categories</option>
+                    @foreach (var type in ApplicationConstants.ChecklistTypes.AllChecklistTypes)
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <!-- Templates Grid -->
+        <div class="row">
+            @foreach (var template in FilteredTemplates)
+            {
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm hover-shadow">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-list-check"></i> @template.Name
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text text-muted">@(template.Description ?? "No description provided")</p>
+                            
+                            <div class="mb-2">
+                                <span class="badge bg-info">@template.Category</span>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between text-muted small">
+                                <span><i class="bi bi-list-ul"></i> @(template.Items?.Count ?? 0) items</span>
+                                @if (template.Items != null && template.Items.Any(i => i.RequiresValue))
+                                {
+                                    <span><i class="bi bi-input-cursor-text"></i> @template.Items.Count(i => i.RequiresValue) need values</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <button class="btn btn-success w-100" @onclick="@(() => StartChecklist(template.Id))">
+                                <i class="bi bi-plus-circle"></i> Complete Checklist
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<ChecklistTemplate>? templates;
+    private string? errorMessage;
+    private string searchText = "";
+    private string filterCategory = "";
+
+    private IEnumerable<ChecklistTemplate> FilteredTemplates
+    {
+        get
+        {
+            if (templates == null) return Enumerable.Empty<ChecklistTemplate>();
+
+            var filtered = templates.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                filtered = filtered.Where(t =>
+                    t.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                    (t.Description?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterCategory))
+            {
+                filtered = filtered.Where(t => t.Category == filterCategory);
+            }
+
+            return filtered;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTemplates();
+    }
+
+    private async Task LoadTemplates()
+    {
+        try
+        {
+            templates = await ChecklistService.GetChecklistTemplatesAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading templates: {ex.Message}";
+        }
+    }
+
+    private void StartChecklist(Guid templateId)
+    {
+        // Navigate to complete page with template ID - checklist will be created on save
+        NavigationManager.NavigateTo($"/propertymanagement/checklists/complete/new?templateId={templateId}");
+    }
+
+    private void NavigateToMyChecklists()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/checklists/mychecklists");
+    }
+
+    private void NavigateToTemplates()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/checklists/templates");
+    }
+}

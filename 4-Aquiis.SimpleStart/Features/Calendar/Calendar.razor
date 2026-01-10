@@ -1,0 +1,1670 @@
+@page "/Calendar"
+@using Aquiis.Core.Entities
+@using Aquiis.Application.Services
+@using Aquiis.SimpleStart.Shared.Services
+@using Aquiis.Application.Services.PdfGenerators
+@using Aquiis.Core.Utilities
+@using Aquiis.Core.Constants
+@using Aquiis.SimpleStart.Shared.Components
+
+
+@using Microsoft.AspNetCore.Authorization
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
+@inject CalendarEventService CalendarEventService
+@inject CalendarSettingsService CalendarSettingsService
+@inject UserContextService UserContext
+@inject NavigationManager Navigation
+@inject ToastService ToastService
+@inject PropertyManagementService PropertyManagementService
+@inject PropertyService PropertyService
+@inject TourService TourService
+@inject InspectionService InspectionService
+@inject MaintenanceService MaintenanceService
+
+@rendermode InteractiveServer
+
+<PageTitle>Calendar</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <h1><i class="bi bi-calendar3"></i> Calendar</h1>
+            <p class="text-muted">Tours, Appointments, and other Events</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group me-2">
+                <button class="btn btn-outline-secondary" @onclick="NavigateToListView">
+                    <i class="bi bi-list-ul"></i> List View
+                </button>
+            </div>
+            <div class="btn-group me-2">
+                <button class="btn btn-outline-secondary @(viewMode == "day" ? "active" : "")" @onclick='() => ChangeView("day")'>
+                    <i class="bi bi-calendar-day"></i> Day
+                </button>
+                <button class="btn btn-outline-secondary @(viewMode == "week" ? "active" : "")" @onclick='() => ChangeView("week")'>
+                    <i class="bi bi-calendar-week"></i> Week
+                </button>
+                <button class="btn btn-outline-secondary @(viewMode == "month" ? "active" : "")" @onclick='() => ChangeView("month")'>
+                    <i class="bi bi-calendar-month"></i> Month
+                </button>
+            </div>
+            <button class="btn btn-outline-secondary me-2" @onclick="ToggleFilters">
+                <i class="bi bi-funnel"></i> Filters
+            </button>
+            <button class="btn btn-success me-2" @onclick="ShowAddEventModal">
+                <i class="bi bi-plus-circle"></i> Add Event
+            </button>
+            <button class="btn btn-primary" @onclick="NavigateToDashboard">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </button>
+        </div>
+    </div>
+
+    @if (showFilters)
+    {
+        <div class="card mb-3">
+            <div class="card-body">
+                <h6 class="card-title">Event Types</h6>
+                <div class="row">
+                    @foreach (var eventType in CalendarEventTypes.GetAllTypes())
+                    {
+                        var config = CalendarEventTypes.Config[eventType];
+                        <div class="col-auto mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       id="@($"filter-{eventType}")"
+                                       checked="@selectedEventTypes.Contains(eventType)"
+                                       @onchange="@(async () => await ToggleEventType(eventType))">
+                                <label class="form-check-label" for="@($"filter-{eventType}")">
+                                    <i class="bi @config.Icon" style="color: @config.Color;"></i>
+                                    @config.DisplayName
+                                </label>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (loading)
+    {
+        <div class="text-center p-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Navigation Controls -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <button class="btn btn-outline-primary" @onclick="NavigatePrevious">
+                        <i class="bi bi-chevron-left"></i> Previous
+                    </button>
+                    
+                    <div class="d-flex align-items-center gap-3">
+                        <h4 class="mb-0">@GetDateRangeTitle()</h4>
+                        <input type="date" 
+                               class="form-control form-control-sm" 
+                               style="width: 150px;"
+                               value="@currentDate.ToString("yyyy-MM-dd")"
+                               @onchange="OnDateSelected" />
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary" @onclick="NavigateToday">
+                            Today
+                        </button>
+                        <button class="btn btn-outline-primary" @onclick="NavigateNext">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar View -->
+        @if (viewMode == "day")
+        {
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">@currentDate.ToString("dddd, MMMM dd, yyyy")</h5>
+                </div>
+                <div class="card-body">
+                    @RenderDayView()
+                </div>
+            </div>
+        }
+        else if (viewMode == "week")
+        {
+            @RenderWeekView()
+        }
+        else if (viewMode == "month")
+        {
+            @RenderMonthView()
+        }
+    }
+</div>
+
+<!-- Generic Event Detail Modal -->
+@if (selectedEvent != null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="border-left: 4px solid @selectedEvent.Color;">
+                    <div>
+                        <h5 class="modal-title">
+                            <i class="bi @(selectedEvent.Icon ?? "bi-calendar-event") me-2" style="color: @selectedEvent.Color;"></i>
+                            @selectedEvent.Title
+                        </h5>
+                        <small class="text-muted">@CalendarEventTypes.GetDisplayName(selectedEvent.EventType)</small>
+                    </div>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Event Basic Info -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-clock"></i> Schedule</h6>
+                            <p>
+                                <strong>@selectedEvent.StartOn.ToString("MMM dd, yyyy")</strong><br/>
+                                @selectedEvent.StartOn.ToString("h:mm tt")
+                                @if (selectedEvent.EndOn.HasValue)
+                                {
+                                    <text> - @selectedEvent.EndOn.Value.ToString("h:mm tt")</text>
+                                }
+                                <br/>
+                                <small class="text-muted">Duration: @selectedEvent.DurationMinutes minutes</small>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-info-circle"></i> Status</h6>
+                            <p>
+                                @if (!string.IsNullOrEmpty(selectedEvent.Status))
+                                {
+                                    <span class="badge @GetEventStatusBadgeClass(selectedEvent.Status)">@selectedEvent.Status</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">No Status</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+
+                    @if (selectedEvent.PropertyId.HasValue && selectedEvent.Property != null)
+                    {
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <h6><i class="bi bi-house"></i> Property</h6>
+                                <p>
+                                    <a href="/PropertyManagement/Properties/Details/@selectedEvent.PropertyId" class="text-decoration-none">
+                                        @selectedEvent.Property.Address, @selectedEvent.Property.City, @selectedEvent.Property.State @selectedEvent.Property.ZipCode
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(selectedEvent.Location))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <h6><i class="bi bi-geo-alt"></i> Location</h6>
+                                <p>@selectedEvent.Location</p>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(selectedEvent.Description))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <h6><i class="bi bi-card-text"></i> Description</h6>
+                                <p>@selectedEvent.Description</p>
+                            </div>
+                        </div>
+                    }
+
+                    @* Notes timeline for custom events (visible when In Progress, Completed, or Cancelled) *@
+                    @if (selectedEvent != null && selectedEvent.IsCustomEvent && 
+                         (selectedEvent.Status == "In Progress" || selectedEvent.Status == "Completed" || selectedEvent.Status == "Cancelled"))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <NotesTimeline EntityType="CalendarEvent" EntityId="@selectedEvent.Id" />
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Entity-Specific Details -->
+                    @if (selectedTour != null)
+                    {
+                        <hr/>
+                        <h6 class="text-primary"><i class="bi bi-house-door"></i> Tour Details</h6>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <strong>Prospective Tenant</strong>
+                                <p>
+                                    @selectedTour.ProspectiveTenant?.FullName<br/>
+                                    <small class="text-muted">
+                                        <i class="bi bi-envelope"></i> @selectedTour.ProspectiveTenant?.Email<br/>
+                                        <i class="bi bi-telephone"></i> @selectedTour.ProspectiveTenant?.Phone
+                                    </small>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Property</strong>
+                                <p>
+                                    @selectedTour.Property?.Address<br/>
+                                    <small class="text-muted">@selectedTour.Property?.City, @selectedTour.Property?.State @selectedTour.Property?.ZipCode</small>
+                                </p>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(selectedTour.InterestLevel))
+                        {
+                            <div class="mt-2">
+                                <strong>Interest Level:</strong>
+                                <span class="badge @GetInterestBadgeClass(selectedTour.InterestLevel) ms-2">
+                                    @GetInterestDisplay(selectedTour.InterestLevel)
+                                </span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(selectedTour.Feedback))
+                        {
+                            <div class="mt-2">
+                                <strong>Feedback:</strong>
+                                <p class="text-muted">@selectedTour.Feedback</p>
+                            </div>
+                        }
+                        @if (selectedTour.Checklist != null)
+                        {
+                            <div class="mt-2">
+                                <span class="badge @GetChecklistStatusBadgeClass(selectedTour.Checklist.Status)">
+                                    <i class="bi bi-list-check"></i> Checklist: @selectedTour.Checklist.Status
+                                </span>
+                            </div>
+                        }
+                    }
+
+                    @if (selectedInspection != null)
+                    {
+                        <hr/>
+                        <h6 class="text-success"><i class="bi bi-clipboard-check"></i> Inspection Details</h6>
+                        @if (!string.IsNullOrEmpty(selectedInspection.OverallCondition))
+                        {
+                            <div class="mb-3">
+                                <strong>Overall Condition:</strong>
+                                <span class="badge @GetInspectionStatusBadgeClass(selectedInspection.OverallCondition) ms-2">@selectedInspection.OverallCondition</span>
+                            </div>
+                        }
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <strong>Type</strong>
+                                <p>@selectedInspection.InspectionType</p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Property</strong>
+                                <p>
+                                    @selectedInspection.Property?.Address<br/>
+                                    <small class="text-muted">@selectedInspection.Property?.City, @selectedInspection.Property?.State</small>
+                                </p>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(selectedInspection.InspectedBy))
+                        {
+                            <div class="mt-2">
+                                <strong>Inspector:</strong> @selectedInspection.InspectedBy
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(selectedInspection.GeneralNotes))
+                        {
+                            <div class="mt-2">
+                                <strong>Notes:</strong>
+                                <p class="text-muted">@selectedInspection.GeneralNotes</p>
+                            </div>
+                        }
+                    }
+
+                    @if (selectedMaintenanceRequest != null)
+                    {
+                        <hr/>
+                        <h6 class="text-danger"><i class="bi bi-tools"></i> Maintenance Details</h6>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <strong>Type</strong>
+                                <p>@selectedMaintenanceRequest.RequestType</p>
+                                <strong>Priority</strong>
+                                <p>
+                                    <span class="badge @GetPriorityBadgeClass(selectedMaintenanceRequest.Priority)">
+                                        @selectedMaintenanceRequest.Priority
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Property</strong>
+                                <p>
+                                    @selectedMaintenanceRequest.Property?.Address<br/>
+                                    <small class="text-muted">@selectedMaintenanceRequest.Property?.City, @selectedMaintenanceRequest.Property?.State</small>
+                                </p>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(selectedMaintenanceRequest.AssignedTo))
+                        {
+                            <div class="mt-2">
+                                <strong>Assigned To:</strong> @selectedMaintenanceRequest.AssignedTo
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(selectedMaintenanceRequest.RequestedBy))
+                        {
+                            <div class="mt-2">
+                                <strong>Requested By:</strong> @selectedMaintenanceRequest.RequestedBy
+                                @if (!string.IsNullOrEmpty(selectedMaintenanceRequest.RequestedByPhone))
+                                {
+                                    <text> - <i class="bi bi-telephone"></i> @selectedMaintenanceRequest.RequestedByPhone</text>
+                                }
+                            </div>
+                        }
+                        @if (selectedMaintenanceRequest.EstimatedCost > 0)
+                        {
+                            <div class="mt-2">
+                                <strong>Estimated Cost:</strong> @selectedMaintenanceRequest.EstimatedCost.ToString("C")
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="modal-footer">
+                    <!-- Entity-specific actions -->
+                    @if (selectedTour != null && selectedTour.Status == ApplicationConstants.TourStatuses.Scheduled)
+                    {
+                        <button class="btn btn-success" @onclick="() => CompleteTour(selectedTour.Id)">
+                            <i class="bi bi-check-circle"></i> Complete Tour
+                        </button>
+                        <button class="btn btn-warning text-dark" @onclick="() => MarkTourAsNoShow(selectedTour.Id)">
+                            <i class="bi bi-person-x"></i> Mark as No Show
+                        </button>
+                        <button class="btn btn-danger" @onclick="() => CancelTour(selectedTour.Id)">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                    }
+
+                    @if (selectedMaintenanceRequest != null)
+                    {
+                        @if (selectedMaintenanceRequest.Status == ApplicationConstants.MaintenanceRequestStatuses.Submitted)
+                        {
+                            <button class="btn btn-primary" @onclick="() => StartWork(selectedMaintenanceRequest.Id)">
+                                <i class="bi bi-play-circle"></i> Start Work
+                            </button>
+                            <button class="btn btn-danger" @onclick="() => CancelMaintenanceRequest(selectedMaintenanceRequest.Id)">
+                                <i class="bi bi-x-circle"></i> Cancel Request
+                            </button>
+                        }
+                        else if (selectedMaintenanceRequest.Status == ApplicationConstants.MaintenanceRequestStatuses.InProgress)
+                        {
+                            <button class="btn btn-success" @onclick="() => CompleteMaintenanceRequest(selectedMaintenanceRequest.Id)">
+                                <i class="bi bi-check-circle"></i> Mark Complete
+                            </button>
+                            <button class="btn btn-danger" @onclick="() => CancelMaintenanceRequest(selectedMaintenanceRequest.Id)">
+                                <i class="bi bi-x-circle"></i> Cancel Request
+                            </button>
+                        }
+                    }
+
+                    @* Show Complete Inspection button for property-based routine inspections *@
+                    @if (selectedEvent != null && selectedEvent.EventType == CalendarEventTypes.Inspection && 
+                         selectedEvent.SourceEntityType == "Property" && selectedEvent.PropertyId.HasValue)
+                    {
+                        <button class="btn btn-success" @onclick="() => CompleteRoutineInspection(selectedEvent.PropertyId.Value)">
+                            <i class="bi bi-check-circle"></i> Complete Inspection
+                        </button>
+                    }
+
+                    @* Custom event workflow buttons *@
+                    @if (selectedEvent != null && selectedEvent.IsCustomEvent)
+                    {
+                        @if (selectedEvent.Status == "Scheduled")
+                        {
+                            <button class="btn btn-primary" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "In Progress"))">
+                                <i class="bi bi-play-circle"></i> Start
+                            </button>
+                            <button class="btn btn-success" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Completed"))">
+                                <i class="bi bi-check-circle"></i> Complete
+                            </button>
+                            <button class="btn btn-danger" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Cancelled"))">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </button>
+                        }
+                        else if (selectedEvent.Status == "In Progress")
+                        {
+                            <button class="btn btn-success" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Completed"))">
+                                <i class="bi bi-check-circle"></i> Complete
+                            </button>
+                            <button class="btn btn-danger" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Cancelled"))">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </button>
+                        }
+                        else if (selectedEvent.Status == "Completed" || selectedEvent.Status == "Cancelled")
+                        {
+                            <button class="btn btn-secondary" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Scheduled"))">
+                                <i class="bi bi-arrow-counterclockwise"></i> Reopen
+                            </button>
+                        }
+                        else if (selectedEvent.Status == "Confirmed")
+                        {
+                            <button class="btn btn-primary" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "In Progress"))">
+                                <i class="bi bi-play-circle"></i> Start
+                            </button>
+                            <button class="btn btn-success" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Completed"))">
+                                <i class="bi bi-check-circle"></i> Complete
+                            </button>
+                            <button class="btn btn-danger" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Cancelled"))">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </button>
+                        }
+                        else if (selectedEvent.Status == "Postponed")
+                        {
+                            <button class="btn btn-info" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Scheduled"))">
+                                <i class="bi bi-calendar-check"></i> Reschedule
+                            </button>
+                            <button class="btn btn-danger" @onclick="@(() => UpdateCustomEventStatus(selectedEvent.Id, "Cancelled"))">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </button>
+                        }
+                    }
+
+                    <!-- View Details button - navigates to full detail page -->
+                    @if (selectedEvent != null && CalendarEventRouter.IsRoutable(selectedEvent))
+                    {
+                        <button class="btn btn-primary" @onclick="NavigateToEventDetail">
+                            <i class="bi bi-box-arrow-up-right"></i> View Full Details
+                        </button>
+                    }
+
+                    <button class="btn btn-secondary" @onclick="CloseModal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Add Custom Event Modal -->
+@if (showAddEventModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Add Custom Event</h5>
+                    <button type="button" class="btn-close" @onclick="CloseAddEventModal"></button>
+                </div>
+                <EditForm Model="newEvent" OnValidSubmit="SaveCustomEvent">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="alert alert-danger" />
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Title <span class="text-danger">*</span></label>
+                                <InputText @bind-Value="newEvent.Title" class="form-control" placeholder="Event title" />
+                                <ValidationMessage For="@(() => newEvent.Title)" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Event Type <span class="text-danger">*</span></label>
+                                <InputSelect @bind-Value="newEvent.EventType" class="form-select">
+                                    <option value="">Select type...</option>
+                                    @foreach (var type in CalendarEventTypes.GetAllTypes())
+                                    {
+                                        <option value="@type">@CalendarEventTypes.GetDisplayName(type)</option>
+                                    }
+                                </InputSelect>
+                                <ValidationMessage For="@(() => newEvent.EventType)" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Start Date & Time <span class="text-danger">*</span></label>
+                                <InputDate Type="InputDateType.DateTimeLocal" @bind-Value="newEvent.StartOn" class="form-control" />
+                                <ValidationMessage For="@(() => newEvent.StartOn)" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">End Date & Time</label>
+                                <InputDate Type="InputDateType.DateTimeLocal" @bind-Value="newEvent.EndOn" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Status</label>
+                                <InputSelect @bind-Value="newEvent.Status" class="form-select">
+                                    <option value="Scheduled">Scheduled</option>
+                                    <option value="Confirmed">Confirmed</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                    <option value="Postponed">Postponed</option>
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Location</label>
+                                <InputText @bind-Value="newEvent.Location" class="form-control" placeholder="Event location" />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Link to Property</label>
+                            <div class="input-group">
+                                <input type="text" 
+                                       class="form-control" 
+                                       value="@propertySearchTerm" 
+                                       @oninput="OnPropertySearchInput"
+                                       placeholder="Search by address..."
+                                       autocomplete="off" />
+                                @if (newEvent.PropertyId.HasValue && selectedPropertyForEvent != null)
+                                {
+                                    <button type="button" class="btn btn-outline-secondary" @onclick="ClearPropertySelection">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                }
+                            </div>
+                            @if (newEvent.PropertyId.HasValue && selectedPropertyForEvent != null)
+                            {
+                                <div class="alert alert-info mt-2 mb-0">
+                                    <i class="bi bi-house"></i> <strong>@selectedPropertyForEvent.Address</strong>, @selectedPropertyForEvent.City, @selectedPropertyForEvent.State @selectedPropertyForEvent.ZipCode
+                                </div>
+                            }
+                            @if (showPropertySearchResults && propertySearchResults.Any())
+                            {
+                                <div class="list-group mt-1" style="max-height: 200px; overflow-y: auto;">
+                                    @foreach (var property in propertySearchResults)
+                                    {
+                                        <button type="button" 
+                                                class="list-group-item list-group-item-action" 
+                                                @onclick="() => SelectProperty(property)">
+                                            <i class="bi bi-house"></i> @property.Address, @property.City, @property.State @property.ZipCode
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <InputTextArea @bind-Value="newEvent.Description" class="form-control" rows="3" placeholder="Event description" />
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Color</label>
+                                <InputText type="color" @bind-Value="newEvent.Color" class="form-control form-control-color" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Icon</label>
+                                <InputSelect @bind-Value="newEvent.Icon" class="form-select">
+                                    <option value="bi-calendar-event">📅 Calendar Event</option>
+                                    <option value="bi-bell">🔔 Bell</option>
+                                    <option value="bi-clock">🕐 Clock</option>
+                                    <option value="bi-flag">🚩 Flag</option>
+                                    <option value="bi-star">⭐ Star</option>
+                                    <option value="bi-geo-alt">📍 Location Pin</option>
+                                    <option value="bi-people">👥 People</option>
+                                    <option value="bi-briefcase">💼 Briefcase</option>
+                                    <option value="bi-calendar-check">✅ Calendar Check</option>
+                                </InputSelect>
+                                <small class="text-muted">Choose an icon for this event</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseAddEventModal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Save Event
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<CalendarEvent> allEvents = new();
+    private CalendarEvent? selectedEvent;
+    private Tour? selectedTour;
+    private Inspection? selectedInspection;
+    private MaintenanceRequest? selectedMaintenanceRequest;
+    private bool loading = true;
+    private string viewMode = "week"; // day, week, month
+    private DateTime currentDate = DateTime.Today;
+    private List<string> selectedEventTypes = new();
+    private bool showFilters = false;
+    private bool showAddEventModal = false;
+    private CalendarEvent newEvent = new();
+    private string propertySearchTerm = string.Empty;
+    private List<Property> propertySearchResults = new();
+    private bool showPropertySearchResults = false;
+    private Property? selectedPropertyForEvent = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load filter defaults from settings
+        var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+        if (organizationId.HasValue)
+        {
+            var settings = await CalendarSettingsService.GetSettingsAsync(organizationId.Value);
+            selectedEventTypes = settings
+                .Where(s => s.ShowOnCalendar)
+                .Select(s => s.EntityType)
+                .ToList();
+        }
+        
+        // Fallback to all types if no settings
+        if (!selectedEventTypes.Any())
+        {
+            selectedEventTypes = CalendarEventTypes.GetAllTypes().ToList();
+        }
+        
+        await LoadEvents();
+    }
+
+    private async Task LoadEvents()
+    {
+        loading = true;
+        try
+        {
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            if (organizationId.HasValue)
+            {
+                // Get date range based on current view
+                var (startDate, endDate) = viewMode switch
+                {
+                    "day" => (currentDate.Date, currentDate.Date.AddDays(1)),
+                    "week" => (GetWeekStart(), GetWeekEnd().AddDays(1)),
+                    "month" => (new DateTime(currentDate.Year, currentDate.Month, 1), 
+                               new DateTime(currentDate.Year, currentDate.Month, 1).AddMonths(1)),
+                    _ => (currentDate.Date, currentDate.Date.AddDays(1))
+                };
+
+                // Include "Custom" event type in filters to show user-created events
+                var eventTypesToLoad = selectedEventTypes.Any() 
+                    ? selectedEventTypes.Union(new[] { CalendarEventTypes.Custom }).ToList()
+                    : null;
+
+                allEvents = await CalendarEventService.GetEventsAsync(
+                    startDate, 
+                    endDate,
+                    eventTypesToLoad
+                );
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading calendar events: {ex.Message}");
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task OnEventTypeFilterChanged()
+    {
+        await LoadEvents();
+    }
+
+    private void ToggleFilters()
+    {
+        showFilters = !showFilters;
+    }
+
+    private async Task ToggleEventType(string eventType)
+    {
+        if (selectedEventTypes.Contains(eventType))
+        {
+            selectedEventTypes.Remove(eventType);
+        }
+        else
+        {
+            selectedEventTypes.Add(eventType);
+        }
+        await LoadEvents();
+    }
+
+    private void NavigateToDashboard()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task ShowAddEventModal()
+    {
+        var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+        var userId = await UserContext.GetUserIdAsync();
+        
+        newEvent = new CalendarEvent
+        {
+            StartOn = currentDate.Date.AddHours(9), // Default to 9 AM on current date
+            Color = "#6c757d",
+            Icon = "bi-calendar-event",
+            EventType = CalendarEventTypes.Custom,
+            Status = "Scheduled",
+            OrganizationId = organizationId.HasValue ? organizationId.Value : Guid.Empty,
+            CreatedBy = !string.IsNullOrEmpty(userId) ? userId : string.Empty,
+            CreatedOn = DateTime.UtcNow
+        };
+        showAddEventModal = true;
+    }
+
+    private void CloseAddEventModal()
+    {
+        showAddEventModal = false;
+        newEvent = new();
+        propertySearchTerm = string.Empty;
+        propertySearchResults.Clear();
+        showPropertySearchResults = false;
+        selectedPropertyForEvent = null;
+    }
+
+    private async Task OnPropertySearchInput(ChangeEventArgs e)
+    {
+        propertySearchTerm = e.Value?.ToString() ?? string.Empty;
+        
+        if (string.IsNullOrWhiteSpace(propertySearchTerm))
+        {
+            propertySearchResults.Clear();
+            showPropertySearchResults = false;
+            return;
+        }
+        
+        try
+        {
+            propertySearchResults = await PropertyService.SearchPropertiesByAddressAsync(propertySearchTerm);
+            showPropertySearchResults = propertySearchResults.Any();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error searching properties: {ex.Message}");
+        }
+    }
+
+    private void SelectProperty(Property property)
+    {
+        selectedPropertyForEvent = property;
+        newEvent.PropertyId = property.Id;
+        propertySearchTerm = $"{property.Address}, {property.City}, {property.State} {property.ZipCode}";
+        showPropertySearchResults = false;
+        propertySearchResults.Clear();
+    }
+
+    private void ClearPropertySelection()
+    {
+        selectedPropertyForEvent = null;
+        newEvent.PropertyId = null;
+        propertySearchTerm = string.Empty;
+        propertySearchResults.Clear();
+        showPropertySearchResults = false;
+    }
+
+    private async Task SaveCustomEvent()
+    {
+        try
+        {
+            // Calculate duration if end time is set
+            if (newEvent.EndOn.HasValue)
+            {
+                newEvent.DurationMinutes = (int)(newEvent.EndOn.Value - newEvent.StartOn).TotalMinutes;
+            }
+
+            await CalendarEventService.CreateCustomEventAsync(newEvent);
+            
+            ToastService.ShowSuccess("Event created successfully");
+            CloseAddEventModal();
+            await LoadEvents();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error creating event: {ex.Message}");
+        }
+    }
+
+    private async Task ChangeView(string mode)
+    {
+        viewMode = mode;
+        await LoadEvents();
+    }
+
+    private async Task NavigatePrevious()
+    {
+        currentDate = viewMode switch
+        {
+            "day" => currentDate.AddDays(-1),
+            "week" => currentDate.AddDays(-7),
+            "month" => currentDate.AddMonths(-1),
+            _ => currentDate
+        };
+        await LoadEvents();
+    }
+
+    private async Task NavigateNext()
+    {
+        currentDate = viewMode switch
+        {
+            "day" => currentDate.AddDays(1),
+            "week" => currentDate.AddDays(7),
+            "month" => currentDate.AddMonths(1),
+            _ => currentDate
+        };
+        await LoadEvents();
+    }
+
+    private async Task NavigateToday()
+    {
+        currentDate = DateTime.Today;
+        await LoadEvents();
+    }
+
+    private string GetDateRangeTitle()
+    {
+        return viewMode switch
+        {
+            "day" => currentDate.ToString("dddd, MMMM dd, yyyy"),
+            "week" => $"{GetWeekStart().ToString("MMM dd")} - {GetWeekEnd().ToString("MMM dd, yyyy")}",
+            "month" => currentDate.ToString("MMMM yyyy"),
+            _ => ""
+        };
+    }
+
+    private DateTime GetWeekStart()
+    {
+        var diff = (7 + (currentDate.DayOfWeek - DayOfWeek.Sunday)) % 7;
+        return currentDate.AddDays(-1 * diff).Date;
+    }
+
+    private DateTime GetWeekEnd()
+    {
+        return GetWeekStart().AddDays(6);
+    }
+
+    private async Task OnDateSelected(ChangeEventArgs e)
+    {
+        if (e.Value != null && DateTime.TryParse(e.Value.ToString(), out var selectedDate))
+        {
+            currentDate = selectedDate;
+            await LoadEvents();
+        }
+    }
+
+    private RenderFragment RenderDayView() => builder =>
+    {
+        var dayEvents = allEvents
+            .Where(e => e.StartOn.Date == currentDate.Date)
+            .OrderBy(e => e.StartOn)
+            .ToList();
+
+        if (!dayEvents.Any())
+        {
+            builder.OpenElement(0, "div");
+            builder.AddAttribute(1, "class", "text-center text-muted p-4");
+            builder.OpenElement(2, "i");
+            builder.AddAttribute(3, "class", "bi bi-calendar-x");
+            builder.AddAttribute(4, "style", "font-size: 3rem;");
+            builder.CloseElement();
+            builder.OpenElement(5, "p");
+            builder.AddAttribute(6, "class", "mt-2");
+            builder.AddContent(7, "No events scheduled for this day");
+            builder.CloseElement();
+            builder.CloseElement();
+        }
+        else
+        {
+            builder.OpenElement(10, "div");
+            builder.AddAttribute(11, "class", "list-group");
+            
+            foreach (var evt in dayEvents)
+            {
+                builder.OpenElement(20, "div");
+                builder.AddAttribute(21, "class", "list-group-item list-group-item-action");
+                builder.AddAttribute(22, "onclick", EventCallback.Factory.Create(this, async () => await ShowEventDetail(evt)));
+                builder.AddAttribute(23, "style", $"cursor: pointer; border-left: 4px solid {evt.Color};");
+                
+                builder.OpenElement(30, "div");
+                builder.AddAttribute(31, "class", "d-flex justify-content-between align-items-start");
+                
+                builder.OpenElement(40, "div");
+                builder.OpenElement(41, "h6");
+                builder.AddAttribute(42, "class", "mb-1");
+                builder.OpenElement(43, "i");
+                builder.AddAttribute(44, "class", evt.Icon ?? "bi bi-calendar-event");
+                builder.CloseElement();
+                var endTime = evt.EndOn?.ToString("h:mm tt") ?? "";
+                var timeDisplay = !string.IsNullOrEmpty(endTime) ? $" {evt.StartOn.ToString("h:mm tt")} - {endTime}" : $" {evt.StartOn.ToString("h:mm tt")}";
+                builder.AddContent(45, timeDisplay);
+                builder.CloseElement();
+                
+                builder.OpenElement(50, "p");
+                builder.AddAttribute(51, "class", "mb-1");
+                builder.AddContent(52, evt.Title);
+                builder.CloseElement();
+                
+                builder.OpenElement(60, "small");
+                builder.AddAttribute(61, "class", "text-muted");
+                builder.AddContent(62, evt.Description ?? "");
+                builder.CloseElement();
+                builder.CloseElement();
+                
+                builder.OpenElement(70, "div");
+                builder.OpenElement(71, "span");
+                builder.AddAttribute(72, "class", $"badge bg-secondary");
+                builder.AddContent(73, CalendarEventTypes.GetDisplayName(evt.EventType));
+                builder.CloseElement();
+                if (!string.IsNullOrEmpty(evt.Status))
+                {
+                    builder.OpenElement(74, "span");
+                    builder.AddAttribute(75, "class", $"badge {GetEventStatusBadgeClass(evt.Status)} ms-1");
+                    builder.AddContent(76, evt.Status);
+                    builder.CloseElement();
+                }
+                builder.CloseElement();
+                
+                builder.CloseElement();
+                builder.CloseElement();
+            }
+            
+            builder.CloseElement();
+        }
+    };
+
+    private RenderFragment RenderWeekView() => builder =>
+    {
+        var weekStart = GetWeekStart();
+        var weekEnd = GetWeekEnd();
+        
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "card");
+        builder.OpenElement(2, "div");
+        builder.AddAttribute(3, "class", "card-body p-0");
+        
+        builder.OpenElement(10, "div");
+        builder.AddAttribute(11, "class", "table-responsive");
+        builder.OpenElement(12, "table");
+        builder.AddAttribute(13, "class", "table table-bordered mb-0");
+        
+        // Header
+        builder.OpenElement(20, "thead");
+        builder.OpenElement(21, "tr");
+        
+        for (int i = 0; i < 7; i++)
+        {
+            var date = weekStart.AddDays(i);
+            var isToday = date.Date == DateTime.Today;
+            
+            builder.OpenElement(30 + i, "th");
+            builder.AddAttribute(31 + i, "class", isToday ? "bg-primary text-white text-center" : "text-center");
+            builder.AddAttribute(32 + i, "style", "width: 14.28%;");
+            builder.OpenElement(40 + i, "div");
+            builder.AddContent(41 + i, date.ToString("ddd"));
+            builder.CloseElement();
+            builder.OpenElement(50 + i, "div");
+            builder.AddAttribute(51 + i, "class", "fs-5");
+            builder.AddContent(52 + i, date.Day.ToString());
+            builder.CloseElement();
+            builder.CloseElement();
+        }
+        
+        builder.CloseElement();
+        builder.CloseElement();
+        
+        // Body
+        builder.OpenElement(100, "tbody");
+        builder.OpenElement(101, "tr");
+        
+        for (int i = 0; i < 7; i++)
+        {
+            var date = weekStart.AddDays(i);
+            var dayEvents = allEvents
+                .Where(e => e.StartOn.Date == date.Date)
+                .OrderBy(e => e.StartOn)
+                .ToList();
+            
+            builder.OpenElement(110 + i, "td");
+            builder.AddAttribute(111 + i, "class", "align-top");
+            builder.AddAttribute(112 + i, "style", "min-height: 300px; vertical-align: top;");
+            
+            if (dayEvents.Any())
+            {
+                builder.OpenElement(120 + i, "div");
+                builder.AddAttribute(121 + i, "class", "d-flex flex-column gap-1");
+                
+                foreach (var evt in dayEvents)
+                {
+                    var index = 130 + (i * 100) + dayEvents.IndexOf(evt);
+                    builder.OpenElement(index, "div");
+                    builder.AddAttribute(index + 1, "class", "card border-start border-4 mb-1");
+                    builder.AddAttribute(index + 2, "onclick", EventCallback.Factory.Create(this, async () => await ShowEventDetail(evt)));
+                    builder.AddAttribute(index + 3, "style", $"cursor: pointer; border-left-color: {evt.Color} !important;");
+                    
+                    builder.OpenElement(index + 10, "div");
+                    builder.AddAttribute(index + 11, "class", "card-body p-2");
+                    
+                    builder.OpenElement(index + 20, "small");
+                    builder.AddAttribute(index + 21, "class", "fw-bold d-block");
+                    builder.OpenElement(index + 22, "i");
+                    builder.AddAttribute(index + 23, "class", evt.Icon ?? "bi bi-calendar-event");
+                    builder.CloseElement();
+                    builder.AddContent(index + 24, $" {evt.StartOn.ToString("h:mm tt")}");
+                    builder.CloseElement();
+                    
+                    builder.OpenElement(index + 30, "small");
+                    builder.AddAttribute(index + 31, "class", "d-block text-truncate");
+                    builder.AddContent(index + 32, evt.Title);
+                    builder.CloseElement();
+                    
+                    builder.OpenElement(index + 40, "small");
+                    builder.AddAttribute(index + 41, "class", "d-block text-truncate text-muted");
+                    builder.OpenElement(index + 42, "span");
+                    builder.AddAttribute(index + 43, "class", "badge bg-secondary" );
+                    builder.AddAttribute(index + 44, "style", "font-size: 0.65rem;");
+                    builder.AddContent(index + 45, CalendarEventTypes.GetDisplayName(evt.EventType));
+                    builder.CloseElement();
+                    if (!string.IsNullOrEmpty(evt.Status))
+                    {
+                        builder.OpenElement(index + 46, "span");
+                        builder.AddAttribute(index + 47, "class", $"badge {GetEventStatusBadgeClass(evt.Status)} ms-1");
+                        builder.AddAttribute(index + 48, "style", "font-size: 0.65rem;");
+                        builder.AddContent(index + 49, evt.Status);
+                        builder.CloseElement();
+                    }
+                    builder.CloseElement();
+                    
+                    builder.CloseElement();
+                    builder.CloseElement();
+                }
+                
+                builder.CloseElement();
+            }
+            
+            builder.CloseElement();
+        }
+        
+        builder.CloseElement(); // Close tr
+        builder.CloseElement(); // Close tbody
+        builder.CloseElement(); // Close table
+        builder.CloseElement(); // Close table-responsive div
+        builder.CloseElement(); // Close card-body
+        builder.CloseElement(); // Close card
+    };
+
+    private RenderFragment RenderMonthView() => builder =>
+    {
+        var firstDayOfMonth = new DateTime(currentDate.Year, currentDate.Month, 1);
+        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+        var firstDayOfWeek = (int)firstDayOfMonth.DayOfWeek;
+        var daysInMonth = DateTime.DaysInMonth(currentDate.Year, currentDate.Month);
+        
+        var startDate = firstDayOfMonth.AddDays(-firstDayOfWeek);
+        
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "card");
+        builder.OpenElement(2, "div");
+        builder.AddAttribute(3, "class", "card-body p-0");
+        
+        builder.OpenElement(10, "div");
+        builder.AddAttribute(11, "class", "table-responsive");
+        builder.OpenElement(12, "table");
+        builder.AddAttribute(13, "class", "table table-bordered mb-0");
+        
+        // Header - Days of week
+        builder.OpenElement(20, "thead");
+        builder.OpenElement(21, "tr");
+        var daysOfWeek = new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+        foreach (var day in daysOfWeek)
+        {
+            builder.OpenElement(30, "th");
+            builder.AddAttribute(31, "class", "text-center");
+            builder.AddContent(32, day);
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+        builder.CloseElement();
+        
+        // Body - Weeks and days
+        builder.OpenElement(100, "tbody");
+        
+        var currentWeekDate = startDate;
+        for (int week = 0; week < 6; week++)
+        {
+            builder.OpenElement(110 + week, "tr");
+            
+            for (int day = 0; day < 7; day++)
+            {
+                var date = currentWeekDate;
+                var isCurrentMonth = date.Month == currentDate.Month;
+                var isToday = date.Date == DateTime.Today;
+                var dayEvents = allEvents
+                    .Where(e => e.StartOn.Date == date.Date)
+                    .OrderBy(e => e.StartOn)
+                    .ToList();
+
+                var cellIndex = 200 + (week * 10) + day;
+                builder.OpenElement(cellIndex, "td");
+                builder.AddAttribute(cellIndex + 1, "class", isCurrentMonth ? "align-top" : "align-top bg-light text-muted");
+                builder.AddAttribute(cellIndex + 2, "style", "min-height: 100px; width: 14.28%;");
+                
+                builder.OpenElement(cellIndex + 10, "div");
+                builder.AddAttribute(cellIndex + 11, "class", isToday ? "badge bg-primary rounded-circle mb-1" : "fw-bold mb-1");
+                builder.AddContent(cellIndex + 12, date.Day.ToString());
+                builder.CloseElement();
+                
+                if (dayEvents.Any())
+                {
+                    builder.OpenElement(cellIndex + 20, "div");
+                    builder.AddAttribute(cellIndex + 21, "class", "d-flex flex-column gap-1");
+                    
+                    foreach (var evt in dayEvents.Take(3))
+                    {
+                        var eventIndex = cellIndex + 30 + dayEvents.IndexOf(evt);
+                        builder.OpenElement(eventIndex, "div");
+                        builder.AddAttribute(eventIndex + 1, "class", $"badge {GetMonthViewEventBadgeClass(evt)} text-start text-truncate");
+                        builder.AddAttribute(eventIndex + 2, "onclick", EventCallback.Factory.Create(this, async () => await ShowEventDetail(evt)));
+                        builder.AddAttribute(eventIndex + 3, "style", $"cursor: pointer; font-size: 0.7rem; border-left: 3px solid {evt.Color};");
+                        builder.OpenElement(eventIndex + 4, "i");
+                        builder.AddAttribute(eventIndex + 5, "class", evt.Icon ?? "bi bi-calendar-event");
+                        builder.CloseElement();
+                        builder.AddContent(eventIndex + 6, $" {evt.StartOn.ToString("h:mm tt")} - {evt.Title}");
+                        builder.CloseElement();
+                    }
+                    
+                    if (dayEvents.Count > 3)
+                    {
+                        builder.OpenElement(cellIndex + 80, "small");
+                        builder.AddAttribute(cellIndex + 81, "class", "text-muted");
+                        builder.AddContent(cellIndex + 82, $"+{dayEvents.Count - 3} more");
+                        builder.CloseElement();
+                    }
+                    
+                    builder.CloseElement();
+                }
+                
+                builder.CloseElement();
+                currentWeekDate = currentWeekDate.AddDays(1);
+            }
+            
+            builder.CloseElement();
+        }
+        
+        builder.CloseElement();
+        builder.CloseElement();
+        builder.CloseElement();
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+
+    private void ShowTourDetail(Tour tour)
+    {
+        selectedTour = tour;
+    }
+
+    private async Task ShowEventDetail(CalendarEvent calendarEvent)
+    {
+        // Load entity and show modal for all event types
+        selectedEvent = calendarEvent;
+
+        if (!calendarEvent.SourceEntityId.HasValue)
+        {
+            // Custom event without source entity - just show basic info
+            return;
+        }
+
+        try
+        {
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            if (!organizationId.HasValue) return;
+
+            switch (calendarEvent.EventType)
+            {
+                case CalendarEventTypes.Tour:
+                    await ShowTourDetailById(calendarEvent.SourceEntityId.Value);
+                    break;
+
+                case CalendarEventTypes.Inspection:
+                    // Check if this is a property-based routine inspection or an actual inspection record
+                    if (calendarEvent.SourceEntityType == "Property")
+                    {
+                        // This is a scheduled routine inspection - no Inspection record exists yet
+                        // Just show the basic calendar event info (selectedEvent is already set)
+                    }
+                    else
+                    {
+                        // This is linked to an actual Inspection record
+                        await ShowInspectionDetailById(calendarEvent.SourceEntityId.Value);
+                    }
+                    break;
+
+                case CalendarEventTypes.Maintenance:
+                    await ShowMaintenanceRequestDetailById(calendarEvent.SourceEntityId.Value);
+                    break;
+
+                // Other event types (LeaseExpiry, RentDue, Custom) just show basic info
+                default:
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading event details: {ex.Message}");
+        }
+    }
+
+    private async Task ShowTourDetailById(Guid tourId)
+    {
+        var tour = await TourService.GetByIdAsync(tourId);
+        if (tour != null)
+        {
+            selectedTour = tour;
+        }
+        else
+        {
+            ToastService.ShowError("Tour not found");
+        }
+    }
+
+    private async Task ShowInspectionDetailById(Guid inspectionId)
+    {
+        var inspection = await InspectionService.GetByIdAsync(inspectionId);
+        if (inspection != null)
+        {
+            selectedInspection = inspection;
+        }
+        else
+        {
+            ToastService.ShowError("Inspection not found");
+        }
+    }
+
+    private async Task ShowMaintenanceRequestDetailById(Guid maintenanceId)
+    {
+        var maintenanceRequest = await MaintenanceService.GetByIdAsync(maintenanceId);
+        if (maintenanceRequest != null)
+        {
+            selectedMaintenanceRequest = maintenanceRequest;
+        }
+        else
+        {
+            ToastService.ShowError("Maintenance request not found");
+        }
+    }
+
+    private void CloseModal()
+    {
+        selectedEvent = null;
+        selectedTour = null;
+        selectedInspection = null;
+        selectedMaintenanceRequest = null;
+    }
+
+    private void NavigateToEventDetail()
+    {
+        if (selectedEvent == null) return;
+
+        // For tours, navigate to checklist if available
+        if (selectedEvent.SourceEntityType == nameof(Tour) && selectedTour != null)
+        {
+            if (selectedTour.ChecklistId.HasValue)
+            {
+                Navigation.NavigateTo($"/PropertyManagement/Checklists/View/{selectedTour.ChecklistId.Value}");
+            }
+            else
+            {
+                ToastService.ShowWarning("No checklist found for this tour");
+            }
+            return;
+        }
+
+        // For other event types, use the router
+        if (CalendarEventRouter.IsRoutable(selectedEvent))
+        {
+            var route = CalendarEventRouter.GetRouteForEvent(selectedEvent);
+            if (!string.IsNullOrEmpty(route))
+            {
+                Navigation.NavigateTo(route);
+            }
+        }
+    }
+
+    private void ShowMaintenanceRequestDetail(MaintenanceRequest request)
+    {
+        // Navigate to maintenance request detail page
+        Navigation.NavigateTo($"/propertymanagement/maintenance/{request.Id}");
+    }
+
+    private void ShowPropertyDetail(Property property)
+    {
+        // Navigate to property detail page
+        Navigation.NavigateTo($"/propertymanagement/properties/{property.Id}");
+    }
+
+    private async Task CompleteTour(Guid tourId)
+    {
+        try
+        {
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            if (organizationId.HasValue)
+            {
+                var tour = await TourService.GetByIdAsync(tourId);
+                if (tour != null)
+                {
+                    CloseModal();
+                    if (tour.ChecklistId.HasValue)
+                    {
+                        Navigation.NavigateTo($"/PropertyManagement/Checklists/View/{tour.ChecklistId.Value}");
+                    }
+                    else
+                    {
+                        ToastService.ShowWarning("No property tour checklist found for this tour");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error completing tour: {ex.Message}");
+        }
+    }
+
+    private async Task CancelTour(Guid tourId)
+    {
+        try
+        {
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            var userId = await UserContext.GetUserIdAsync();
+            
+            if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
+            {
+                await TourService.CancelTourAsync(tourId);
+                ToastService.ShowSuccess("Tour cancelled successfully");
+                CloseModal();
+                await LoadEvents();
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error cancelling tour: {ex.Message}");
+        }
+    }
+
+    private async Task MarkTourAsNoShow(Guid tourId)
+    {
+        try
+        {
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            var userId = await UserContext.GetUserIdAsync();
+            
+            if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
+            {
+                await TourService.MarkTourAsNoShowAsync(tourId);
+                ToastService.ShowSuccess("Tour marked as No Show");
+                CloseModal();
+                await LoadEvents();
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error marking tour as no show: {ex.Message}");
+        }
+    }
+
+    private async Task StartWork(Guid maintenanceRequestId)
+    {
+        try
+        {
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            var userId = await UserContext.GetUserIdAsync();
+            
+            if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
+            {
+                var request = await MaintenanceService.GetByIdAsync(maintenanceRequestId);
+                if (request != null)
+                {
+                    request.Status = ApplicationConstants.MaintenanceRequestStatuses.InProgress;
+                    
+                    
+                    await MaintenanceService.UpdateAsync(request);
+                    ToastService.ShowSuccess("Work started on maintenance request");
+                    
+                    // Reload the maintenance request to show updated status
+                    await ShowMaintenanceRequestDetailById(maintenanceRequestId);
+                    await LoadEvents();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error starting work: {ex.Message}");
+        }
+    }
+
+    private async Task CompleteMaintenanceRequest(Guid maintenanceRequestId)
+    {
+        try
+        {
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            var userId = await UserContext.GetUserIdAsync();
+            
+            if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
+            {
+                var request = await MaintenanceService.GetByIdAsync(maintenanceRequestId);
+                if (request != null)
+                {
+                    request.Status = ApplicationConstants.MaintenanceRequestStatuses.Completed;
+                    request.CompletedOn = request.CompletedOn ?? DateTime.UtcNow;
+                    
+                    await MaintenanceService.UpdateAsync(request);
+                    ToastService.ShowSuccess("Maintenance request marked as complete");
+                    
+                    // Reload the maintenance request to show updated status
+                    await ShowMaintenanceRequestDetailById(maintenanceRequestId);
+                    await LoadEvents();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error completing request: {ex.Message}");
+        }
+    }
+
+    private async Task CancelMaintenanceRequest(Guid maintenanceRequestId)
+    {
+        try
+        {
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            var userId = await UserContext.GetUserIdAsync();
+            
+            if (organizationId.HasValue && !string.IsNullOrEmpty(userId))
+            {
+                var request = await MaintenanceService.GetByIdAsync(maintenanceRequestId);
+                if (request != null)
+                {
+                    request.Status = ApplicationConstants.MaintenanceRequestStatuses.Cancelled;
+                    
+                    await MaintenanceService.UpdateAsync(request);
+                    ToastService.ShowSuccess("Maintenance request cancelled");
+                    CloseModal();
+                    await LoadEvents();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error cancelling request: {ex.Message}");
+        }
+    }
+
+    private async Task UpdateCustomEventStatus(Guid eventId, string newStatus)
+    {
+        try
+        {
+            var organizationId = await UserContext.GetActiveOrganizationIdAsync();
+            var userId = await UserContext.GetUserIdAsync();
+            
+            if (!organizationId.HasValue || string.IsNullOrEmpty(userId))
+            {
+                ToastService.ShowError("Unable to identify user or organization");
+                return;
+            }
+
+            var calendarEvent = await CalendarEventService.GetEventByIdAsync(eventId);
+            if (calendarEvent != null && calendarEvent.IsCustomEvent)
+            {
+                calendarEvent.Status = newStatus;
+                
+                await CalendarEventService.UpdateCustomEventAsync(calendarEvent);
+                
+                // Update the selected event to reflect the change
+                if (selectedEvent != null && selectedEvent.Id == eventId)
+                {
+                    selectedEvent.Status = newStatus;
+                }
+                
+                ToastService.ShowSuccess($"Event status updated to {newStatus}");
+                await LoadEvents();
+            }
+            else
+            {
+                ToastService.ShowError("Event not found or is not a custom event");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error updating event status: {ex.Message}");
+        }
+    }
+
+    private void NavigateToProspects()
+    {
+        Navigation.NavigateTo("/PropertyManagement/ProspectiveTenants");
+    }
+
+    private void NavigateToListView()
+    {
+        Navigation.NavigateTo("/Calendar/ListView");
+    }
+
+    private void CompleteRoutineInspection(Guid propertyId)
+    {
+        // Navigate to create new inspection form with the property pre-selected
+        Navigation.NavigateTo($"/PropertyManagement/Inspections/Create?propertyId={propertyId}");
+    }
+
+    private string GetStatusBadgeClass(string status) => status switch
+    {
+        var s when s == ApplicationConstants.TourStatuses.Scheduled => "bg-info",
+        var s when s == ApplicationConstants.TourStatuses.Completed => "bg-success",
+        var s when s == ApplicationConstants.TourStatuses.Cancelled => "bg-danger",
+        var s when s == ApplicationConstants.TourStatuses.NoShow => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+
+    private string GetBorderColorClass(string status) => status switch
+    {
+        var s when s == ApplicationConstants.TourStatuses.Scheduled => "border-info",
+        var s when s == ApplicationConstants.TourStatuses.Completed => "border-success",
+        var s when s == ApplicationConstants.TourStatuses.Cancelled => "border-danger",
+        var s when s == ApplicationConstants.TourStatuses.NoShow => "border-warning",
+        _ => "border-secondary"
+    };
+
+    private string GetChecklistStatusBadgeClass(string status) => status switch
+    {
+        var s when s == ApplicationConstants.ChecklistStatuses.Draft => "bg-secondary",
+        var s when s == ApplicationConstants.ChecklistStatuses.InProgress => "bg-warning text-dark",
+        var s when s == ApplicationConstants.ChecklistStatuses.Completed => "bg-success",
+        _ => "bg-secondary"
+    };
+
+    private string GetInterestBadgeClass(string? level) => level switch
+    {
+        var l when l == ApplicationConstants.TourInterestLevels.VeryInterested => "bg-success",
+        var l when l == ApplicationConstants.TourInterestLevels.Interested => "bg-primary",
+        var l when l == ApplicationConstants.TourInterestLevels.Neutral => "bg-secondary",
+        var l when l == ApplicationConstants.TourInterestLevels.NotInterested => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    private string GetInterestDisplay(string? level) => level switch
+    {
+        var l when l == ApplicationConstants.TourInterestLevels.VeryInterested => "Very Interested",
+        var l when l == ApplicationConstants.TourInterestLevels.Interested => "Interested",
+        var l when l == ApplicationConstants.TourInterestLevels.Neutral => "Neutral",
+        var l when l == ApplicationConstants.TourInterestLevels.NotInterested => "Not Interested",
+        _ => "Unknown"
+    };
+
+    private string GetEventStatusBadgeClass(string status) => status switch
+    {
+        var s when s == ApplicationConstants.TourStatuses.Scheduled => "bg-info",
+        var s when s == ApplicationConstants.TourStatuses.Completed => "bg-success",
+        var s when s == ApplicationConstants.TourStatuses.Cancelled => "bg-danger",
+        var s when s == ApplicationConstants.TourStatuses.NoShow => "bg-warning text-dark",
+        var s when s == ApplicationConstants.MaintenanceRequestStatuses.Completed => "bg-success",
+        var s when s == ApplicationConstants.MaintenanceRequestStatuses.InProgress => "bg-warning text-dark",
+        var s when s == ApplicationConstants.MaintenanceRequestStatuses.Submitted => "bg-info",
+        var s when s == ApplicationConstants.MaintenanceRequestStatuses.Cancelled => "bg-danger",
+        "Good" => "bg-success",
+        "Excellent" => "bg-success",
+        "Fair" => "bg-warning text-dark",
+        "Poor" => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    private string GetPriorityBadgeClass(string priority) => priority switch
+    {
+        "High" => "bg-danger",
+        "Medium" => "bg-warning text-dark",
+        "Low" => "bg-info",
+        _ => "bg-secondary"
+    };
+
+    private string GetInspectionStatusBadgeClass(string status) => status switch
+    {
+        "Good" => "bg-success",
+        "Fair" => "bg-warning text-dark",
+        "Poor" => "bg-danger",
+        "Completed" => "bg-success",
+        _ => "bg-secondary"
+    };
+
+    private string GetMonthViewEventBadgeClass(CalendarEvent evt)
+    {
+        // Prioritize status-based coloring
+        if (!string.IsNullOrEmpty(evt.Status))
+        {
+            // Tour statuses
+            if (evt.Status == ApplicationConstants.TourStatuses.Completed)
+                return "bg-success";
+            if (evt.Status == ApplicationConstants.TourStatuses.Scheduled)
+                return "bg-info";
+            if (evt.Status == ApplicationConstants.TourStatuses.Cancelled)
+                return "bg-danger";
+            if (evt.Status == ApplicationConstants.TourStatuses.NoShow)
+                return "bg-warning text-dark";
+            
+            // Maintenance request statuses
+            if (evt.Status == ApplicationConstants.MaintenanceRequestStatuses.Completed)
+                return "bg-success";
+            if (evt.Status == ApplicationConstants.MaintenanceRequestStatuses.InProgress)
+                return "bg-warning text-dark";
+            if (evt.Status == ApplicationConstants.MaintenanceRequestStatuses.Submitted)
+                return "bg-info";
+            if (evt.Status == ApplicationConstants.MaintenanceRequestStatuses.Cancelled)
+                return "bg-danger";
+            
+            // Inspection overall conditions
+            if (evt.Status == "Good")
+                return "bg-success";
+            if (evt.Status == "Fair")
+                return "bg-warning text-dark";
+            if (evt.Status == "Poor")
+                return "bg-danger";
+        }
+        
+        return "bg-secondary";
+    }
+}
