@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using Aquiis.Core.Constants;
 using Aquiis.Core.Entities;
 using Aquiis.Core.Interfaces.Services;
-using Aquiis.SimpleStart.Entities;
 using Aquiis.Infrastructure.Data;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using PaymentService = Aquiis.Application.Services.PaymentService;
+using Aquiis.Application.Services;
 
 namespace Aquiis.Application.Tests
 {
@@ -153,11 +153,25 @@ namespace Aquiis.Application.Tests
                 SoftDeleteEnabled = true
             });
 
+            // In CreateTestContextAsync()
+            var mockEmailService = new Mock<IEmailService>();
+            var mockSmsService = new Mock<ISMSService>();
+
+            var notificationService = new NotificationService(
+                _context,
+                _mockUserContext.Object,
+                mockEmailService.Object,
+                mockSmsService.Object,
+                Options.Create(new ApplicationSettings { SoftDeleteEnabled = true }),
+                Mock.Of<ILogger<NotificationService>>()
+            );
+
             // Create service instance
             _service = new PaymentService(
                 _context,
                 _mockLogger.Object,
                 _mockUserContext.Object,
+                notificationService,
                 _mockSettings);
         }
 

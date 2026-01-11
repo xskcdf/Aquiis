@@ -26,14 +26,17 @@ namespace Aquiis.Application.Services.Workflows
     public class LeaseWorkflowService : BaseWorkflowService, IWorkflowState<LeaseStatus>
     {
         private readonly NoteService _noteService;
+        private readonly NotificationService _notificationService;
 
         public LeaseWorkflowService(
             ApplicationDbContext context,
             IUserContextService userContext,
-            NoteService noteService)
+            NoteService noteService,
+            NotificationService notificationService)
             : base(context, userContext)
         {
             _noteService = noteService;
+            _notificationService = notificationService;
         }
 
         #region State Machine Implementation
@@ -146,6 +149,18 @@ namespace Aquiis.Application.Services.Workflows
                     lease.Status,
                     "ActivateLease");
 
+                await _notificationService.SendNotificationAsync(
+                    userId,
+                    $"Lease Activated for {lease.Tenant?.FullName}",
+                    $"Lease for {lease.Tenant?.FullName} property '{lease.Property?.Address}' has been activated effective {lease.SignedOn:MMM dd, yyyy}.",
+                    NotificationConstants.Types.Info,
+                    NotificationConstants.Categories.Lease,
+                    leaseId,
+                    ApplicationConstants.EntityTypes.Lease);
+                
+                // TODO: Send email to tenant with welcome info
+                // _notificatoinService.SendLeaseActivationEmailToTenant(lease);
+
                 return WorkflowResult.Ok("Lease activated successfully");
             });
         }
@@ -206,6 +221,16 @@ namespace Aquiis.Application.Services.Workflows
                     "RecordTerminationNotice",
                     reason);
 
+                // Send notification about termination notice
+                await _notificationService.SendNotificationAsync(
+                    userId,
+                    $"Termination Notice Recorded for {lease.Tenant?.FullName}",
+                    $"A termination notice has been recorded for lease of {lease.Tenant?.FullName} at property '{lease.Property?.Address}'. Expected move-out date: {expectedMoveOutDate:MMM dd, yyyy}.",
+                    NotificationConstants.Types.Warning,
+                    NotificationConstants.Categories.Lease,
+                    leaseId,
+                    ApplicationConstants.EntityTypes.Lease);
+
                 return WorkflowResult.Ok($"Termination notice recorded. Move-out date: {expectedMoveOutDate:MMM dd, yyyy}");
             });
         }
@@ -249,6 +274,16 @@ namespace Aquiis.Application.Services.Workflows
                     oldStatus,
                     lease.Status,
                     "ConvertToMonthToMonth");
+
+                // send notification about conversion
+                await _notificationService.SendNotificationAsync(
+                    userId,
+                    $"Lease Converted to Month-to-Month for {lease.Tenant?.FullName}",
+                    $"Lease for {lease.Tenant?.FullName} property '{lease.Property?.Address}' has been converted to month-to-month tenancy.",
+                    NotificationConstants.Types.Info,
+                    NotificationConstants.Categories.Lease,
+                    leaseId,
+                    ApplicationConstants.EntityTypes.Lease);
 
                 return WorkflowResult.Ok("Lease converted to month-to-month successfully");
             });
@@ -334,6 +369,16 @@ namespace Aquiis.Application.Services.Workflows
                 // Add note about renewal
                 var noteContent = $"Lease renewed. New term: {renewalLease.StartDate:MMM dd, yyyy} - {renewalLease.EndDate:MMM dd, yyyy}. Rent: ${renewalLease.MonthlyRent:N2}/month.";
                 await _noteService.AddNoteAsync(ApplicationConstants.EntityTypes.Lease, renewalLease.Id, noteContent);
+
+                // Send notification about lease renewal
+                await _notificationService.SendNotificationAsync(
+                    userId,
+                    $"Lease Renewed for {renewalLease.Tenant?.FullName}",
+                    $"Lease for {renewalLease.Tenant?.FullName} property '{renewalLease.Property?.Address}' has been renewed for the term {renewalLease.StartDate:MMM dd, yyyy} to {renewalLease.EndDate:MMM dd, yyyy} at ${renewalLease.MonthlyRent:N2}/month.",
+                    NotificationConstants.Types.Info,
+                    NotificationConstants.Categories.Lease,
+                    renewalLease.Id,
+                    ApplicationConstants.EntityTypes.Lease);
 
                 return WorkflowResult<Lease>.Ok(
                     renewalLease,
@@ -422,6 +467,16 @@ namespace Aquiis.Application.Services.Workflows
 
                 await _noteService.AddNoteAsync(ApplicationConstants.EntityTypes.Lease, leaseId, noteContent);
 
+                // Send notification about completed move-out
+                await _notificationService.SendNotificationAsync(
+                    userId,
+                    $"Lease Move-Out Completed for {lease.Tenant?.FullName}",
+                    $"Lease for {lease.Tenant?.FullName} property '{lease.Property?.Address}' has been marked as moved out effective {actualMoveOutDate:MMM dd, yyyy}.",
+                    NotificationConstants.Types.Info,
+                    NotificationConstants.Categories.Lease,
+                    leaseId,
+                    ApplicationConstants.EntityTypes.Lease);
+
                 return WorkflowResult.Ok("Move-out completed successfully");
             });
         }
@@ -501,6 +556,16 @@ namespace Aquiis.Application.Services.Workflows
                     "EarlyTerminate",
                     $"[{terminationType}] {reason}");
 
+                // Send notification about early termination
+                await _notificationService.NotifyAllUsersAsync(
+                    lease.OrganizationId,
+                    $"Early Lease Termination for {lease.Tenant?.FullName}",
+                    $"Lease for {lease.Tenant?.FullName} property '{lease.Property?.Address}' has been early terminated effective {effectiveDate:MMM dd, yyyy}. Reason: {terminationType} - {reason}",
+                    NotificationConstants.Types.Warning,
+                    NotificationConstants.Categories.Lease,
+                    leaseId,
+                    ApplicationConstants.EntityTypes.Lease);
+
                 return WorkflowResult.Ok($"Lease terminated ({terminationType})");
             });
         }
@@ -524,7 +589,7 @@ namespace Aquiis.Application.Services.Workflows
             return await ExecuteWorkflowAsync<int>(async () =>
             {
                 var userId = await _userContext.GetUserIdAsync() ?? "System";
-
+                
                 // Find active leases past their end date
                 var expiredLeases = await _context.Leases
                     .Include(l => l.Property)
@@ -536,6 +601,7 @@ namespace Aquiis.Application.Services.Workflows
                     .ToListAsync();
 
                 var count = 0;
+                var addresses = string.Empty;
                 foreach (var lease in expiredLeases)
                 {
                     var oldStatus = lease.Status;
@@ -551,11 +617,63 @@ namespace Aquiis.Application.Services.Workflows
                         "AutoExpire",
                         "Lease end date passed without renewal");
 
+                    addresses += $"- {lease.Property?.Address} (Tenant: {lease.Tenant?.FullName})\n";
+
                     count++;
                 }
 
+                await _notificationService.NotifyAllUsersAsync(
+                    organizationId,
+                    "Expired Lease Notification",
+                    $"{count} lease(s) have been automatically expired as of today.\n\n{addresses}",
+                    NotificationConstants.Types.Info,
+                    NotificationConstants.Categories.Lease,
+                    null,
+                    ApplicationConstants.EntityTypes.Lease);
+
                 return WorkflowResult<int>.Ok(count, $"{count} lease(s) expired");
             });
+        }
+
+        #endregion
+
+        #region Notification Methods
+
+        /// <summary>
+        /// Notifies all users in the organization of leases expiring in the specified number of days.
+        /// </summary>
+        public async Task NotifyLeasesExpiringInAsync(int daysUntilExpiration)
+        {
+            var targetDate = DateTime.Today.AddDays(daysUntilExpiration);
+            var orgId = await GetActiveOrganizationIdAsync();
+            
+            var expiringLeases = await _context.Leases
+                .Where(l => l.EndDate.Date == targetDate 
+                        && l.Status == ApplicationConstants.LeaseStatuses.Active
+                        && l.OrganizationId == orgId
+                        && !l.IsDeleted)
+                .Include(l => l.Property)
+                .Include(l => l.Tenant)
+                .ToListAsync();
+
+            var urgency = daysUntilExpiration switch
+            {
+                <= 30 => NotificationConstants.Types.Warning,
+                _ => NotificationConstants.Types.Info
+            };
+
+            foreach (var lease in expiringLeases)
+            {
+                await _notificationService.NotifyAllUsersAsync(
+                    orgId,
+                    $"Lease Expiring in {daysUntilExpiration} Days - {lease.Property.Address}",
+                    $"Lease expires {lease.EndDate:MMM dd, yyyy}. Please review renewal options.",
+                    urgency,
+                    NotificationConstants.Categories.Lease,
+                    lease.Id,
+                    ApplicationConstants.EntityTypes.Lease
+                );
+            }
         }
 
         #endregion

@@ -9,6 +9,9 @@ using WorkflowLeaseStatus = Aquiis.Application.Services.Workflows.LeaseStatus;
 using Aquiis.Infrastructure.Data;
 using Aquiis.SimpleStart.Entities;
 using Aquiis.Application.Services.Workflows;
+using Aquiis.Application.Services;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Aquiis.Application.Tests;
 
@@ -62,7 +65,26 @@ public class LeaseWorkflowServiceTests
         await context.SaveChangesAsync();
 
         var noteService = new Application.Services.NoteService(context, mockUserContext.Object);
-        var workflowService = new LeaseWorkflowService(context, mockUserContext.Object, noteService);
+        // In CreateTestContextAsync()
+        var mockEmailService = new Mock<IEmailService>();
+        var mockSmsService = new Mock<ISMSService>();
+
+        var notificationService = new NotificationService(
+            context,
+            mockUserContext.Object,
+            mockEmailService.Object,
+            mockSmsService.Object,
+            Options.Create(new ApplicationSettings { SoftDeleteEnabled = true }),
+            Mock.Of<ILogger<NotificationService>>()
+        );
+
+        var workflowService = new LeaseWorkflowService(
+            context, 
+            mockUserContext.Object, 
+            noteService,
+            notificationService
+        );
+        // var workflowService = new LeaseWorkflowService(context, mockUserContext.Object, noteService);
 
         return new TestContext
         {
@@ -1060,7 +1082,7 @@ public class LeaseWorkflowServiceTests
     private static LeaseWorkflowService CreateWorkflowServiceForStateMachineTests()
     {
         // Create minimal dependencies for state machine tests (doesn't need DB)
-        return new LeaseWorkflowService(null!, null!, null!);
+        return new LeaseWorkflowService(null!, null!, null!, null!);
     }
 
     #endregion

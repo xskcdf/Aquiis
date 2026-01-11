@@ -15,13 +15,16 @@ namespace Aquiis.Application.Services
     /// </summary>
     public class PaymentService : BaseService<Payment>
     {
+        private readonly NotificationService _notificationService;
         public PaymentService(
             ApplicationDbContext context,
             ILogger<PaymentService> logger,
             IUserContextService userContext,
+            NotificationService notificationService,
             IOptions<ApplicationSettings> settings)
             : base(context, logger, userContext, settings)
         {
+            _notificationService = notificationService;
         }
 
         /// <summary>

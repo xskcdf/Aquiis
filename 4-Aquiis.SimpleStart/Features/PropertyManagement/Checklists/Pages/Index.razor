@@ -161,7 +161,7 @@
     private void StartChecklist(Guid templateId)
     {
         // Navigate to complete page with template ID - checklist will be created on save
-        NavigationManager.NavigateTo($"/propertymanagement/checklists/complete/new?templateId={templateId}");
+        NavigationManager.NavigateTo($"/propertymanagement/checklists/create/{templateId}");
     }
 
     private void NavigateToMyChecklists()

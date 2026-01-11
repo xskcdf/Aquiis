@@ -29,14 +29,17 @@ namespace Aquiis.Application.Services.Workflows
     public class ApplicationWorkflowService : BaseWorkflowService, IWorkflowState<ApplicationStatus>
     {
         private readonly NoteService _noteService;
+        private readonly NotificationService _notificationService;
 
         public ApplicationWorkflowService(
             ApplicationDbContext context,
             IUserContextService userContext,
-            NoteService noteService)
+            NoteService noteService,
+            NotificationService notificationService)
             : base(context, userContext)
         {
             _noteService = noteService;
+            _notificationService = notificationService;
         }
 
         #region State Machine Implementation
@@ -198,6 +201,17 @@ namespace Aquiis.Application.Services.Workflows
                     ApplicationConstants.ApplicationStatuses.Submitted,
                     "SubmitApplication");
 
+                // send notification to leasing agents
+                await _notificationService.NotifyAllUsersAsync(
+                    orgId,
+                    $"New Rental Application Submitted for {property?.Address}",
+                    $"{prospect!.FullName} has submitted a new rental application for property ID {property!.Address}.",
+                    NotificationConstants.Types.Info,
+                    NotificationConstants.Categories.Application,
+                    application!.Id,
+                    ApplicationConstants.EntityTypes.Application
+                );
+
                 return WorkflowResult<RentalApplication>.Ok(
                     application,
                     "Application submitted successfully");
@@ -240,6 +254,17 @@ namespace Aquiis.Application.Services.Workflows
                     oldStatus,
                     application.Status,
                     "MarkUnderReview");
+
+                // send notification to leasing agents
+                await _notificationService.NotifyAllUsersAsync(
+                    application.OrganizationId,
+                    $"Application Marked as Under Review for {application.Property?.Address}",
+                    $"Application ID {application.Id} has been marked as under review.",
+                    NotificationConstants.Types.Info,
+                    NotificationConstants.Categories.Application,
+                    application.Id,
+                    ApplicationConstants.EntityTypes.Application
+                );
 
                 return WorkflowResult.Ok("Application marked as under review");
 
@@ -336,6 +361,17 @@ namespace Aquiis.Application.Services.Workflows
                     application.Status,
                     "InitiateScreening");
 
+                // notify leasing agents
+                await _notificationService.NotifyAllUsersAsync(
+                    application.OrganizationId,
+                    $"Screening Initiated for Application ID {application.Id}",
+                    $"Background and/or credit screening has been initiated for application ID {application.Id}.",
+                    NotificationConstants.Types.Info,
+                    NotificationConstants.Categories.Application,
+                    application.Id,
+                    ApplicationConstants.EntityTypes.Application
+                );
+
                 return WorkflowResult<ApplicationScreening>.Ok(
                     screening,
                     "Screening initiated successfully");
@@ -393,6 +429,18 @@ namespace Aquiis.Application.Services.Workflows
                     oldStatus,
                     application.Status,
                     "ApproveApplication");
+
+
+                // send notification to leasing agents
+                await _notificationService.NotifyAllUsersAsync(
+                    application.OrganizationId,
+                    $"Application Approved for {application.Property?.Address}",
+                    $"Application ID {application.Id} has been approved.",
+                    NotificationConstants.Types.Info,
+                    NotificationConstants.Categories.Application,
+                    application.Id,
+                    ApplicationConstants.EntityTypes.Application
+                );
 
                 return WorkflowResult.Ok("Application approved successfully");
 
@@ -454,6 +502,17 @@ namespace Aquiis.Application.Services.Workflows
                     application.Status,
                     "DenyApplication",
                     denialReason);
+
+                // send notification to leasing agents
+                await _notificationService.NotifyAllUsersAsync(
+                    application.OrganizationId,
+                    $"Application Denied for {application.Property?.Address}",
+                    $"Application ID {application.Id} has been denied. Reason: {denialReason}",
+                    NotificationConstants.Types.Warning,
+                    NotificationConstants.Categories.Application,
+                    application.Id,
+                    ApplicationConstants.EntityTypes.Application
+                );
 
                 return WorkflowResult.Ok("Application denied");
 
@@ -518,6 +577,17 @@ namespace Aquiis.Application.Services.Workflows
                     "WithdrawApplication",
                     withdrawalReason);
 
+                // send notification to leasing agents
+                await _notificationService.NotifyAllUsersAsync(
+                    application.OrganizationId,
+                    $"Application Withdrawn for {application.Property?.Address}",
+                    $"Application ID {application.Id} has been withdrawn by the prospect. Reason: {withdrawalReason}",
+                    NotificationConstants.Types.Warning,
+                    NotificationConstants.Categories.Application,
+                    application.Id,
+                    ApplicationConstants.EntityTypes.Application
+                );
+
                 return WorkflowResult.Ok("Application withdrawn");
 
             });
@@ -576,6 +646,17 @@ namespace Aquiis.Application.Services.Workflows
                     screening.OverallResult,
                     "CompleteScreening",
                     results.ResultNotes);
+
+                // notify leasing agents
+                await _notificationService.NotifyAllUsersAsync(
+                    application.OrganizationId,
+                    $"Screening Results Updated for Application ID {application.Id}",
+                    $"Screening results have been updated for application ID {application.Id}. Overall Result: {screening.OverallResult}",
+                    NotificationConstants.Types.Info,
+                    NotificationConstants.Categories.Application,
+                    application.Id,
+                    ApplicationConstants.EntityTypes.Application
+                );
 
                 return WorkflowResult.Ok("Screening results updated successfully");
 
@@ -876,6 +957,17 @@ namespace Aquiis.Application.Services.Workflows
                     await _noteService.AddNoteAsync(ApplicationConstants.EntityTypes.Lease, lease.Id, noteContent);
                 }
 
+                // send notification to leasing agents
+                await _notificationService.NotifyAllUsersAsync(
+                    orgId,
+                    $"Lease Offer Accepted for {leaseOffer.Property?.Address}",
+                    $"Lease offer ID {leaseOffer.Id} has been accepted and tenant {tenant.FirstName} {tenant.LastName} has been created.",
+                    NotificationConstants.Types.Success,
+                    NotificationConstants.Categories.Lease,
+                    lease.Id,
+                    ApplicationConstants.EntityTypes.Lease
+                );
+
                 return WorkflowResult<Lease>.Ok(lease, "Lease offer accepted and tenant created successfully");
 
             });
@@ -947,6 +1039,17 @@ namespace Aquiis.Application.Services.Workflows
                     "DeclineLeaseOffer",
                     declineReason);
 
+                // send notification to leasing agents
+                await _notificationService.NotifyAllUsersAsync(
+                    orgId,
+                    $"Lease Offer Declined for {leaseOffer.Property?.Address}",
+                    $"Lease offer ID {leaseOffer.Id} has been declined. Reason: {declineReason}",
+                    NotificationConstants.Types.Warning,
+                    NotificationConstants.Categories.Lease,
+                    leaseOffer.Id,
+                    ApplicationConstants.EntityTypes.Lease
+                );
+
                 return WorkflowResult.Ok("Lease offer declined");
 
             });
@@ -1016,6 +1119,17 @@ namespace Aquiis.Application.Services.Workflows
                     "Expired",
                     "ExpireLeaseOffer",
                     "Offer expired after 30 days");
+
+                // send notification to leasing agents
+                await _notificationService.SendNotificationAsync(
+                    userId,
+                    $"Lease Offer Expired for {leaseOffer.Property?.Address}",
+                    $"Lease offer ID {leaseOffer.Id} has expired after 30 days.",
+                    NotificationConstants.Types.Info,
+                    NotificationConstants.Categories.Lease,
+                    leaseOffer.Id,
+                    ApplicationConstants.EntityTypes.Lease
+                );
 
                 return WorkflowResult.Ok("Lease offer expired");
 

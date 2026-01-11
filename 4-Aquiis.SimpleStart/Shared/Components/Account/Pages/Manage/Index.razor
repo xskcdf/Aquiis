@@ -55,6 +55,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await base.OnInitializedAsync();
+        
+        Input = Input ?? new InputModel();
         user = await UserAccessor.GetRequiredUserAsync(HttpContext);
         
         // Reload user from database to ensure we have the latest values

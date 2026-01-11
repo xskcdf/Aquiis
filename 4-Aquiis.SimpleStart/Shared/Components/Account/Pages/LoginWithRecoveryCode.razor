@@ -44,8 +44,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Input = Input ?? new InputModel();
         await base.OnInitializedAsync();
+
+        Input = Input ?? new InputModel();
 
         // Ensure the user has gone through the username & password screen first
         user = await SignInManager.GetTwoFactorAuthenticationUserAsync() ??

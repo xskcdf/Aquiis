@@ -1,5 +1,4 @@
-@page "/propertymanagement/checklists/complete/{ChecklistId:guid}"
-@page "/propertymanagement/checklists/complete/new"
+@page "/propertymanagement/checklists/{ChecklistId:guid}/complete"
 
 @using Aquiis.Core.Entities
 @using Aquiis.SimpleStart.Features.PropertyManagement
@@ -696,7 +695,7 @@ else
             
             // Redirect to view page after a short delay
             await Task.Delay(1500);
-            NavigationManager.NavigateTo($"/propertymanagement/checklists/view/{ChecklistId}");
+            NavigationManager.NavigateTo($"/propertymanagement/checklists/{ChecklistId}");
         }
         catch (Exception ex)
         {

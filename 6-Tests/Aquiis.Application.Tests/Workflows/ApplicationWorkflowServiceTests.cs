@@ -6,6 +6,9 @@ using Moq;
 using Aquiis.Infrastructure.Data;
 using Aquiis.SimpleStart.Entities;
 using Aquiis.Application.Services.Workflows;
+using Aquiis.Application.Services;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Aquiis.Application.Tests;
 
@@ -57,7 +60,26 @@ public class ApplicationWorkflowServiceTests
         // Create NoteService (not used heavily in this test)
         var noteService = new Application.Services.NoteService(context, mockUserContext.Object);
 
-        var workflowService = new ApplicationWorkflowService(context, mockUserContext.Object, noteService);
+        // Create ApplicationWorkflowService
+        // In CreateTestContextAsync()
+        var mockEmailService = new Mock<IEmailService>();
+        var mockSmsService = new Mock<ISMSService>();
+
+        var notificationService = new NotificationService(
+            context,
+            mockUserContext.Object,
+            mockEmailService.Object,
+            mockSmsService.Object,
+            Options.Create(new ApplicationSettings { SoftDeleteEnabled = true }),
+            Mock.Of<ILogger<NotificationService>>()
+        );
+
+        var workflowService = new ApplicationWorkflowService(
+            context, 
+            mockUserContext.Object, 
+            noteService,
+            notificationService
+        );
 
         // Act - submit application then initiate screening
         var submissionModel = new ApplicationSubmissionModel

@@ -80,6 +80,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await base.OnInitializedAsync();
+        
         var user = await UserAccessor.GetRequiredUserAsync(HttpContext);
         canTrack = HttpContext.Features.Get<ITrackingConsentFeature>()?.CanTrack ?? true;
         hasAuthenticator = await UserManager.GetAuthenticatorKeyAsync(user) is not null;

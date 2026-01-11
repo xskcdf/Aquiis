@@ -105,6 +105,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await base.OnInitializedAsync();
+
         // Check if this is the first user (excluding system user)
         var users = await UserManager.Users
             .Where(u => u.Id != ApplicationConstants.SystemUser.Id)
@@ -116,7 +118,6 @@ else
         _allowRegistration = _isFirstUser; // Only allow registration if this is the first user
 
         Input = Input ?? new InputModel();
-        await base.OnInitializedAsync();
         StateHasChanged();
     }
 

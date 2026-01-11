@@ -38,6 +38,12 @@
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = default!;
 
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        Input = Input ?? new InputModel();
+    }
     private async Task OnValidSubmitAsync()
     {
         Input = Input ?? new InputModel();

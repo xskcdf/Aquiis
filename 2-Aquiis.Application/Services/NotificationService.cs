@@ -2,7 +2,6 @@
 using Aquiis.Core.Constants;
 using Aquiis.Core.Entities;
 using Aquiis.Core.Interfaces.Services;
-using Aquiis.Application.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,7 +11,6 @@ public class NotificationService : BaseService<Notification>
 {
     private readonly IEmailService _emailService;
     private readonly ISMSService _smsService;
-    private new readonly ILogger<NotificationService> _logger;
 
     public NotificationService(
         ApplicationDbContext context,
@@ -25,7 +23,6 @@ public class NotificationService : BaseService<Notification>
     {
         _emailService = emailService;
         _smsService = smsService;
-        _logger = logger;
     }
 
     /// <summary>
@@ -108,6 +105,38 @@ public class NotificationService : BaseService<Notification>
         await UpdateAsync(notification);
 
         return notification;
+    }
+
+    public async Task<Notification> NotifyAllUsersAsync(
+        Guid organizationId,
+        string title,
+        string message,
+        string type,
+        string category,
+        Guid? relatedEntityId = null,
+        string? relatedEntityType = null)
+    {
+        // Query users through UserOrganizations to find all users in the organization
+        var userIds = await _context.UserOrganizations
+            .Where(uo => uo.OrganizationId == organizationId && uo.IsActive && !uo.IsDeleted)
+            .Select(uo => uo.UserId)
+            .ToListAsync();
+
+        Notification? lastNotification = null;
+
+        foreach (var userId in userIds)
+        {
+            lastNotification = await SendNotificationAsync(
+                userId,
+                title,
+                message,
+                type,
+                category,
+                relatedEntityId,
+                relatedEntityType);
+        }
+
+        return lastNotification!;
     }
 
     /// <summary>
@@ -270,5 +299,14 @@ public class NotificationService : BaseService<Notification>
             NotificationConstants.Categories.Lease => prefs.SMSLeaseExpiringUrgent,
             _ => false
         };
+    }
+
+    /// <summary>
+    /// Sends an email directly without creating a notification record.
+    /// Useful for digest emails and system notifications.
+    /// </summary>
+    public async Task SendEmailDirectAsync(string to, string subject, string body, string? fromName = null)
+    {
+        await _emailService.SendEmailAsync(to, subject, body, fromName);
     }
 }

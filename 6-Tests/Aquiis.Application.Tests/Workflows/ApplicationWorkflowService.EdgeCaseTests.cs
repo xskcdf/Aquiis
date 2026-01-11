@@ -5,7 +5,9 @@ using Aquiis.Core.Interfaces.Services;
 using Aquiis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Moq;
-using Aquiis.SimpleStart.Entities;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Aquiis.Application.Services;
 
 namespace Aquiis.Application.Tests;
 /// <summary>
@@ -53,10 +55,40 @@ public class ApplicationWorkflowServiceEdgeCaseTests
 
         var org = new Organization { Id = orgId, Name = "TestOrg", OwnerId = testUserId, CreatedBy = testUserId, CreatedOn = DateTime.UtcNow };
         context.Organizations.Add(org);
+        
+        // Add UserOrganization relationship so notifications can find users
+        var userOrg = new UserOrganization 
+        { 
+            UserId = testUserId, 
+            OrganizationId = orgId, 
+            IsActive = true,
+            CreatedBy = testUserId,
+            CreatedOn = DateTime.UtcNow
+        };
+        context.UserOrganizations.Add(userOrg);
+        
         await context.SaveChangesAsync();
 
         var noteService = new Application.Services.NoteService(context, mockUserContext.Object);
-        var workflowService = new ApplicationWorkflowService(context, mockUserContext.Object, noteService);
+        // In CreateTestContextAsync()
+        var mockEmailService = new Mock<IEmailService>();
+        var mockSmsService = new Mock<ISMSService>();
+
+        var notificationService = new NotificationService(
+            context,
+            mockUserContext.Object,
+            mockEmailService.Object,
+            mockSmsService.Object,
+            Options.Create(new ApplicationSettings { SoftDeleteEnabled = true }),
+            Mock.Of<ILogger<NotificationService>>()
+        );
+
+        var workflowService = new ApplicationWorkflowService(
+            context, 
+            mockUserContext.Object, 
+            noteService,
+            notificationService
+        );
 
         return new TestContext
         {
@@ -179,6 +211,21 @@ public class ApplicationWorkflowServiceEdgeCaseTests
         Assert.Equal("Credit score below minimum threshold", dbApp.DenialReason);
         Assert.NotNull(dbApp.DecidedOn);
         Assert.Equal(ApplicationConstants.ProspectiveStatuses.Denied, dbApp.ProspectiveTenant!.Status);
+
+        // Verify notifications were created
+        var allNotifications = await ctx.Context.Notifications.ToListAsync();
+        
+        // Should have 2 notifications: one from Submit, one from Deny
+        Assert.True(allNotifications.Count >= 1, 
+            $"Expected at least one notification. Found: {allNotifications.Count}");
+        
+        // Find the denial notification (most recent one)
+        var denyNotification = allNotifications
+            .OrderByDescending(n => n.CreatedOn)
+            .FirstOrDefault(n => n.Title.Contains("Denied"));
+        
+        Assert.NotNull(denyNotification);
+        Assert.Contains("Application Denied", denyNotification.Title);
     }
 
     [Fact]
