@@ -1,0 +1,143 @@
+@page "/test/shared-components"
+@using Aquiis.UI.Shared.Components.Common
+
+<PageTitle>Shared Components Test</PageTitle>
+
+<h1>Shared UI Components Test Page</h1>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2>Modal Component</h2>
+        <button class="btn btn-primary" @onclick="() => showModal = true">Open Modal</button>
+        
+        <Modal IsVisible="@showModal" 
+               Title="Test Modal" 
+               Size="ModalSize.Large"
+               Position="ModalPosition.Centered"
+               OnClose="@(() => showModal = false)">
+            <ChildContent>
+                <p>This is the modal body content.</p>
+                <p>The modal supports different sizes and positions.</p>
+            </ChildContent>
+            <FooterContent>
+                <button class="btn btn-secondary" @onclick="() => showModal = false">Close</button>
+                <button class="btn btn-primary">Save Changes</button>
+            </FooterContent>
+        </Modal>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <h2>Card Component</h2>
+        <Card Title="Basic Card" FullHeight="true">
+            <p>This is a card with a title.</p>
+            <p>Cards support headers, bodies, and footers.</p>
+        </Card>
+    </div>
+    
+    <div class="col-md-4">
+        <Card FullHeight="true">
+            <HeaderContent>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Custom Header</h5>
+                    <span class="badge bg-success">Active</span>
+                </div>
+            </HeaderContent>
+            <ChildContent>
+                <p>This card has a custom header with a badge.</p>
+            </ChildContent>
+            <FooterContent>
+                <button class="btn btn-sm btn-primary">Action</button>
+            </FooterContent>
+        </Card>
+    </div>
+    
+    <div class="col-md-4">
+        <Card HeaderCssClass="bg-primary text-white" FullHeight="true">
+            <HeaderContent>
+                <h5 class="mb-0">Styled Card</h5>
+            </HeaderContent>
+            <ChildContent>
+                <p>This card has custom styling on the header.</p>
+            </ChildContent>
+        </Card>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2>DataTable Component</h2>
+        <DataTable TItem="TestItem" Items="@testItems">
+            <HeaderTemplate>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </HeaderTemplate>
+            <RowTemplate>
+                <td>@context.Id</td>
+                <td>@context.Name</td>
+                <td><span class="badge bg-@(context.IsActive ? "success" : "secondary")">@(context.IsActive ? "Active" : "Inactive")</span></td>
+                <td>
+                    <button class="btn btn-sm btn-primary">Edit</button>
+                    <button class="btn btn-sm btn-danger">Delete</button>
+                </td>
+            </RowTemplate>
+        </DataTable>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>FormField Component</h2>
+        <EditForm Model="@formModel" OnValidSubmit="HandleSubmit">
+            <FormField Label="Username" Required="true" HelpText="Enter your username">
+                <InputText class="form-control" @bind-Value="formModel.Username" />
+            </FormField>
+            
+            <FormField Label="Email" Required="true">
+                <InputText type="email" class="form-control" @bind-Value="formModel.Email" />
+            </FormField>
+            
+            <FormField Label="Description" HelpText="Optional description">
+                <InputTextArea class="form-control" @bind-Value="formModel.Description" rows="3" />
+            </FormField>
+            
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private bool showModal = false;
+    
+    private class TestItem
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public bool IsActive { get; set; }
+    }
+    
+    private List<TestItem> testItems = new()
+    {
+        new TestItem { Id = 1, Name = "Item One", IsActive = true },
+        new TestItem { Id = 2, Name = "Item Two", IsActive = true },
+        new TestItem { Id = 3, Name = "Item Three", IsActive = false },
+        new TestItem { Id = 4, Name = "Item Four", IsActive = true },
+    };
+    
+    private class FormModel
+    {
+        public string Username { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Description { get; set; } = "";
+    }
+    
+    private FormModel formModel = new();
+    
+    private void HandleSubmit()
+    {
+        // Form submitted
+    }
+}

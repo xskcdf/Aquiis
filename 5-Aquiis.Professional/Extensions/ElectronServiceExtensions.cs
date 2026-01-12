@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore;
 using Aquiis.Core.Interfaces;
 using Aquiis.Core.Interfaces.Services;
-using Aquiis.Application;
+using Aquiis.Application;  // ✅ Application facade
 using Aquiis.Application.Services;
 using Aquiis.Professional.Data;
 using Aquiis.Professional.Entities;
@@ -14,7 +14,7 @@ using Aquiis.Professional.Services;
 namespace Aquiis.Professional.Extensions;
 
 /// <summary>
-/// Extension methods for configuring Electron-specific services for Professional.
+/// Extension methods for configuring Electron-specific services for SimpleStart.
 /// </summary>
 public static class ElectronServiceExtensions
 {
@@ -34,7 +34,7 @@ public static class ElectronServiceExtensions
         // Get connection string using the path service
         var connectionString = GetElectronConnectionString(configuration).GetAwaiter().GetResult();
 
-        // Register Application layer (includes Infrastructure internally)
+        // ✅ Register Application layer (includes Infrastructure internally)
         services.AddApplication(connectionString);
 
         // Register Identity database context (Professional-specific)

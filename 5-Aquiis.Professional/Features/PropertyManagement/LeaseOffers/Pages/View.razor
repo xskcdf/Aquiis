@@ -1,4 +1,4 @@
-@page "/propertymanagement/leaseoffers/{Id:guid}"
+@page "/propertymanagement/leaseoffers/view/{Id:guid}"
 
 @using Aquiis.Core.Entities
 @using Aquiis.Application.Services
@@ -484,7 +484,7 @@
                 // Navigate to the newly created lease
                 if (result.Data != null)
                 {
-                    Navigation.NavigateTo($"/propertymanagement/leases/{result.Data.Id}");
+                    Navigation.NavigateTo($"/propertymanagement/leases/{result.Data.Id}/view");
                 }
             }
             else
@@ -544,7 +544,7 @@
     {
         if (leaseOffer?.ConvertedLeaseId.HasValue == true)
         {
-            Navigation.NavigateTo($"/propertymanagement/leases/{leaseOffer.ConvertedLeaseId.Value}");
+            Navigation.NavigateTo($"/propertymanagement/leases/{leaseOffer.ConvertedLeaseId.Value}/view");
         }
     }
 
@@ -552,7 +552,7 @@
     {
         if (leaseOffer?.RentalApplicationId != null)
         {
-            Navigation.NavigateTo($"/propertymanagement/applications/{leaseOffer.RentalApplicationId}/review");
+            Navigation.NavigateTo($"/propertymanagement/applications/{leaseOffer.RentalApplicationId}/view");
         }
         else
         {

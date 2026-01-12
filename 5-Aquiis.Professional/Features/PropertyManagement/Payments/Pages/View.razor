@@ -88,7 +88,7 @@ else
                             <div class="col-md-6">
                                 <label class="text-muted small">Invoice Number</label>
                                 <p class="fw-bold">
-                                    <a href="/propertymanagement/invoices/@payment.Invoice.Id">
+                                    <a href="/propertymanagement/invoices/view/@payment.Invoice.Id">
                                         @payment.Invoice.InvoiceNumber
                                     </a>
                                 </p>
@@ -171,7 +171,7 @@ else
                             <div class="col-md-6">
                                 <label class="text-muted small">Property Address</label>
                                 <p class="fw-bold">
-                                    <a href="/propertymanagement/properties/@payment.Invoice.Lease.PropertyId">
+                                    <a href="/propertymanagement/properties/view/@payment.Invoice.Lease.PropertyId">
                                         @payment.Invoice.Lease.Property?.Address
                                     </a>
                                 </p>
@@ -179,7 +179,7 @@ else
                             <div class="col-md-6">
                                 <label class="text-muted small">Tenant</label>
                                 <p class="fw-bold">
-                                    <a href="/propertymanagement/tenants/@payment.Invoice.Lease.TenantId">
+                                    <a href="/propertymanagement/tenants/view/@payment.Invoice.Lease.TenantId">
                                         @payment.Invoice.Lease.Tenant?.FullName
                                     </a>
                                 </p>
@@ -256,18 +256,18 @@ else
                                 <i class="bi bi-download"></i> Download Receipt
                             </button>
                         }
-                        <a href="/propertymanagement/invoices/@payment.InvoiceId" class="btn btn-outline-primary">
+                        <a href="/propertymanagement/invoices/view/@payment.InvoiceId" class="btn btn-outline-primary">
                             <i class="bi bi-receipt"></i> View Invoice
                         </a>
                         @if (payment.Invoice?.Lease != null)
                         {
-                            <a href="/propertymanagement/leases/@payment.Invoice.LeaseId" class="btn btn-outline-secondary">
+                            <a href="/propertymanagement/leases/view/@payment.Invoice.LeaseId" class="btn btn-outline-secondary">
                                 <i class="bi bi-file-text"></i> View Lease
                             </a>
-                            <a href="/propertymanagement/properties/@payment.Invoice.Lease.PropertyId" class="btn btn-outline-secondary">
+                            <a href="/propertymanagement/properties/view/@payment.Invoice.Lease.PropertyId" class="btn btn-outline-secondary">
                                 <i class="bi bi-house"></i> View Property
                             </a>
-                            <a href="/propertymanagement/tenants/@payment.Invoice.Lease.TenantId" class="btn btn-outline-secondary">
+                            <a href="/propertymanagement/tenants/view/@payment.Invoice.Lease.TenantId" class="btn btn-outline-secondary">
                                 <i class="bi bi-person"></i> View Tenant
                             </a>
                         }

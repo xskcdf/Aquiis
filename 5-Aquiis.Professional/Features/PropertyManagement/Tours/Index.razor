@@ -316,7 +316,7 @@
                     // Navigate to the property tour checklist to complete it
                     if (tour.ChecklistId.HasValue)
                     {
-                        Navigation.NavigateTo($"/PropertyManagement/Checklists/{tour.ChecklistId.Value}");
+                        Navigation.NavigateTo($"/PropertyManagement/Checklists/{tour.ChecklistId.Value}/complete");
                     }
                     else
                     {

@@ -216,7 +216,7 @@ else
                                 <tr @onclick="() => ViewPayment(payment.Id)" style="cursor: pointer;">
                                     <td>@payment.PaidOn.ToString("MMM dd, yyyy")</td>
                                     <td>
-                                        <a href="/propertymanagement/invoices/@payment.InvoiceId" @onclick:stopPropagation="true">
+                                        <a href="/propertymanagement/invoices/view/@payment.InvoiceId" @onclick:stopPropagation="true">
                                             @payment.Invoice?.InvoiceNumber
                                         </a>
                                     </td>

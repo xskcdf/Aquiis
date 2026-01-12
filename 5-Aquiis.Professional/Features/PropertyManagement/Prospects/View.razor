@@ -8,7 +8,6 @@
 @using Aquiis.Core.Utilities
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authorization
-@using System.Runtime.Serialization
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @inject ProspectiveTenantService ProspectiveTenantService
@@ -692,7 +691,7 @@
     {
         if (application != null)
         {
-            Navigation.NavigateTo($"/propertymanagement/applications/{application.Id}");
+            Navigation.NavigateTo($"/propertymanagement/applications/{application.Id}/view");
         }
     }
 

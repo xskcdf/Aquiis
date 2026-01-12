@@ -1,3 +1,4 @@
+using Aquiis.Professional.Entities;
 namespace Aquiis.Professional.Shared.Components.Account
 {
     public static class AccountConstants

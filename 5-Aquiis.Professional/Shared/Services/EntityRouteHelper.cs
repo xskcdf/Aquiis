@@ -4,11 +4,16 @@ namespace Aquiis.Professional.Shared.Services;
 
 /// <summary>
 /// Provides centralized mapping between entity types and their navigation routes.
+/// Follows RESTful routing conventions: /resource/{id} for details, /resource/{id}/action for specific actions.
 /// This ensures consistent URL generation across the application when navigating to entity details.
-/// RESTful pattern: /resource/{id} for view, /resource/{id}/edit for edit, /resource for list
 /// </summary>
 public static class EntityRouteHelper
 {
+    /// <summary>
+    /// RESTful route mapping: entity type to base resource path.
+    /// Detail view: {basePath}/{id}
+    /// Actions: {basePath}/{id}/{action}
+    /// </summary>
     private static readonly Dictionary<string, string> RouteMap = new()
     {
         { "Lease", "/propertymanagement/leases" },
@@ -18,15 +23,11 @@ public static class EntityRouteHelper
         { "Application", "/propertymanagement/applications" },
         { "Property", "/propertymanagement/properties" },
         { "Tenant", "/propertymanagement/tenants" },
-        { "Prospect", "/PropertyManagement/ProspectiveTenants" },
-        { "Inspection", "/propertymanagement/inspections" },
-        { "LeaseOffer", "/propertymanagement/leaseoffers" },
-        { "Checklist", "/propertymanagement/checklists" },
-        { "Organization", "/administration/organizations" }
+        { "Prospect", "/propertymanagement/prospects" }
     };
 
     /// <summary>
-    /// Gets the full navigation route for viewing an entity (RESTful: /resource/{id})
+    /// Gets the detail view route for a given entity (RESTful: /resource/{id}).
     /// </summary>
     /// <param name="entityType">The type of entity (e.g., "Lease", "Payment", "Maintenance")</param>
     /// <param name="entityId">The unique identifier of the entity</param>
@@ -48,15 +49,15 @@ public static class EntityRouteHelper
     }
 
     /// <summary>
-    /// Gets the route for an entity action (RESTful: /resource/{id}/action)
+    /// Gets the route for a specific action on an entity (RESTful: /resource/{id}/{action}).
     /// </summary>
     /// <param name="entityType">The type of entity</param>
     /// <param name="entityId">The unique identifier of the entity</param>
-    /// <param name="action">The action (e.g., "edit", "delete", "approve")</param>
-    /// <returns>The full route path, or "/" if not mapped</returns>
+    /// <param name="action">The action to perform (e.g., "edit", "accept", "approve", "submit-application")</param>
+    /// <returns>The full route path including the entity ID and action</returns>
     public static string GetEntityActionRoute(string? entityType, Guid entityId, string action)
     {
-        if (string.IsNullOrWhiteSpace(entityType))
+        if (string.IsNullOrWhiteSpace(entityType) || string.IsNullOrWhiteSpace(action))
         {
             return "/";
         }
@@ -66,14 +67,14 @@ public static class EntityRouteHelper
             return $"{route}/{entityId}/{action}";
         }
         
-        return "/";
+        return "/"; 
     }
 
     /// <summary>
-    /// Gets the list route for an entity type (RESTful: /resource)
+    /// Gets the list view route for a given entity type (RESTful: /resource).
     /// </summary>
     /// <param name="entityType">The type of entity</param>
-    /// <returns>The list route path, or "/" if not mapped</returns>
+    /// <returns>The list view route path</returns>
     public static string GetListRoute(string? entityType)
     {
         if (string.IsNullOrWhiteSpace(entityType))
@@ -86,14 +87,14 @@ public static class EntityRouteHelper
             return route;
         }
         
-        return "/";
+        return "/"; 
     }
 
     /// <summary>
-    /// Gets the create route for an entity type (RESTful: /resource/create)
+    /// Gets the create route for a given entity type (RESTful: /resource/create).
     /// </summary>
     /// <param name="entityType">The type of entity</param>
-    /// <returns>The create route path, or "/" if not mapped</returns>
+    /// <returns>The create route path</returns>
     public static string GetCreateRoute(string? entityType)
     {
         if (string.IsNullOrWhiteSpace(entityType))
@@ -106,7 +107,7 @@ public static class EntityRouteHelper
             return $"{route}/create";
         }
         
-        return "/";
+        return "/"; 
     }
 
     /// <summary>

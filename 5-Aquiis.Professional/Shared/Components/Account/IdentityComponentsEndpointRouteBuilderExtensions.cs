@@ -1,3 +1,4 @@
+using Aquiis.Professional.Entities;
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;

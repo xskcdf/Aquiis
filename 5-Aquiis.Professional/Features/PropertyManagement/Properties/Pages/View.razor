@@ -279,7 +279,7 @@ else
                             {
                                 var lastInspection = propertyInspections.Where(i => i.CompletedOn == property.LastRoutineInspectionDate.Value && i.InspectionType == "Routine").FirstOrDefault();
                                 <small>
-                                    <a href="/propertymanagement/inspections/@lastInspection!.Id" class="text-decoration-none">
+                                    <a href="/propertymanagement/inspections/view/@lastInspection!.Id" class="text-decoration-none">
                                         <i class="bi bi-eye"></i> View Last Routine Inspection
                                     </a>
                                 </small>

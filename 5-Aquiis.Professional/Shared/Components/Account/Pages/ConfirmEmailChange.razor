@@ -31,6 +31,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await base.OnInitializedAsync();
+
         if (UserId is null || Email is null || Code is null)
         {
             RedirectManager.RedirectToWithStatus(

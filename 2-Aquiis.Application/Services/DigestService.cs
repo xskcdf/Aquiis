@@ -1,6 +1,4 @@
 using Aquiis.Core.Constants;
-using Aquiis.Core.Entities;
-using Aquiis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -113,7 +111,7 @@ public class DigestService
 
                     var inspectionsCompleted = await _dbContext.Inspections
                         .Where(i => i.OrganizationId == orgId &&
-                                   i.CompletedOn != null &&
+                                   //i.CompletedOn != null &&
                                    i.CompletedOn >= yesterday &&
                                    !i.IsDeleted)
                         .CountAsync();

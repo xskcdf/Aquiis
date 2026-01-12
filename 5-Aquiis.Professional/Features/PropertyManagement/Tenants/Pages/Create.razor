@@ -138,7 +138,7 @@
                 if (existingTenant != null)
                 {
                     errorMessage = $"A tenant with identification number <strong>{tenantModel.IdentificationNumber}</strong> already exists. " +
-                                 $"<a href=\"/propertymanagement/tenants/{existingTenant.Id}\" class=\"alert-link\">View existing tenant: {existingTenant.FullName}</a>";
+                                 $"<a href=\"/propertymanagement/tenants/view/{existingTenant.Id}\" class=\"alert-link\">View existing tenant: {existingTenant.FullName}</a>";
                     ToastService.ShowWarning($"Duplicate identification number found for {existingTenant.FullName}");
                     return;
                 }

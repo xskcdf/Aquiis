@@ -68,8 +68,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Input = Input ?? new InputModel();
+        await base.OnInitializedAsync();
 
+        Input = Input ?? new InputModel();
+        
         if (RemoteError is not null)
         {
             RedirectManager.RedirectToWithStatus("Account/Login", $"Error from external provider: {RemoteError}", HttpContext);

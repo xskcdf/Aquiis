@@ -1,9 +1,7 @@
 @page "/administration/settings/sms"
-
 @using Aquiis.Application.Services
 @using SocketIOClient.Messages
 @using System.ComponentModel.DataAnnotations
-@using Aquiis.Core.Entities
 @inject SMSSettingsService SMSSettingsService
 @inject SMSService SMSService
 
@@ -301,10 +299,10 @@
     {
         settings = await SMSSettingsService.GetOrCreateSettingsAsync();
         // TODO Phase 2.5: Uncomment when GetSMSStatsAsync is implemented
-        if (settings.IsSMSEnabled)
-        {
-            stats = await SMSService.GetSMSStatsAsync();
-        }
+         if (settings.IsSMSEnabled)
+         {
+             stats = await SMSService.GetSMSStatsAsync();
+         }
     }
 
     private async Task SaveConfiguration()

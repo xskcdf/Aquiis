@@ -303,7 +303,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        //Input = Input ?? new InputModel();
+        Input ??= new();
         await LoadUserData();
         isLoading = false;
     }

@@ -1,5 +1,4 @@
-@page "/propertymanagement/checklists/complete/{ChecklistId:guid}"
-@page "/propertymanagement/checklists/complete/new"
+@page "/propertymanagement/checklists/{ChecklistId:guid}/complete"
 
 @using Aquiis.Core.Entities
 @using Aquiis.Professional.Features.PropertyManagement
@@ -449,7 +448,7 @@ else
             // If checklist is already completed, redirect to view page
             if (checklist.Status == ApplicationConstants.ChecklistStatuses.Completed)
             {
-                NavigationManager.NavigateTo($"/propertymanagement/checklists/{ChecklistId}");
+                NavigationManager.NavigateTo($"/propertymanagement/checklists/view/{ChecklistId}");
             }
         }
         catch (Exception ex)

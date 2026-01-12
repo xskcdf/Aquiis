@@ -26,6 +26,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+    
+        await base.OnInitializedAsync();
+        
         if (UserId is null || Code is null)
         {
             RedirectManager.RedirectTo("");

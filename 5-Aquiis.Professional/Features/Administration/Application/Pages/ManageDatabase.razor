@@ -1,14 +1,14 @@
 @page "/administration/application/database"
 @using Aquiis.Application.Services
 @using Aquiis.Professional.Shared.Services
-@using Aquiis.Professional.Services
 @using Aquiis.Application.Services.PdfGenerators
 @using Aquiis.Core.Constants
+@using Aquiis.Core.Interfaces
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Extensions.Options
 @using ElectronNET.API
 @inject DatabaseBackupService BackupService
-@inject ElectronPathService ElectronPathService
+@inject IPathService PathService
 @inject NavigationManager Navigation
 @inject SchemaValidationService SchemaService
 @inject IOptions<ApplicationSettings> AppSettings
@@ -386,7 +386,7 @@
             await Task.Delay(1000);
             
             // Get database path
-            var dbPath = await ElectronPathService.GetDatabasePathAsync();
+            var dbPath = await PathService.GetDatabasePathAsync();
             
             if (File.Exists(dbPath))
             {
@@ -734,7 +734,7 @@
             
             // Get database path and backup directory
             var dbPath = HybridSupport.IsElectronActive 
-                ? await ElectronPathService.GetDatabasePathAsync()
+                ? await PathService.GetDatabasePathAsync()
                 : Path.Combine(Directory.GetCurrentDirectory(), "Data/app.db");
             var backupDir = Path.Combine(Path.GetDirectoryName(dbPath)!, "Backups");
             Directory.CreateDirectory(backupDir);

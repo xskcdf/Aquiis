@@ -160,7 +160,7 @@
                                         <td>
                                             @if (deposit.Lease?.Property != null)
                                             {
-                                                <a href="/propertymanagement/properties/@deposit.Lease.Property.Id" class="text-decoration-none">
+                                                <a href="/propertymanagement/properties/view/@deposit.Lease.Property.Id" class="text-decoration-none">
                                                     <strong>@deposit.Lease.Property.Address</strong><br/>
                                                     <small class="text-muted">@deposit.Lease.Property.City, @deposit.Lease.Property.State</small>
                                                 </a>
@@ -169,7 +169,7 @@
                                         <td>
                                             @if (deposit.Tenant != null)
                                             {
-                                                <a href="/propertymanagement/tenants/@deposit.TenantId">
+                                                <a href="/propertymanagement/tenants/view/@deposit.TenantId">
                                                     @deposit.Tenant.FirstName @deposit.Tenant.LastName
                                                 </a>
                                             }

@@ -395,7 +395,7 @@ else
             
             // Navigate to view inspection page after short delay
             await Task.Delay(500);
-            NavigationManager.NavigateTo($"/propertymanagement/inspections/view/{inspection.Id}");
+            NavigationManager.NavigateTo($"/propertymanagement/inspections/{inspection.Id}");
         }
         catch (Exception ex)
         {

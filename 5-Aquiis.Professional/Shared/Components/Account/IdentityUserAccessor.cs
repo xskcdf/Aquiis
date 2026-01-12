@@ -1,3 +1,4 @@
+using Aquiis.Professional.Entities;
 using Microsoft.AspNetCore.Identity;
 using Aquiis.Infrastructure.Data;
 

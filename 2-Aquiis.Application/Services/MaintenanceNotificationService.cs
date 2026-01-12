@@ -1,6 +1,4 @@
 using Aquiis.Core.Constants;
-using Aquiis.Core.Entities;
-using Aquiis.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -148,7 +146,7 @@ public class MaintenanceNotificationService
                     var topProperties = await _dbContext.MaintenanceRequests
                         .Where(m => m.OrganizationId == organizationId &&
                                    m.RequestedOn >= startDate &&
-                                   m.PropertyId != null &&
+                                   //m.PropertyId != null &&
                                    !m.IsDeleted)
                         .GroupBy(m => new { m.PropertyId, m.Property!.Address })
                         .Select(g => new
@@ -164,7 +162,7 @@ public class MaintenanceNotificationService
                     var weeklyMaintenanceCost = await _dbContext.MaintenanceRequests
                         .Where(m => m.OrganizationId == organizationId &&
                                    m.RequestedOn >= startDate &&
-                                   m.EstimatedCost != null &&
+                                   //m.EstimatedCost != null &&
                                    !m.IsDeleted)
                         .SumAsync(m => m.EstimatedCost);
 
@@ -172,7 +170,7 @@ public class MaintenanceNotificationService
                         .Where(m => m.OrganizationId == organizationId &&
                                    m.Status != ApplicationConstants.MaintenanceRequestStatuses.Completed &&
                                    m.Status != ApplicationConstants.MaintenanceRequestStatuses.Cancelled &&
-                                   m.EstimatedCost != null &&
+                                   //m.EstimatedCost != null &&
                                    !m.IsDeleted)
                         .SumAsync(m => m.EstimatedCost);
 

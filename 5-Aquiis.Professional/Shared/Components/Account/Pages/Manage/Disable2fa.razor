@@ -35,12 +35,15 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await base.OnInitializedAsync();
+
         user = await UserAccessor.GetRequiredUserAsync(HttpContext);
 
         if (HttpMethods.IsGet(HttpContext.Request.Method) && !await UserManager.GetTwoFactorEnabledAsync(user))
         {
             throw new InvalidOperationException("Cannot disable 2FA for user as it's not currently enabled.");
         }
+
     }
 
     private async Task OnSubmitAsync()

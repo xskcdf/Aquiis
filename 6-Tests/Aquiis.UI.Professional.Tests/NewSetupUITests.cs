@@ -198,7 +198,7 @@ public class NewSetupUITests : PageTest
 
         await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
 
-        await Page.GetByRole(AriaRole.Button, new() { Name = " Continue Editing" }).ClickAsync();
+        //await Page.GetByRole(AriaRole.Button, new() { Name = " Continue Editing" }).ClickAsync();
         await Page.GetByRole(AriaRole.Button, new() { Name = " Check All" }).First.ClickAsync();
         await Page.GetByRole(AriaRole.Button, new() { Name = " Check All" }).Nth(1).ClickAsync();
         await Page.GetByRole(AriaRole.Button, new() { Name = " Check All" }).Nth(2).ClickAsync();

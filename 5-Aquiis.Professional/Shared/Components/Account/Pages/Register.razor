@@ -105,23 +105,20 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await base.OnInitializedAsync();
 
         // Check if this is the first user (excluding system user)
         var users = await UserManager.Users
-                .Where(u => u.Id != ApplicationConstants.SystemUser.Id)
-                .ToListAsync();
-
+            .Where(u => u.Id != ApplicationConstants.SystemUser.Id)
+            .ToListAsync();
+            
         var userCount = users.Count;
 
         _isFirstUser = userCount == 0;
         _allowRegistration = _isFirstUser; // Only allow registration if this is the first user
-    }
 
-    protected override Task OnParametersSetAsync()
-    {
-        ReturnUrl ??= NavigationManager.BaseUri;
         Input = Input ?? new InputModel();
-        return base.OnParametersSetAsync();
+        StateHasChanged();
     }
 
     public async Task RegisterUser(EditContext editContext)

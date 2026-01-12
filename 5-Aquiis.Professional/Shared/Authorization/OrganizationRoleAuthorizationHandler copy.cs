@@ -5,6 +5,7 @@ using Aquiis.Professional.Shared.Components.Account;
 using Aquiis.Infrastructure.Data;
 using Aquiis.Core.Constants;
 using System.Security.Claims;
+using Aquiis.Professional.Entities;
 
 namespace Aquiis.Professional.Shared.Authorization;
 

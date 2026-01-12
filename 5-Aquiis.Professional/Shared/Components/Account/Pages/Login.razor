@@ -77,18 +77,15 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await base.OnInitializedAsync();
+
+        Input = Input ?? new InputModel();
+
         if (HttpMethods.IsGet(HttpContext.Request.Method))
         {
             // Clear the existing external cookie to ensure a clean login process
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         }
-    }
-
-    protected override Task OnParametersSetAsync()
-    {
-        ReturnUrl ??= NavigationManager.BaseUri;
-        Input = Input ?? new InputModel();
-        return base.OnParametersSetAsync();
     }
 
     public async Task LoginUser()

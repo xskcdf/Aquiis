@@ -344,7 +344,7 @@
             if (result.Success)
             {
                 ToastService.ShowSuccess("Lease offer generated successfully!");
-                Navigation.NavigateTo($"/propertymanagement/leaseoffers/{result.Data!.Id}");
+                Navigation.NavigateTo($"/propertymanagement/leaseoffers/view/{result.Data!.Id}");
             }
             else
             {

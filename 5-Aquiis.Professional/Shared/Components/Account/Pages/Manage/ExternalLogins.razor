@@ -82,6 +82,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await base.OnInitializedAsync();
+        
         user = await UserAccessor.GetRequiredUserAsync(HttpContext);
         currentLogins = await UserManager.GetLoginsAsync(user);
         otherLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync())
@@ -100,6 +102,7 @@
         {
             await OnGetLinkLoginCallbackAsync();
         }
+
     }
 
     private async Task OnSubmitAsync()

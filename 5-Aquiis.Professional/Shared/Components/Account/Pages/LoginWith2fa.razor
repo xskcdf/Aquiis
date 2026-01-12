@@ -58,15 +58,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await base.OnInitializedAsync();
+
+        Input = Input ?? new InputModel();
+
         // Ensure the user has gone through the username & password screen first
         user = await SignInManager.GetTwoFactorAuthenticationUserAsync() ??
             throw new InvalidOperationException("Unable to load two-factor authentication user.");
-    }
-
-    protected override Task OnParametersSetAsync()
-    {
-        Input = Input ?? new InputModel();
-        return base.OnParametersSetAsync();
     }
 
     private async Task OnValidSubmitAsync()
