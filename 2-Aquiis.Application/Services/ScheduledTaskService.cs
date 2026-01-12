@@ -14,19 +14,17 @@ namespace Aquiis.Application.Services
         private readonly ILogger<ScheduledTaskService> _logger;
         private readonly IServiceProvider _serviceProvider;
 
-        private readonly NotificationService _notificationService;
         private Timer? _timer;
         private Timer? _dailyTimer;
         private Timer? _hourlyTimer;
+        private Timer? _weeklyTimer;
 
         public ScheduledTaskService(
             ILogger<ScheduledTaskService> logger,
-            IServiceProvider serviceProvider,
-            NotificationService notificationService)
+            IServiceProvider serviceProvider)
         {
             _logger = logger;
             _serviceProvider = serviceProvider;
-            _notificationService = notificationService;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -64,7 +62,23 @@ namespace Aquiis.Application.Services
                 TimeSpan.Zero, // Start immediately
                 TimeSpan.FromHours(1));
 
-            _logger.LogInformation("Scheduled Task Service started. Daily tasks will run at midnight, hourly tasks every hour.");
+            // Calculate time until next Monday 6 AM for weekly tasks
+            var daysUntilMonday = ((int)DayOfWeek.Monday - (int)now.DayOfWeek + 7) % 7;
+            if (daysUntilMonday == 0 && now.Hour >= 6)
+            {
+                daysUntilMonday = 7; // If it's Monday and past 6 AM, schedule for next Monday
+            }
+            var nextMonday = now.Date.AddDays(daysUntilMonday).AddHours(6);
+            var timeUntilMonday = nextMonday - now;
+
+            // Start weekly timer (executes every Monday at 6 AM)
+            _weeklyTimer = new Timer(
+                async _ => await ExecuteWeeklyTasks(),
+                null,
+                timeUntilMonday,
+                TimeSpan.FromDays(7));
+
+            _logger.LogInformation("Scheduled Task Service started. Daily tasks will run at midnight, hourly tasks every hour, weekly tasks every Monday at 6 AM.");
 
             // Keep the service running
             while (!stoppingToken.IsCancellationRequested)
@@ -83,6 +97,7 @@ namespace Aquiis.Application.Services
                 {
                     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                     var organizationService = scope.ServiceProvider.GetRequiredService<OrganizationService>();
+                    var leaseNotificationService = scope.ServiceProvider.GetRequiredService<LeaseNotificationService>();
 
                     // Get all distinct organization IDs from OrganizationSettings
                     var organizations = await dbContext.OrganizationSettings
@@ -118,7 +133,7 @@ namespace Aquiis.Application.Services
                         }
 
                         // Task 4: Check for expiring leases and send renewal notifications
-                        await CheckLeaseRenewals(dbContext, organizationId, stoppingToken);
+                        await leaseNotificationService.SendLeaseRenewalRemindersAsync(organizationId, stoppingToken);
 
                         // Task 5: Expire overdue leases using workflow service (with audit logging)
                         var expiredLeaseCount = await ExpireOverdueLeases(scope, organizationId);
@@ -279,161 +294,7 @@ namespace Aquiis.Application.Services
             }
         }
 
-        private async Task CheckLeaseRenewals(ApplicationDbContext dbContext, Guid organizationId, CancellationToken stoppingToken)
-        {
-            try
-            {
-                var today = DateTime.Today;
-                var addresses = string.Empty;
-
-                // Check for leases expiring in 90 days (initial notification)
-                var leasesExpiring90Days = await dbContext.Leases
-                    .Include(l => l.Tenant)
-                    .Include(l => l.Property)
-                    .Where(l => !l.IsDeleted &&
-                               l.OrganizationId == organizationId &&
-                               l.Status == "Active" &&
-                               l.EndDate >= today.AddDays(85) &&
-                               l.EndDate <= today.AddDays(95) &&
-                               (l.RenewalNotificationSent == null || !l.RenewalNotificationSent.Value))
-                    .ToListAsync(stoppingToken);
-
-                foreach (var lease in leasesExpiring90Days)
-                {
-                    // TODO: Send email notification when email service is integrated
-                    _logger.LogInformation(
-                        "Lease expiring in 90 days: Lease ID {LeaseId}, Property: {PropertyAddress}, Tenant: {TenantName}, End Date: {EndDate}",
-                        lease.Id,
-                        lease.Property?.Address ?? "Unknown",
-                        lease.Tenant?.FullName ?? "Unknown",
-                        lease.EndDate.ToString("MMM dd, yyyy"));
-
-                    lease.RenewalNotificationSent = true;
-                    lease.RenewalNotificationSentOn = DateTime.UtcNow;
-                    lease.RenewalStatus = "Pending";
-                    lease.LastModifiedOn = DateTime.UtcNow;
-                    lease.LastModifiedBy = ApplicationConstants.SystemUser.Id; // Automated task
-
-                    addresses += lease.Property?.Address + "\n";
-                }
-
-                // Send organization-wide notification if any leases are expiring
-                await _notificationService.NotifyAllUsersAsync(
-                    organizationId,
-                    "90-Day Lease Renewal Notification",
-                    $"The following properties have leases expiring in 90 days:\n\n{addresses}",
-                    NotificationConstants.Types.Info,
-                    NotificationConstants.Categories.Lease,
-                    null,
-                    ApplicationConstants.EntityTypes.Lease);
-
-                // clear addresses for next use
-                addresses = string.Empty;
-
-                // Check for leases expiring in 60 days (reminder)
-                var leasesExpiring60Days = await dbContext.Leases
-                    .Include(l => l.Tenant)
-                    .Include(l => l.Property)
-                    .Where(l => !l.IsDeleted &&
-                               l.OrganizationId == organizationId &&
-                               l.Status == "Active" &&
-                               l.EndDate >= today.AddDays(55) &&
-                               l.EndDate <= today.AddDays(65) &&
-                               l.RenewalNotificationSent == true &&
-                               l.RenewalReminderSentOn == null)
-                    .ToListAsync(stoppingToken);
-
-                foreach (var lease in leasesExpiring60Days)
-                {
-                    // TODO: Send reminder email
-                    _logger.LogInformation(
-                        "Lease expiring in 60 days (reminder): Lease ID {LeaseId}, Property: {PropertyAddress}, Tenant: {TenantName}, End Date: {EndDate}",
-                        lease.Id,
-                        lease.Property?.Address ?? "Unknown",
-                        lease.Tenant?.FullName ?? "Unknown",
-                        lease.EndDate.ToString("MMM dd, yyyy"));
-
-                    lease.RenewalReminderSentOn = DateTime.UtcNow;
-                    lease.LastModifiedOn = DateTime.UtcNow;
-                    lease.LastModifiedBy = ApplicationConstants.SystemUser.Id; // Automated task
-
-                    addresses += lease.Property?.Address + "\n";
-                }
-
-                 // Send organization-wide notification if any leases are expiring
-                await _notificationService.NotifyAllUsersAsync(
-                    organizationId,
-                    "60-Day Lease Renewal Notification",
-                    $"The following properties have leases expiring in 60 days:\n\n{addresses}",
-                    NotificationConstants.Types.Info,
-                    NotificationConstants.Categories.Lease,
-                    null,
-                    ApplicationConstants.EntityTypes.Lease);
-
-                // clear addresses for next use
-                addresses = string.Empty;
-
-                // Check for leases expiring in 30 days (final reminder)
-                var leasesExpiring30Days = await dbContext.Leases
-                    .Include(l => l.Tenant)
-                    .Include(l => l.Property)
-                    .Where(l => !l.IsDeleted &&
-                               l.OrganizationId == organizationId &&
-                               l.Status == "Active" &&
-                               l.EndDate >= today.AddDays(25) &&
-                               l.EndDate <= today.AddDays(35) &&
-                               l.RenewalStatus == "Pending")
-                    .ToListAsync(stoppingToken);
-
-                foreach (var lease in leasesExpiring30Days)
-                {
-                    // TODO: Send final reminder
-                    _logger.LogInformation(
-                        "Lease expiring in 30 days (final reminder): Lease ID {LeaseId}, Property: {PropertyAddress}, Tenant: {TenantName}, End Date: {EndDate}",
-                        lease.Id,
-                        lease.Property?.Address ?? "Unknown",
-                        lease.Tenant?.FullName ?? "Unknown",
-                        lease.EndDate.ToString("MMM dd, yyyy"));
-
-                    addresses += lease.Property?.Address + "\n";
-                }
-
-                // Send organization-wide notification if any leases are expiring
-                await _notificationService.NotifyAllUsersAsync(
-                    organizationId,
-                    "30-Day Lease Renewal Notification",
-                    $"The following properties have leases expiring in 30 days:\n\n{addresses}",
-                    NotificationConstants.Types.Info,
-                    NotificationConstants.Categories.Lease,
-                    null,
-                    ApplicationConstants.EntityTypes.Lease);
-
-                // clear addresses for next use
-                addresses = string.Empty;
-
-                // Note: Lease expiration is now handled by ExpireOverdueLeases() 
-                // which uses LeaseWorkflowService for proper audit logging
-
-                var totalUpdated = leasesExpiring90Days.Count + leasesExpiring60Days.Count + 
-                                  leasesExpiring30Days.Count;
-
-                if (totalUpdated > 0)
-                {
-                    await dbContext.SaveChangesAsync(stoppingToken);
-                    _logger.LogInformation(
-                        "Processed {Count} lease renewal notifications for organization {OrganizationId}: {Initial} initial, {Reminder60} 60-day, {Reminder30} 30-day reminders",
-                        totalUpdated,
-                        organizationId,
-                        leasesExpiring90Days.Count,
-                        leasesExpiring60Days.Count,
-                        leasesExpiring30Days.Count);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error checking lease renewals for organization {OrganizationId}", organizationId);
-            }
-        }
+        // Lease renewal reminder logic moved to LeaseNotificationService
 
         private async Task ExecuteDailyTasks()
         {
@@ -505,7 +366,8 @@ namespace Aquiis.Application.Services
                 }
 
                 // Send daily digest emails to users who have opted in
-                await SendDailyDigestsAsync(dbContext);
+                var digestService = scope.ServiceProvider.GetRequiredService<DigestService>();
+                await digestService.SendDailyDigestsAsync();
 
                 // Additional daily tasks:
                 // - Generate daily reports
@@ -519,262 +381,30 @@ namespace Aquiis.Application.Services
             }
         }
 
-        /// <summary>
-        /// Sends daily digest emails to users who have opted in.
-        /// Consolidates notifications and activity metrics from the last 24 hours.
-        /// </summary>
-        private async Task SendDailyDigestsAsync(ApplicationDbContext dbContext)
+        // Daily digest logic moved to DigestService
+
+        private async Task ExecuteWeeklyTasks()
         {
+            _logger.LogInformation("Executing weekly tasks at {Time}", DateTime.Now);
+
             try
             {
-                _logger.LogInformation("Starting daily digest email processing at {Time}", DateTime.Now);
+                using var scope = _serviceProvider.CreateScope();
+                var digestService = scope.ServiceProvider.GetRequiredService<DigestService>();
+                var documentNotificationService = scope.ServiceProvider.GetRequiredService<DocumentNotificationService>();
+                var maintenanceNotificationService = scope.ServiceProvider.GetRequiredService<MaintenanceNotificationService>();
 
-                var now = DateTime.UtcNow;
-                var yesterday = now.AddDays(-1);
-
-                // Get all users with daily digest enabled
-                var usersWithDigest = await dbContext.NotificationPreferences
-                    .Where(np => np.EnableDailyDigest && 
-                                !np.IsDeleted &&
-                                np.EnableEmailNotifications &&
-                                !string.IsNullOrEmpty(np.EmailAddress))
-                    .Include(np => np.Organization)
-                    .ToListAsync();
-
-                if (!usersWithDigest.Any())
-                {
-                    _logger.LogInformation("No users have daily digest enabled");
-                    return;
-                }
-
-                _logger.LogInformation("Processing daily digests for {Count} user(s)", usersWithDigest.Count);
-
-                var successCount = 0;
-                var failureCount = 0;
-
-                // Process each user
-                foreach (var userPrefs in usersWithDigest)
-                {
-                    try
-                    {
-                        // Get user's notifications from last 24 hours
-                        var userNotifications = await dbContext.Notifications
-                            .Where(n => n.RecipientUserId == userPrefs.UserId &&
-                                       n.OrganizationId == userPrefs.OrganizationId &&
-                                       n.CreatedOn >= yesterday &&
-                                       !n.IsDeleted)
-                            .OrderByDescending(n => n.CreatedOn)
-                            .Take(50) // Limit to 50 most recent
-                            .ToListAsync();
-
-                        // Get daily metrics for user's organization
-                        var orgId = userPrefs.OrganizationId;
-
-                        // Applications submitted today
-                        var newApplications = await dbContext.RentalApplications
-                            .Where(a => a.OrganizationId == orgId &&
-                                       a.CreatedOn >= yesterday &&
-                                       !a.IsDeleted)
-                            .CountAsync();
-
-                        // Payments received today
-                        var paymentsToday = await dbContext.Payments
-                            .Where(p => p.OrganizationId == orgId &&
-                                       p.PaidOn >= yesterday &&
-                                       !p.IsDeleted)
-                            .ToListAsync();
-                        var paymentsCount = paymentsToday.Count;
-                        var paymentsTotal = paymentsToday.Sum(p => p.Amount);
-
-                        // Maintenance requests created/completed today
-                        var maintenanceCreated = await dbContext.MaintenanceRequests
-                            .Where(m => m.OrganizationId == orgId &&
-                                       m.CreatedOn >= yesterday &&
-                                       !m.IsDeleted)
-                            .CountAsync();
-
-                        var maintenanceCompleted = await dbContext.MaintenanceRequests
-                            .Where(m => m.OrganizationId == orgId &&
-                                       m.CompletedOn >= yesterday &&
-                                       m.Status == ApplicationConstants.MaintenanceRequestStatuses.Completed &&
-                                       !m.IsDeleted)
-                            .CountAsync();
-
-                        // Inspections completed today
-                        var inspectionsScheduled = 0; // Note: Inspection entity doesn't have ScheduledDate - would need to query CalendarEvent
-
-                        var inspectionsCompleted = await dbContext.Inspections
-                            .Where(i => i.OrganizationId == orgId &&
-                                       i.CompletedOn >= yesterday &&
-                                       !i.IsDeleted)
-                            .CountAsync();
-
-                        // Leases expiring within 90 days (for context)
-                        var leasesExpiringSoon = await dbContext.Leases
-                            .Where(l => l.OrganizationId == orgId &&
-                                       l.EndDate <= DateTime.Today.AddDays(90) &&
-                                       l.EndDate >= DateTime.Today &&
-                                       l.Status == ApplicationConstants.LeaseStatuses.Active &&
-                                       !l.IsDeleted)
-                            .CountAsync();
-
-                        // Quick stats
-                        var activeProperties = await dbContext.Properties
-                            .Where(p => p.OrganizationId == orgId &&
-                                       !p.IsDeleted)
-                            .CountAsync();
-
-                        var occupiedProperties = await dbContext.Properties
-                            .Where(p => p.OrganizationId == orgId &&
-                                       !p.IsDeleted &&
-                                       p.Status == ApplicationConstants.PropertyStatuses.Occupied)
-                            .CountAsync();
-
-                        var outstandingInvoices = await dbContext.Invoices
-                            .Where(i => i.OrganizationId == orgId &&
-                                       (i.Status == ApplicationConstants.InvoiceStatuses.Pending ||
-                                        i.Status == ApplicationConstants.InvoiceStatuses.Overdue) &&
-                                       !i.IsDeleted)
-                            .SumAsync(i => i.Amount);
-
-                        // Build email content
-                        var subject = $"Daily Digest - {userPrefs.Organization?.Name ?? "Property Management"} - {DateTime.Today:MMM dd, yyyy}";
-                        
-                        var body = BuildDailyDigestEmailBody(
-                            userPrefs.UserId,
-                            userPrefs.Organization?.Name ?? "Property Management",
-                            DateTime.Today.ToString("MMMM dd, yyyy"),
-                            newApplications,
-                            paymentsCount,
-                            paymentsTotal,
-                            maintenanceCreated,
-                            maintenanceCompleted,
-                            inspectionsScheduled,
-                            inspectionsCompleted,
-                            leasesExpiringSoon,
-                            userNotifications,
-                            activeProperties,
-                            occupiedProperties,
-                            outstandingInvoices);
-
-                        // Send email via NotificationService's email service
-                        await _notificationService.SendEmailDirectAsync(
-                            userPrefs.EmailAddress!,
-                            subject,
-                            body);
-
-                        successCount++;
-                        _logger.LogInformation(
-                            "Sent daily digest to {Email} for organization {OrgName} ({NotificationCount} notifications)",
-                            userPrefs.EmailAddress,
-                            userPrefs.Organization?.Name,
-                            userNotifications.Count);
-                    }
-                    catch (Exception ex)
-                    {
-                        failureCount++;
-                        _logger.LogError(ex,
-                            "Failed to send daily digest to user {UserId} in organization {OrgId}",
-                            userPrefs.UserId,
-                            userPrefs.OrganizationId);
-                    }
-                }
-
-                _logger.LogInformation(
-                    "Daily digest processing complete: {Success} sent, {Failures} failed",
-                    successCount,
-                    failureCount);
+                await digestService.SendWeeklyDigestsAsync();
+                await documentNotificationService.CheckDocumentExpirationsAsync();
+                await maintenanceNotificationService.SendMaintenanceStatusSummaryAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing daily digest emails");
+                _logger.LogError(ex, "Error executing weekly tasks");
             }
         }
 
-        /// <summary>
-        /// Builds the HTML body for the daily digest email
-        /// </summary>
-        private string BuildDailyDigestEmailBody(
-            string userId,
-            string organizationName,
-            string date,
-            int newApplications,
-            int paymentsCount,
-            decimal paymentsTotal,
-            int maintenanceCreated,
-            int maintenanceCompleted,
-            int inspectionsScheduled,
-            int inspectionsCompleted,
-            int leasesExpiringSoon,
-            List<Notification> notifications,
-            int activeProperties,
-            int occupiedProperties,
-            decimal outstandingInvoices)
-        {
-            var notificationList = string.Empty;
-            if (notifications.Any())
-            {
-                var notificationItems = notifications
-                    .Take(10) // Show top 10
-                    .Select(n => $"<li><strong>{n.Title}</strong><br/><span style='color: #666; font-size: 14px;'>{n.Message.Substring(0, Math.Min(100, n.Message.Length))}{(n.Message.Length > 100 ? "..." : "")}</span><br/><span style='color: #999; font-size: 12px;'>{n.CreatedOn:MMM dd, h:mm tt}</span></li>")
-                    .ToList();
-                notificationList = string.Join("", notificationItems);
-            }
-            else
-            {
-                notificationList = "<li style='color: #999;'>No new notifications in the last 24 hours</li>";
-            }
-
-            return $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Daily Digest</title>
-</head>
-<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;'>
-    <div style='background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;'>
-        <h1 style='color: #2c3e50; margin: 0 0 10px 0;'>Daily Digest</h1>
-        <p style='color: #666; margin: 0;'>{organizationName} - {date}</p>
-    </div>
-
-    <div style='background-color: #fff; padding: 20px; border: 1px solid #dee2e6; border-radius: 8px; margin-bottom: 20px;'>
-        <h2 style='color: #2c3e50; margin-top: 0;'>📊 Activity Overview</h2>
-        <ul style='list-style: none; padding: 0;'>
-            <li style='padding: 8px 0; border-bottom: 1px solid #eee;'><strong>{newApplications}</strong> new rental application{(newApplications != 1 ? "s" : "")}</li>
-            <li style='padding: 8px 0; border-bottom: 1px solid #eee;'><strong>{paymentsCount}</strong> payment{(paymentsCount != 1 ? "s" : "")} received (<strong>${paymentsTotal:N2}</strong> total)</li>
-            <li style='padding: 8px 0; border-bottom: 1px solid #eee;'><strong>{maintenanceCreated}</strong> maintenance request{(maintenanceCreated != 1 ? "s" : "")} created, <strong>{maintenanceCompleted}</strong> completed</li>
-            <li style='padding: 8px 0; border-bottom: 1px solid #eee;'><strong>{inspectionsScheduled}</strong> inspection{(inspectionsScheduled != 1 ? "s" : "")} scheduled, <strong>{inspectionsCompleted}</strong> completed</li>
-            <li style='padding: 8px 0;'><strong>{leasesExpiringSoon}</strong> lease{(leasesExpiringSoon != 1 ? "s" : "")} expiring within 90 days</li>
-        </ul>
-    </div>
-
-    <div style='background-color: #fff; padding: 20px; border: 1px solid #dee2e6; border-radius: 8px; margin-bottom: 20px;'>
-        <h2 style='color: #2c3e50; margin-top: 0;'>🔔 Your Notifications (Last 24 hours)</h2>
-        <ul style='padding-left: 20px;'>
-            {notificationList}
-        </ul>
-        {(notifications.Count > 10 ? $"<p style='color: #666; font-size: 14px; margin: 10px 0 0 0;'>...and {notifications.Count - 10} more notification{(notifications.Count - 10 != 1 ? "s" : "")}</p>" : "")}
-    </div>
-
-    <div style='background-color: #fff; padding: 20px; border: 1px solid #dee2e6; border-radius: 8px; margin-bottom: 20px;'>
-        <h2 style='color: #2c3e50; margin-top: 0;'>📈 Quick Stats</h2>
-        <ul style='list-style: none; padding: 0;'>
-            <li style='padding: 8px 0; border-bottom: 1px solid #eee;'>Active properties: <strong>{activeProperties}</strong></li>
-            <li style='padding: 8px 0; border-bottom: 1px solid #eee;'>Occupied units: <strong>{occupiedProperties}</strong>/{activeProperties} ({(activeProperties > 0 ? (occupiedProperties * 100.0 / activeProperties).ToString("F1") : "0")}%)</li>
-            <li style='padding: 8px 0;'>Outstanding invoices: <strong>${outstandingInvoices:N2}</strong></li>
-        </ul>
-    </div>
-
-    <div style='text-align: center; padding: 20px; color: #999; font-size: 14px;'>
-        <p>You're receiving this email because you've enabled daily digest notifications.</p>
-        <p>To change your notification preferences, log in to your account and visit Settings.</p>
-    </div>
-</body>
-</html>";
-        }
-
+        // Old SendDailyDigestsAsync removed - functionality in DigestService
         private async Task ExecuteHourlyTasks()
         {
             _logger.LogInformation("Executing hourly tasks at {Time}", DateTime.Now);
@@ -1096,6 +726,7 @@ namespace Aquiis.Application.Services
             _timer?.Dispose();
             _dailyTimer?.Change(Timeout.Infinite, 0);
             _hourlyTimer?.Change(Timeout.Infinite, 0);
+            _weeklyTimer?.Change(Timeout.Infinite, 0);
             return base.StopAsync(stoppingToken);
         }
 
