@@ -481,7 +481,7 @@ namespace Aquiis.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "UserOrganizations",
+                name: "OrganizationUsers",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
@@ -500,9 +500,9 @@ namespace Aquiis.Infrastructure.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_UserOrganizations", x => x.Id);
+                    table.PrimaryKey("PK_OrganizationUsers", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_UserOrganizations_Organizations_OrganizationId",
+                        name: "FK_OrganizationUsers_Organizations_OrganizationId",
                         column: x => x.OrganizationId,
                         principalTable: "Organizations",
                         principalColumn: "Id",
@@ -1839,23 +1839,23 @@ namespace Aquiis.Infrastructure.Data.Migrations
                 column: "Status");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserOrganizations_IsActive",
-                table: "UserOrganizations",
+                name: "IX_OrganizationUsers_IsActive",
+                table: "OrganizationUsers",
                 column: "IsActive");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserOrganizations_OrganizationId",
-                table: "UserOrganizations",
+                name: "IX_OrganizationUsers_OrganizationId",
+                table: "OrganizationUsers",
                 column: "OrganizationId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserOrganizations_Role",
-                table: "UserOrganizations",
+                name: "IX_OrganizationUsers_Role",
+                table: "OrganizationUsers",
                 column: "Role");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserOrganizations_UserId_OrganizationId",
-                table: "UserOrganizations",
+                name: "IX_OrganizationUsers_UserId_OrganizationId",
+                table: "OrganizationUsers",
                 columns: new[] { "UserId", "OrganizationId" },
                 unique: true);
 
@@ -2018,7 +2018,7 @@ namespace Aquiis.Infrastructure.Data.Migrations
                 name: "Tours");
 
             migrationBuilder.DropTable(
-                name: "UserOrganizations");
+                name: "OrganizationUsers");
 
             migrationBuilder.DropTable(
                 name: "WorkflowAuditLogs");

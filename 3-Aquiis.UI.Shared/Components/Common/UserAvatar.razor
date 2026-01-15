@@ -1,0 +1,40 @@
+
+<div class="avatar rounded-circle d-flex align-items-center justify-content-center" 
+     style="width: @(Size)px; height: @(Size)px; background-color: #e0e0e0; font-size: @(Size / 2)px; color: #555;">
+    @if (!string.IsNullOrWhiteSpace(FirstName) || !string.IsNullOrWhiteSpace(LastName))
+    {
+        @GetInitials()
+    }
+    else
+    {
+        <i class="bi bi-person-fill"></i>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public int Size { get; set; } = 48;
+
+    [Parameter , EditorRequired]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Parameter , EditorRequired]
+    public string LastName { get; set; } = string.Empty;
+
+    private string GetInitials()
+    {
+        var initials = string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(FirstName))
+        {
+            initials += FirstName[0];
+        }
+
+        if (!string.IsNullOrWhiteSpace(LastName))
+        {
+            initials += LastName[0];
+        }
+
+        return initials.ToUpper();
+    }
+}

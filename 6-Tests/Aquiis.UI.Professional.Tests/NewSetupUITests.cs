@@ -31,8 +31,14 @@ public class NewSetupUITests : PageTest
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Organization Name" }).ClickAsync();
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Organization Name" }).FillAsync("Aquiis");
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Organization Name" }).PressAsync("Tab");
+        await Page.Locator("select[id='Input.State']").SelectOptionAsync(new[] { "LA" });
+        await Page.Locator("select[id='Input.State']").PressAsync("Tab");
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).FillAsync("owner1@aquiis.com");
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).PressAsync("Tab");
+        await Page.GetByRole(AriaRole.Textbox, new() { Name = "First Name" }).FillAsync("Solid");
+        await Page.GetByRole(AriaRole.Textbox, new() { Name = "First Name" }).PressAsync("Tab");
+        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Last Name" }).FillAsync("One");
+        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Last Name" }).PressAsync("Tab");
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Password", Exact = true }).FillAsync("Today123");
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Password", Exact = true }).PressAsync("Tab");
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Confirm Password" }).FillAsync("Today123");

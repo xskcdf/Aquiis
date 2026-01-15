@@ -41,7 +41,7 @@ namespace Aquiis.Core.Entities
         public bool IsDeleted { get; set; } = false;
 
         // Navigation properties
-        public virtual ICollection<UserOrganization> UserOrganizations { get; set; } = new List<UserOrganization>();
+        public virtual ICollection<OrganizationUser> OrganizationUsers { get; set; } = new List<OrganizationUser>();
         public virtual ICollection<Property> Properties { get; set; } = new List<Property>();
         public virtual ICollection<Tenant> Tenants { get; set; } = new List<Tenant>();
         public virtual ICollection<Lease> Leases { get; set; } = new List<Lease>();

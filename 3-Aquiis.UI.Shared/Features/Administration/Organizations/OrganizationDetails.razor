@@ -1,0 +1,67 @@
+@using Aquiis.Core.Entities
+@using Aquiis.Application.Services
+@using Aquiis.Core.Constants
+@using Aquiis.UI.Shared.Components.Entities.OrganizationUsers
+@using Aquiis.UI.Shared.Components.Entities.Organizations
+
+@namespace Aquiis.UI.Shared.Features.Organizations
+
+<div class="row">
+    <div class="col-md-8">
+        
+        <!--  Organization Information Card-->
+        <OrganizationCard OrganizationViewModel="OrganizationViewModel" OnEdit="OnEdit" />
+
+        <!-- Users with Access Card -->
+        <OrganizationUsersListView 
+            OrganizationViewModel="@OrganizationViewModel"
+            IsOwner="@IsOwner" 
+            IsAdministrator="@IsAdministrator" 
+            IsCurrentOrganization="@IsCurrentOrganization"
+            OnManageUsers="OnManageUsers"/>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Quick Stats Card -->
+        <OrganizationUserStatistics OrganizationViewModel="@OrganizationViewModel" />
+
+        <!-- Your Access Card -->
+        @if (CurrentUserViewModel != null)
+        {
+            <UserProfileCard OrganizationUserViewModel="@CurrentUserViewModel" />
+        }
+        <UserAccessCard CurrentUserRole="@CurrentUserRole" />
+    </div>
+</div>
+
+@code {
+
+    [Parameter, EditorRequired]
+    public OrganizationViewModel? OrganizationViewModel { get; set; }
+
+    [Parameter, EditorRequired]
+    public string CurrentUserRole { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public bool IsOwner { get; set; }
+
+    [Parameter, EditorRequired]
+    public bool IsAdministrator { get; set; }
+
+    [Parameter, EditorRequired]
+    public bool IsCurrentOrganization { get; set; }
+
+    [Parameter]
+    public OrganizationUserViewModel? CurrentUserViewModel { get; set; }
+
+    [Parameter]
+    public EventCallback OnManageUsers { get; set; }
+
+    [Parameter]
+    public EventCallback OnEdit { get; set; }
+
+    public Organization? Organization => OrganizationViewModel?.Organization;
+
+    public List<OrganizationUserViewModel> OrganizationUsers => OrganizationViewModel?.OrganizationUsers ?? new List<OrganizationUserViewModel>();
+
+}

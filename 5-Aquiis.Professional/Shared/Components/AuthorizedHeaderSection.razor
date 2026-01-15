@@ -1,7 +1,9 @@
 @using Aquiis.Professional.Shared.Components
+@using Aquiis.UI.Shared.Components.OrganizationSwitcher
+@inject UserContextService UserContext
 @rendermode InteractiveServer
 
 <div class="d-flex align-items-center gap-2">
     <NotificationBellWrapper />
-    <OrganizationSwitcher />
+    <Aquiis.UI.Shared.Components.OrganizationSwitcher.OrganizationSwitcher UserContext="UserContext" />
 </div>

@@ -5,11 +5,13 @@
 @using Aquiis.Professional.Shared.Services
 @using Aquiis.Professional.Shared.Components.Account
 @using Aquiis.Core.Constants
+@using Aquiis.Infrastructure.Data
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 
 @inject OrganizationService OrganizationService
+@inject ApplicationDbContext DbContext
 @inject UserContextService UserContext
 @inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
@@ -219,7 +221,7 @@
 
     private bool isLoading = true;
     private Organization? organization;
-    private List<UserOrganization> organizationUsers = new();
+    private List<OrganizationUser> organizationUsers = new();
     private Dictionary<string, string> userEmails = new();
     private bool showAddUserModal = false;
     private List<ApplicationUser> availableUsers = new();
@@ -275,19 +277,21 @@
 
         organizationUsers = await OrganizationService.GetOrganizationUsersAsync(Id);
 
-        // Load user emails
-        foreach (var userOrg in organizationUsers)
-        {
-            var user = await UserManager.FindByIdAsync(userOrg.UserId);
-            if (user != null)
-            {
-                userEmails[userOrg.UserId] = user.Email ?? "Unknown";
-            }
+        // Load user emails from UserProfile (single query)
+        var userIds = organizationUsers
+            .SelectMany(ou => new[] { ou.UserId, ou.GrantedBy })
+            .Distinct()
+            .ToList();
 
-            var grantedByUser = await UserManager.FindByIdAsync(userOrg.GrantedBy);
-            if (grantedByUser != null)
+        var profiles = await DbContext.UserProfiles
+            .Where(up => userIds.Contains(up.UserId))
+            .ToDictionaryAsync(up => up.UserId, up => up.Email);
+
+        foreach (var userId in userIds)
+        {
+            if (profiles.TryGetValue(userId, out var email))
             {
-                userEmails[userOrg.GrantedBy] = grantedByUser.Email ?? "Unknown";
+                userEmails[userId] = email;
             }
         }
     }
@@ -297,11 +301,24 @@
         if (organization == null) return;
 
         // Get all users who are NOT already assigned to this organization
-        var allUsers = await UserManager.Users.ToListAsync();
-        var nonSystemUsers = allUsers.Where(u => u.Id != ApplicationConstants.SystemUser.Id).ToList();
+        // Using UserProfile instead of UserManager.Users
+        var allUserProfiles = await DbContext.UserProfiles
+            .Where(up => up.UserId != ApplicationConstants.SystemUser.Id)
+            .ToListAsync();
+        
         var assignedUserIds = organizationUsers.Select(u => u.UserId).ToHashSet();
         
-        availableUsers = nonSystemUsers.Where(u => !assignedUserIds.Contains(u.Id)).ToList();
+        // Map UserProfile to ApplicationUser for compatibility
+        availableUsers = allUserProfiles
+            .Where(up => !assignedUserIds.Contains(up.UserId))
+            .Select(up => new ApplicationUser
+            {
+                Id = up.UserId,
+                Email = up.Email,
+                FirstName = up.FirstName,
+                LastName = up.LastName
+            })
+            .ToList();
     }
 
     private string GetUserEmail(string userId)
@@ -321,7 +338,7 @@
         };
     }
 
-    private async Task ChangeUserRole(UserOrganization userOrg, string newRole)
+    private async Task ChangeUserRole(OrganizationUser userOrg, string newRole)
     {
         try
         {
@@ -352,7 +369,7 @@
         }
     }
 
-    private async Task RevokeUserAccess(UserOrganization userOrg)
+    private async Task RevokeUserAccess(OrganizationUser userOrg)
     {
         if (!await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to revoke {GetUserEmail(userOrg.UserId)}'s access to this organization?"))
         {

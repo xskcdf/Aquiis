@@ -3263,7 +3263,7 @@ namespace Aquiis.Infrastructure.Data.Migrations
                     b.ToTable("Tours");
                 });
 
-            modelBuilder.Entity("Aquiis.Core.Entities.UserOrganization", b =>
+            modelBuilder.Entity("Aquiis.Core.Entities.OrganizationUser", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -3320,7 +3320,7 @@ namespace Aquiis.Infrastructure.Data.Migrations
                     b.HasIndex("UserId", "OrganizationId")
                         .IsUnique();
 
-                    b.ToTable("UserOrganizations");
+                    b.ToTable("OrganizationUsers");
                 });
 
             modelBuilder.Entity("Aquiis.Core.Entities.WorkflowAuditLog", b =>
@@ -3937,10 +3937,10 @@ namespace Aquiis.Infrastructure.Data.Migrations
                     b.Navigation("ProspectiveTenant");
                 });
 
-            modelBuilder.Entity("Aquiis.Core.Entities.UserOrganization", b =>
+            modelBuilder.Entity("Aquiis.Core.Entities.OrganizationUser", b =>
                 {
                     b.HasOne("Aquiis.Core.Entities.Organization", "Organization")
-                        .WithMany("UserOrganizations")
+                        .WithMany("OrganizationUsers")
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -3991,7 +3991,7 @@ namespace Aquiis.Infrastructure.Data.Migrations
 
                     b.Navigation("Tenants");
 
-                    b.Navigation("UserOrganizations");
+                    b.Navigation("OrganizationUsers");
                 });
 
             modelBuilder.Entity("Aquiis.Core.Entities.Property", b =>

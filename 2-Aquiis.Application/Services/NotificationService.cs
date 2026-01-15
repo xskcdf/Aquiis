@@ -116,8 +116,8 @@ public class NotificationService : BaseService<Notification>
         Guid? relatedEntityId = null,
         string? relatedEntityType = null)
     {
-        // Query users through UserOrganizations to find all users in the organization
-        var userIds = await _context.UserOrganizations
+        // Query users through OrganizationUsers to find all users in the organization
+        var userIds = await _context.OrganizationUsers
             .Where(uo => uo.OrganizationId == organizationId && uo.IsActive && !uo.IsDeleted)
             .Select(uo => uo.UserId)
             .ToListAsync();

@@ -56,8 +56,8 @@ public class ApplicationWorkflowServiceEdgeCaseTests
         var org = new Organization { Id = orgId, Name = "TestOrg", OwnerId = testUserId, CreatedBy = testUserId, CreatedOn = DateTime.UtcNow };
         context.Organizations.Add(org);
         
-        // Add UserOrganization relationship so notifications can find users
-        var userOrg = new UserOrganization 
+        // Add OrganizationUser relationship so notifications can find users
+        var userOrg = new OrganizationUser 
         { 
             UserId = testUserId, 
             OrganizationId = orgId, 
@@ -65,7 +65,7 @@ public class ApplicationWorkflowServiceEdgeCaseTests
             CreatedBy = testUserId,
             CreatedOn = DateTime.UtcNow
         };
-        context.UserOrganizations.Add(userOrg);
+        context.OrganizationUsers.Add(userOrg);
         
         await context.SaveChangesAsync();
 

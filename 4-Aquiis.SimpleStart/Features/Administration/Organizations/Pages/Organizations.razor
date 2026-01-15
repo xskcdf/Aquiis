@@ -23,11 +23,12 @@
             <h1><i class="bi bi-building"></i> Organizations</h1>
             <p class="text-muted mb-0">Manage your organizations and access</p>
         </div>
-        <OrganizationAuthorizeView Roles="Owner">
+        @* --- Only one organization allowed in SimpleStart --- *@
+        @* <OrganizationAuthorizeView Roles="Owner">
             <button class="btn btn-primary" @onclick="NavigateToCreate">
                 <i class="bi bi-plus-circle"></i> Create Organization
             </button>
-        </OrganizationAuthorizeView>
+        </OrganizationAuthorizeView> *@
     </div>
 
     @if (isLoading)
@@ -131,8 +132,8 @@
 
 @code {
     private bool isLoading = true;
-    private List<UserOrganization> organizations = new();
-    private List<UserOrganization> filteredOrganizations = new();
+    private List<OrganizationUser> organizations = new();
+    private List<OrganizationUser> filteredOrganizations = new();
     private string searchTerm = string.Empty;
 
     protected override async Task OnInitializedAsync()
@@ -199,12 +200,12 @@
 
     private void NavigateToView(Guid organizationId)
     {
-        Navigation.NavigateTo($"/administration/organizations/view/{organizationId}");
+        Navigation.NavigateTo($"/administration/organizations/{organizationId}");
     }
 
     private void NavigateToEdit(Guid organizationId)
     {
-        Navigation.NavigateTo($"/administration/organizations/edit/{organizationId}");
+        Navigation.NavigateTo($"/administration/organizations/{organizationId}/edit");
     }
 
     private void NavigateToManageUsers(Guid organizationId)

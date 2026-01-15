@@ -25,82 +25,12 @@
             </div>
         </div>
     }
-    else
-    {
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card text-white bg-primary">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>@totalAccounts</h4>
-                                <p class="card-text">Total Accounts</p>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="bi bi-people-fill" style="font-size: 2rem;"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card text-white bg-success">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>@activeAccounts</h4>
-                                <p class="card-text">Active Accounts</p>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card text-white bg-info">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>@usersOnline</h4>
-                                <p class="card-text">Users Online</p>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="bi bi-person-circle" style="font-size: 2rem;"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card text-white bg-warning">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>@lockedAccounts</h4>
-                                <p class="card-text">Locked Accounts</p>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="bi bi-lock-fill" style="font-size: 2rem;"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
 
     <div>
-    <button class="btn btn-outline-primary" @onclick="GoToOrganizationSettings">Organization Settings</button>
-    <button class="btn btn-primary" @onclick="GoToServiceSettings">Service Settings</button>
-    <button class="btn btn-secondary" @onclick="GoToLateFeeSettings">Late Fee Settings</button>
-    <button class="btn btn-info" @onclick="GoToDatabaseSettings">Manage Database</button>
-    <button class="btn btn-success" @onclick="GoToCalendarSettings">Calendar Settings</button>
-    <button class="btn btn-warning" @onclick="GoToUserManagement">User Management</button>
-    <button class="btn btn-warning" @onclick="GoToEmailSettings">Email Notification Settings</button>
-    <button class="btn btn-warning" @onclick="GoToSMSSettings">SMS Notification Settings</button>
-</div>
+        <button class="btn btn-outline-primary" @onclick="GoToApplicationSettings">Application Settings</button>
+        <button class="btn btn-info" @onclick="GoToDatabaseSettings">Manage Database</button>
+        <button class="btn btn-warning" @onclick="GoToUserManagement">User Management</button>
+    </div>
     </ChildContent>
     <NotAuthorized>
         @{
@@ -111,17 +41,7 @@
 
 @code {
     private bool isLoading = false;
-    //private int totalProperties = 0;
-    //private int availableProperties = 0;
-    //private int totalTenants = 0;
-    //private int activeLeases = 0;
-
-    private int lockedAccounts = 0;
-
-    private int totalAccounts = 0;
-    private int activeAccounts = 0;
-
-    private int usersOnline = 0;
+   
     
     [CascadingParameter]
     private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
@@ -146,39 +66,17 @@
 
     }
 
-    private void GoToEmailSettings()
-    {
-        // Logic to navigate to the email notification settings page
-        NavigationManager.NavigateTo("/administration/settings/email");
-    }
 
-    private void GoToSMSSettings()
-    {
-        // Logic to navigate to the SMS notification settings page
-        NavigationManager.NavigateTo("/administration/settings/sms");
-    }
-
-    private void GoToLateFeeSettings()
-    {
-        // Logic to view the daily system status report
-        NavigationManager.NavigateTo("/administration/settings/latefees");
-    }
-
-    private void GoToServiceSettings()
+    private void GoToApplicationSettings()
     {
         // Logic to navigate to the application settings page
-        NavigationManager.NavigateTo("/administration/settings/services");
+        NavigationManager.NavigateTo("/administration/settings/application");
     }
+    
     private void GoToDatabaseSettings()
     {
         // Logic to navigate to the database management page
-        NavigationManager.NavigateTo("/administration/application/database");
-    }
-
-    private void GoToCalendarSettings()
-    {
-        // Logic to navigate to the calendar settings page
-        NavigationManager.NavigateTo("/administration/settings/calendar");
+        NavigationManager.NavigateTo("/administration/settings/database");
     }
 
     private void GoToUserManagement()
@@ -186,9 +84,5 @@
         // Logic to navigate to the user management page
         NavigationManager.NavigateTo("/administration/users/manage");
     }
-    private void GoToOrganizationSettings()
-    {
-        // Logic to navigate to the organization settings page
-        NavigationManager.NavigateTo("/administration/settings/organization");
-    }
+
 }

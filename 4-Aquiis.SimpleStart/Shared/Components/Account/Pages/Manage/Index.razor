@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Identity
 
 @inject UserManager<ApplicationUser> UserManager
+@inject UserContextService UserContext
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
@@ -88,7 +89,7 @@
             }
         }
         
-        // Update the user properties
+        // Update the user properties in Identity
         user.FirstName = Input.FirstName ?? string.Empty;
         user.LastName = Input.LastName ?? string.Empty;
 
@@ -97,6 +98,19 @@
         {
             var errors = string.Join(", ", updateResult.Errors.Select(e => e.Description));
             RedirectManager.RedirectToCurrentPageWithStatus($"Error: Failed to update profile. {errors}", HttpContext);
+            return;
+        }
+
+        // Update UserProfile to keep denormalized data in sync
+        var profileUpdated = await UserContext.UpdateCurrentUserProfileAsync(
+            Input.FirstName ?? string.Empty,
+            Input.LastName ?? string.Empty,
+            Input.PhoneNumber
+        );
+
+        if (!profileUpdated)
+        {
+            RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to update user profile.", HttpContext);
             return;
         }
 

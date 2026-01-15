@@ -1,9 +1,7 @@
+@using Aquiis.Application.Services
 @inject NotificationService NotificationService
 @inject NavigationManager NavigationManager
-@namespace Aquiis.UI.Shared.Features.Notifications
-@using Aquiis.Application.Services
-
-@* <PageTitle>Notification Bell</PageTitle> *@
+@namespace Aquiis.UI.Shared.Components.Notifications
 
 @if (isLoading)
 {
@@ -15,7 +13,7 @@ else if (notifications.Count > 0)
 {
     <div class="dropdown notification-dropdown">
         <div class="notification-bell">
-            <button class="notification-bell-button" @onclick="ToggleDropdown">
+            <button class="notification-bell-button dropdown-toggle" @onclick="ToggleDropdown">
                 <i class="@((notificationCount > 0) ? "bi bi-bell-fill" : "bi bi-bell-slash")"></i> Notifications
                 <span class="notification-bell-badge">@notificationCount</span>
             </button>

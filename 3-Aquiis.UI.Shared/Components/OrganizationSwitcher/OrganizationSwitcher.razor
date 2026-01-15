@@ -1,10 +1,14 @@
 @using Aquiis.Core.Entities
 @using Aquiis.Application.Services
 @using Aquiis.Core.Constants
+@using Aquiis.Core.Interfaces.Services
+@using Microsoft.AspNetCore.Http
+@using System.ComponentModel
 @inject OrganizationService OrganizationService
-@inject UserContextService UserContext
 @inject NavigationManager Navigation
 @implements IDisposable
+
+@namespace Aquiis.UI.Shared.Components.OrganizationSwitcher
 
 @if (isLoading)
 {
@@ -12,7 +16,7 @@
         <span class="spinner-border spinner-border-sm" role="status"></span>
     </div>
 }
-else if (accessibleOrganizations.Count > 0)
+else if (accessibleOrganizations.Count > 1)
 {
     <div class="dropdown org-switcher">
         <button class="btn btn-outline-secondary dropdown-toggle" type="button" @onclick="ToggleDropdown">
@@ -68,9 +72,25 @@ else if (accessibleOrganizations.Count > 0)
         </ul>
     </div>
 }
+else {
+    <div class="org-switcher">
+        <div class="btn btn-outline-secondary btn-no-transition">
+            <i class="bi bi-building me-2"></i>
+            <span class="org-name">@(currentOrg?.DisplayName ?? currentOrg?.Name ?? "No Organization")</span>
+            @if (!string.IsNullOrEmpty(currentRole))
+            {
+                <span class="badge @GetRoleBadgeClass(currentRole) ms-2">@currentRole</span>
+            }
+        </div>
+    </div>
+}
 
 @code {
-    private List<UserOrganization> accessibleOrganizations = new();
+
+    [Parameter, EditorRequired]
+    public IUserContextService UserContext { get; set; } = default!;
+
+    private List<OrganizationUser> accessibleOrganizations = new();
     private Organization? currentOrg;
     private string? currentRole;
     private bool isAccountOwner;
@@ -187,3 +207,21 @@ else if (accessibleOrganizations.Count > 0)
         };
     }
 }
+<style>
+    .btn-no-transition {
+        transition: none !important;
+        cursor: default !important;
+        pointer-events: none;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        padding: 0.5rem 1rem;
+        color: var(--bs-body-color);
+    }
+    
+    .btn-no-transition:hover,
+    .btn-no-transition:focus,
+    .btn-no-transition:active {
+        transform: none !important;
+        @* box-shadow: none !important; *@
+    }
+</style>

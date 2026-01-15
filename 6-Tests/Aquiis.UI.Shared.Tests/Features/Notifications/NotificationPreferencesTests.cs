@@ -1,4 +1,4 @@
-using Aquiis.UI.Shared.Features.Notifications;
+using Aquiis.UI.Shared.Components.Notifications;
 using Bunit;
 using FluentAssertions;
 using Xunit;

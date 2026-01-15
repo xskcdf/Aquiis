@@ -1,16 +1,19 @@
-@page "/administration/organizations/view/{Id:guid}"
+@page "/administration/organizations/{Id:guid}"
 
 @using Aquiis.Core.Entities
 @using Aquiis.Application.Services
+@using Aquiis.Infrastructure.Data
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Shared.Components.Account
 @using Aquiis.Core.Constants
+@using Aquiis.UI.Shared.Features.Organizations
+@using Aquiis.UI.Shared.Components.Entities.OrganizationUsers
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
 
 @inject OrganizationService OrganizationService
+@inject ApplicationDbContext DbContext
 @inject UserContextService UserContext
-@inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
 @inject ToastService ToastService
 
@@ -22,17 +25,6 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1><i class="bi bi-building"></i> Organization Details</h1>
-        <div class="btn-group">
-            @if (isOwner)
-            {
-                <button class="btn btn-primary" @onclick="NavigateToEdit">
-                    <i class="bi bi-pencil"></i> Edit
-                </button>
-            }
-            <button class="btn btn-outline-secondary" @onclick="Cancel">
-                <i class="bi bi-arrow-left"></i> Back to Organizations
-            </button>
-        </div>
     </div>
 
     @if (isLoading)
@@ -51,175 +43,14 @@
     }
     else
     {
-        <div class="row">
-            <div class="col-md-8">
-                <!-- Organization Information Card -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Organization Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <dl class="row">
-                            <dt class="col-sm-3">Organization Name:</dt>
-                            <dd class="col-sm-9"><strong>@organization.Name</strong></dd>
-
-                            <dt class="col-sm-3">Display Name:</dt>
-                            <dd class="col-sm-9">@(organization.DisplayName ?? "-")</dd>
-
-                            <dt class="col-sm-3">State:</dt>
-                            <dd class="col-sm-9">@(organization.State ?? "-")</dd>
-
-                            <dt class="col-sm-3">Status:</dt>
-                            <dd class="col-sm-9">
-                                @if (organization.IsActive)
-                                {
-                                    <span class="badge bg-success">Active</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary">Inactive</span>
-                                }
-                            </dd>
-
-                            <dt class="col-sm-3">Owner:</dt>
-                            <dd class="col-sm-9">@ownerEmail</dd>
-
-                            <dt class="col-sm-3">Created On:</dt>
-                            <dd class="col-sm-9">@organization.CreatedOn.ToString("MMMM dd, yyyy")</dd>
-
-                            @if (organization.LastModifiedOn.HasValue)
-                            {
-                                <dt class="col-sm-3">Last Modified:</dt>
-                                <dd class="col-sm-9">@organization.LastModifiedOn.Value.ToString("MMMM dd, yyyy")</dd>
-                            }
-                        </dl>
-                    </div>
-                </div>
-
-                <!-- Users with Access Card -->
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Users with Access</h5>
-                        @if (isOwner || isAdministrator && isCurrentOrganization)
-                        {
-                            <button class="btn btn-sm btn-primary" @onclick="NavigateToManageUsers">
-                                <i class="bi bi-people"></i> Manage Users
-                            </button>
-                        }
-                    </div>
-                    <div class="card-body p-0">
-                        @if (!organizationUsers.Any())
-                        {
-                            <div class="p-3 text-center text-muted">
-                                No users assigned to this organization.
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>User</th>
-                                            <th>Role</th>
-                                            <th>Granted By</th>
-                                            <th>Granted On</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var userOrg in organizationUsers)
-                                        {
-                                            <tr>
-                                                <td>
-                                                    <div>
-                                                        <strong>@GetUserEmail(userOrg.UserId)</strong>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <span class="badge @GetRoleBadgeClass(userOrg.Role)">
-                                                        @userOrg.Role
-                                                    </span>
-                                                </td>
-                                                <td>@GetUserEmail(userOrg.GrantedBy)</td>
-                                                <td>@userOrg.GrantedOn.ToString("MMM dd, yyyy")</td>
-                                                <td>
-                                                    @if (userOrg.IsActive && userOrg.RevokedOn == null)
-                                                    {
-                                                        <span class="badge bg-success">Active</span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="badge bg-danger">Revoked</span>
-                                                    }
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <!-- Quick Stats Card -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h6 class="mb-0"><i class="bi bi-bar-chart"></i> Quick Stats</h6>
-                    </div>
-                    <div class="card-body">
-                        <dl class="row mb-0">
-                            <dt class="col-sm-7">Total Users:</dt>
-                            <dd class="col-sm-5 text-end"><strong>@organizationUsers.Count</strong></dd>
-
-                            <dt class="col-sm-7">Active Users:</dt>
-                            <dd class="col-sm-5 text-end"><strong>@organizationUsers.Count(u => u.IsActive)</strong></dd>
-
-                            <dt class="col-sm-7">Owners:</dt>
-                            <dd class="col-sm-5 text-end"><strong>@organizationUsers.Count(u => u.Role == ApplicationConstants.OrganizationRoles.Owner)</strong></dd>
-
-                            <dt class="col-sm-7">Administrators:</dt>
-                            <dd class="col-sm-5 text-end"><strong>@organizationUsers.Count(u => u.Role == ApplicationConstants.OrganizationRoles.Administrator)</strong></dd>
-
-                            <dt class="col-sm-7">Property Managers:</dt>
-                            <dd class="col-sm-5 text-end"><strong>@organizationUsers.Count(u => u.Role == ApplicationConstants.OrganizationRoles.PropertyManager)</strong></dd>
-                        </dl>
-                    </div>
-                </div>
-
-                <!-- Your Access Card -->
-                <div class="card">
-                    <div class="card-header">
-                        <h6 class="mb-0"><i class="bi bi-shield-check"></i> Your Access</h6>
-                    </div>
-                    <div class="card-body">
-                        <p><strong>Your Role:</strong></p>
-                        <p>
-                            <span class="badge @GetRoleBadgeClass(currentUserRole) fs-6">
-                                @currentUserRole
-                            </span>
-                        </p>
-                        <hr />
-                        <p class="small mb-0">
-                            @if (isOwner)
-                            {
-                                <span>You have full control over this organization as the Owner.</span>
-                            }
-                            else if (isAdministrator)
-                            {
-                                <span>You have administrative access to this organization.</span>
-                            }
-                            else
-                            {
-                                <span>You have limited access to this organization.</span>
-                            }
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <OrganizationDetails 
+            OrganizationViewModel="@organizationViewModel"
+            CurrentUserRole="@currentUserRole"
+            CurrentUserViewModel="@currentUserViewModel"
+            IsOwner="@isOwner"
+            IsAdministrator="@isAdministrator"
+            IsCurrentOrganization="@isCurrentOrganization"
+            OnManageUsers="NavigateToManageUsers" OnEdit="NavigateToEdit" />
     }
 </div>
 
@@ -229,8 +60,7 @@
 
     private bool isLoading = true;
     private Organization? organization;
-    private List<UserOrganization> organizationUsers = new();
-    private Dictionary<string, string> userEmails = new();
+    public List<OrganizationUser> organizationUsers = new();
     private string ownerEmail = string.Empty;
     private string currentUserRole = string.Empty;
     private bool isOwner = false;
@@ -238,10 +68,16 @@
 
     private bool isCurrentOrganization = false;
 
+    public OrganizationViewModel organizationViewModel = new();
+
+    public OrganizationUserViewModel currentUserViewModel = new();
+
+
     protected override async Task OnInitializedAsync()
     {
         await LoadOrganization();
     }
+
 
     private async Task LoadOrganization()
     {
@@ -270,34 +106,59 @@
             organization = await OrganizationService.GetOrganizationByIdAsync(Id);
             if (organization != null)
             {
-                // Get owner email
-                var owner = await UserManager.FindByIdAsync(organization.OwnerId);
-                ownerEmail = owner?.Email ?? "Unknown";
-
-                // Get users with access to this organization
-                organizationUsers = await OrganizationService.GetOrganizationUsersAsync(Id);
-
-                // Load user emails
-                foreach (var userOrg in organizationUsers)
-                {
-                    var user = await UserManager.FindByIdAsync(userOrg.UserId);
-                    if (user != null)
+                // Single-context query using UserProfile - no cross-context joins needed!
+                organizationViewModel.OrganizationUsers = await (
+                    from ou in DbContext.OrganizationUsers
+                    join profile in DbContext.UserProfiles on ou.UserId equals profile.UserId
+                    join grantedByProfile in DbContext.UserProfiles on ou.GrantedBy equals grantedByProfile.UserId into grantedByJoin
+                    from grantedByProfile in grantedByJoin.DefaultIfEmpty()
+                    where ou.OrganizationId == Id && ou.IsActive && !ou.IsDeleted
+                    select new OrganizationUserViewModel
                     {
-                        userEmails[userOrg.UserId] = user.Email ?? "Unknown";
+                        Id = ou.Id,
+                        OrganizationId = ou.OrganizationId,
+                        UserId = ou.UserId,
+                        Role = ou.Role,
+                        IsActive = ou.IsActive,
+                        GrantedOn = ou.GrantedOn,
+                        GrantedBy = ou.GrantedBy,
+                        GrantedByEmail = grantedByProfile != null ? grantedByProfile.Email : "System",
+                        Email = profile.Email,
+                        FirstName = profile.FirstName,
+                        LastName = profile.LastName,
+                        PhoneNumber = profile.PhoneNumber
                     }
+                ).ToListAsync();
 
-                    var grantedByUser = await UserManager.FindByIdAsync(userOrg.GrantedBy);
-                    if (grantedByUser != null)
-                    {
-                        userEmails[userOrg.GrantedBy] = grantedByUser.Email ?? "Unknown";
-                    }
-                }
+                // Find owner from the list
+                var owner = organizationViewModel.OrganizationUsers
+                    .FirstOrDefault(u => u.Role == ApplicationConstants.OrganizationRoles.Owner);
 
                 // Get current user's role
-                var currentUserOrg = organizationUsers.FirstOrDefault(u => u.UserId == userId);
+                var currentUserOrg = organizationViewModel.OrganizationUsers.FirstOrDefault(u => u.UserId == userId);
                 currentUserRole = currentUserOrg?.Role ?? "Unknown";
                 isOwner = currentUserRole == ApplicationConstants.OrganizationRoles.Owner;
                 isAdministrator = currentUserRole == ApplicationConstants.OrganizationRoles.Administrator;
+
+                organizationViewModel.Organization = organization;
+                organizationViewModel.OrganizationOwner = owner;
+                
+                // Get current user's profile from UserProfile table
+                var currentUserProfile = await DbContext.UserProfiles
+                    .FirstOrDefaultAsync(up => up.UserId == userId);
+                
+                if (currentUserProfile != null)
+                {
+                    currentUserViewModel = new OrganizationUserViewModel
+                    {
+                        Email = currentUserProfile.Email,
+                        UserId = userId,
+                        Role = currentUserRole, // Add the role from currentUserOrg
+                        FirstName = currentUserProfile.FirstName,
+                        LastName = currentUserProfile.LastName,
+                        PhoneNumber = currentUserProfile.PhoneNumber
+                    };
+                }
             }
         }
         catch (Exception ex)
@@ -308,11 +169,6 @@
         {
             isLoading = false;
         }
-    }
-
-    private string GetUserEmail(string userId)
-    {
-        return userEmails.ContainsKey(userId) ? userEmails[userId] : "Unknown";
     }
 
     private string GetRoleBadgeClass(string role)
@@ -329,7 +185,7 @@
 
     private void NavigateToEdit()
     {
-        Navigation.NavigateTo($"/administration/organizations/edit/{Id}");
+        Navigation.NavigateTo($"/administration/organizations/{Id}/edit");
     }
 
     private void NavigateToManageUsers()

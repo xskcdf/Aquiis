@@ -7,6 +7,8 @@ using System.Security.Claims;
 using Aquiis.Core.Constants;
 using Aquiis.Core.Interfaces.Services;
 using Aquiis.Application.Services;
+using Aquiis.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Aquiis.SimpleStart.Shared.Services
 {
@@ -18,6 +20,7 @@ namespace Aquiis.SimpleStart.Shared.Services
     public class UserContextService : IUserContextService
     {
         private readonly AuthenticationStateProvider _authenticationStateProvider;
+        private readonly ApplicationDbContext _dbContext;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly Func<Task<Aquiis.Application.Services.OrganizationService>> _organizationServiceFactory;
 
@@ -25,15 +28,17 @@ namespace Aquiis.SimpleStart.Shared.Services
         private string? _userId;
         private Guid? _organizationId;
         private Guid? _activeOrganizationId;
-        private ApplicationUser? _currentUser;
+        private UserProfile? _userProfile;
         private bool _isInitialized = false;
 
         public UserContextService(
             AuthenticationStateProvider authenticationStateProvider,
+            ApplicationDbContext dbContext,
             UserManager<ApplicationUser> userManager,
             IServiceProvider serviceProvider)
         {
             _authenticationStateProvider = authenticationStateProvider;
+            _dbContext = dbContext;
             _userManager = userManager;
             // Use factory pattern to avoid circular dependency
             _organizationServiceFactory = async () => 
@@ -50,6 +55,19 @@ namespace Aquiis.SimpleStart.Shared.Services
         {
             await EnsureInitializedAsync();
             return _userId;
+        }
+
+        /// <summary>
+        /// Gets the current ApplicationUser from Identity system. Use this when you need the full Identity user object.
+        /// For display purposes, prefer using UserProfile queries against ApplicationDbContext.
+        /// </summary>
+        public async Task<ApplicationUser?> GetCurrentUserAsync()
+        {
+            var userId = await GetUserIdAsync();
+            if (userId == null)
+                return null;
+
+            return await _userManager.FindByIdAsync(userId);
         }
 
         /// <summary>
@@ -87,12 +105,12 @@ namespace Aquiis.SimpleStart.Shared.Services
         }
 
         /// <summary>
-        /// Gets the current ApplicationUser object. Cached after first access.
+        /// Gets the current UserProfile object. Cached after first access.
         /// </summary>
-        public async Task<ApplicationUser?> GetCurrentUserAsync()
+        public async Task<UserProfile?> GetUserProfileAsync()
         {
             await EnsureInitializedAsync();
-            return _currentUser;
+            return _userProfile;
         }
 
         /// <summary>
@@ -110,7 +128,7 @@ namespace Aquiis.SimpleStart.Shared.Services
         public async Task<string?> GetUserEmailAsync()
         {
             await EnsureInitializedAsync();
-            return _currentUser?.Email;
+            return _userProfile?.Email;
         }
 
         /// <summary>
@@ -119,11 +137,32 @@ namespace Aquiis.SimpleStart.Shared.Services
         public async Task<string?> GetUserNameAsync()
         {
             await EnsureInitializedAsync();
-            if (_currentUser != null)
-            {
-                return $"{_currentUser.FirstName} {_currentUser.LastName}".Trim();
-            }
-            return null;
+            return _userProfile?.FullName;
+        }
+
+        /// <summary>
+        /// Updates the current user's profile information and refreshes the cache.
+        /// </summary>
+        public async Task<bool> UpdateCurrentUserProfileAsync(string firstName, string lastName, string? phoneNumber)
+        {
+            var userId = await GetUserIdAsync();
+            if (string.IsNullOrEmpty(userId))
+                return false;
+
+            var userProfile = await _dbContext.UserProfiles.FirstOrDefaultAsync(up => up.UserId == userId);
+            if (userProfile == null)
+                return false;
+
+            userProfile.FirstName = firstName;
+            userProfile.LastName = lastName;
+            userProfile.PhoneNumber = phoneNumber;
+            userProfile.LastModifiedOn = DateTime.UtcNow;
+            userProfile.LastModifiedBy = userId;
+            await _dbContext.SaveChangesAsync();
+
+            // Refresh cache to reflect changes
+            await RefreshAsync();
+            return true;
         }
 
         /// <summary>
@@ -140,14 +179,14 @@ namespace Aquiis.SimpleStart.Shared.Services
         /// <summary>
         /// Get all organizations the current user has access to
         /// </summary>
-        public async Task<List<UserOrganization>> GetAccessibleOrganizationsAsync()
+        public async Task<List<OrganizationUser>> GetAccessibleOrganizationsAsync()
         {
             var userId = await GetUserIdAsync();
             if (string.IsNullOrEmpty(userId))
-                return new List<UserOrganization>();
+                return new List<OrganizationUser>();
 
             var organizationService = await _organizationServiceFactory();
-            return await organizationService.GetUserOrganizationsAsync(userId);
+            return await organizationService.GetOrganizationUsersAsync(userId);
         }
 
         /// <summary>
@@ -204,22 +243,21 @@ namespace Aquiis.SimpleStart.Shared.Services
             if (!await organizationService.CanAccessOrganizationAsync(userId, organizationId))
                 return false;
 
-            // Update user's active organization
-            var user = await GetCurrentUserAsync();
-            if (user == null)
+            // Update UserProfile's active organization
+            var userProfile = await _dbContext.UserProfiles
+                .FirstOrDefaultAsync(up => up.UserId == userId);
+            
+            if (userProfile == null)
                 return false;
 
-            user.ActiveOrganizationId = organizationId;
-            var result = await _userManager.UpdateAsync(user);
+            userProfile.ActiveOrganizationId = organizationId;
+            userProfile.LastModifiedOn = DateTime.UtcNow;
+            userProfile.LastModifiedBy = userId;
+            await _dbContext.SaveChangesAsync();
 
-            if (result.Succeeded)
-            {
-                // Refresh cache
-                await RefreshAsync();
-                return true;
-            }
-
-            return false;
+            // Refresh cache
+            await RefreshAsync();
+            return true;
         }
 
         /// <summary>
@@ -272,7 +310,7 @@ namespace Aquiis.SimpleStart.Shared.Services
             _userId = null;
             _organizationId = null;
             _activeOrganizationId = null;
-            _currentUser = null;
+            _userProfile = null;
             await EnsureInitializedAsync();
         }
 
@@ -295,12 +333,16 @@ namespace Aquiis.SimpleStart.Shared.Services
                 if (!string.IsNullOrEmpty(claimsUserId))
                 {
                     _userId = claimsUserId;
-                }
-                {
-                    _currentUser = await _userManager.FindByIdAsync(_userId!);
-                    if (_currentUser != null)
+                    
+                    // Load UserProfile from ApplicationDbContext (single-context query)
+                    _userProfile = await _dbContext.UserProfiles
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(up => up.UserId == _userId);
+                    
+                    if (_userProfile != null)
                     {
-                        _activeOrganizationId = _currentUser.ActiveOrganizationId; // New multi-org
+                        _organizationId = _userProfile.OrganizationId;
+                        _activeOrganizationId = _userProfile.ActiveOrganizationId;
                     }
                 }
             }

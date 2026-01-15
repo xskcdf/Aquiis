@@ -543,7 +543,7 @@ using (var scope = app.Services.CreateScope())
         }
         
         // DO NOT assign to any organization - service account is org-agnostic
-        // DO NOT create UserOrganizations entries
+        // DO NOT create OrganizationUsers entries
         // DO NOT set ActiveOrganizationId
     }
 }

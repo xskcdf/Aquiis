@@ -1,0 +1,55 @@
+
+@using Aquiis.Core.Entities
+@using Aquiis.Core.Constants
+@namespace Aquiis.UI.Shared.Components.Entities.OrganizationUsers
+
+
+<div class="card">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-shield-check"></i> Your Access</h6>
+    </div>
+    <div class="card-body">
+        <p><strong>Your Role:</strong></p>
+        <p>
+            <span class="badge @GetRoleBadgeClass(CurrentUserRole) fs-6">
+                @CurrentUserRole
+            </span>
+        </p>
+        <hr />
+        <p class="small mb-0">
+            @if (isOwner)
+            {
+                <span>You have full control over this organization as the Owner.</span>
+            }
+            else if (isAdministrator)
+            {
+                <span>You have administrative access to this organization.</span>
+            }
+            else
+            {
+                <span>You have limited access to this organization.</span>
+            }
+        </p>
+    </div>
+</div>
+
+@code {
+
+    [Parameter, EditorRequired]
+    public string CurrentUserRole { get; set; }
+
+    private bool isOwner => CurrentUserRole == ApplicationConstants.OrganizationRoles.Owner;
+    private bool isAdministrator => CurrentUserRole == ApplicationConstants.OrganizationRoles.Administrator;
+
+     private string GetRoleBadgeClass(string role)
+    {
+        return role switch
+        {
+            ApplicationConstants.OrganizationRoles.Owner => "bg-primary",
+            ApplicationConstants.OrganizationRoles.Administrator => "bg-info",
+            ApplicationConstants.OrganizationRoles.PropertyManager => "bg-success",
+            ApplicationConstants.OrganizationRoles.User => "bg-secondary",
+            _ => "bg-secondary"
+        };
+    }
+}

@@ -16,6 +16,40 @@ namespace Aquiis.Infrastructure.Data
         {
         }
 
+        public override int SaveChanges()
+        {
+            SanitizeStringProperties();
+            return base.SaveChanges();
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            SanitizeStringProperties();
+            return base.SaveChangesAsync(cancellationToken);
+        }
+
+        private void SanitizeStringProperties()
+        {
+            var entries = ChangeTracker.Entries()
+                .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+
+            foreach (var entry in entries)
+            {
+                foreach (var property in entry.Properties)
+                {
+                    if (property.Metadata.ClrType == typeof(string) && property.CurrentValue != null)
+                    {
+                        var value = property.CurrentValue as string;
+                        if (!string.IsNullOrEmpty(value))
+                        {
+                            // Trim leading/trailing whitespace
+                            property.CurrentValue = value.Trim();
+                        }
+                    }
+                }
+            }
+        }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
@@ -54,7 +88,10 @@ namespace Aquiis.Infrastructure.Data
         
         // Multi-organization support
         public DbSet<Organization> Organizations { get; set; }
-        public DbSet<UserOrganization> UserOrganizations { get; set; }
+        public DbSet<OrganizationUser> OrganizationUsers { get; set; }
+        
+        // User profiles (business context - separate from Identity)
+        public DbSet<UserProfile> UserProfiles { get; set; }
         
         // Workflow audit logging
         public DbSet<WorkflowAuditLog> WorkflowAuditLogs { get; set; }
@@ -499,13 +536,13 @@ namespace Aquiis.Infrastructure.Data
                 // No navigation property configured here
             });
 
-            // Configure UserOrganization entity
-            modelBuilder.Entity<UserOrganization>(entity =>
+            // Configure OrganizationUser entity
+            modelBuilder.Entity<OrganizationUser>(entity =>
             {
                 entity.HasKey(e => e.Id);
                 
                 entity.HasOne(uo => uo.Organization)
-                    .WithMany(o => o.UserOrganizations)
+                    .WithMany(o => o.OrganizationUsers)
                     .HasForeignKey(uo => uo.OrganizationId)
                     .OnDelete(DeleteBehavior.Cascade);
                 
@@ -605,6 +642,24 @@ namespace Aquiis.Infrastructure.Data
                 // Precision for financial fields
                 entity.Property(e => e.AccountBalance).HasPrecision(18, 2);
                 entity.Property(e => e.CostPerSMS).HasPrecision(18, 4);
+            });
+
+            // Configure UserProfile entity
+            modelBuilder.Entity<UserProfile>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                
+                // Unique constraint: one profile per user
+                entity.HasIndex(e => e.UserId).IsUnique();
+                
+                // Additional indexes for common queries
+                entity.HasIndex(e => e.Email);
+                entity.HasIndex(e => e.OrganizationId);
+                entity.HasIndex(e => e.ActiveOrganizationId);
+                entity.HasIndex(e => e.IsDeleted);
+                
+                // Note: No navigation property to AspNetUsers (different context)
+                // UserId is a string FK to Identity context, but no EF relationship configured
             });
 
             // Seed System Checklist Templates

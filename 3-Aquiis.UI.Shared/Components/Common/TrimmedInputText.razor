@@ -1,0 +1,31 @@
+@inherits InputText
+
+@*
+    A text input component that automatically trims leading and trailing whitespace
+    on blur (when user leaves the field). Extends standard InputText functionality.
+    
+    Usage:
+    <TrimmedInputText @bind-Value="Model.FirstName" class="form-control" />
+*@
+
+<input @attributes="AdditionalAttributes"
+       class="@CssClass"
+       value="@CurrentValue"
+       @oninput="HandleInput"
+       @onblur="HandleBlur" />
+
+@code {
+    private void HandleInput(ChangeEventArgs e)
+    {
+        CurrentValueAsString = e.Value?.ToString();
+    }
+
+    private void HandleBlur(FocusEventArgs e)
+    {
+        // Trim the value when user leaves the field
+        if (!string.IsNullOrEmpty(CurrentValueAsString))
+        {
+            CurrentValueAsString = CurrentValueAsString.Trim();
+        }
+    }
+}

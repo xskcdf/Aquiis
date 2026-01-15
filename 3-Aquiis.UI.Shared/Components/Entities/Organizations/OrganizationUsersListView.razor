@@ -1,0 +1,101 @@
+
+@namespace Aquiis.UI.Shared.Components.Entities.Organizations
+@using Aquiis.UI.Shared.Components.Entities.OrganizationUsers
+
+<!-- Users with Access Card -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Users with Access</h5>
+        @if (IsOwner || IsAdministrator && IsCurrentOrganization)
+        {
+            <button class="btn btn-sm btn-primary" @onclick="() => OnManageUsers.InvokeAsync()">
+                <i class="bi bi-people"></i> Manage Users
+            </button>
+        }
+    </div>
+    <div class="card-body p-0">
+        @if (!OrganizationUsers.Any())
+        {
+            <div class="p-3 text-center text-muted">
+                No users assigned to this organization.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Granted By</th>
+                            <th>Granted On</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var orgUser in OrganizationUsers)
+                        {
+                            <tr>
+                                <td>
+                                    <div>
+                                        <strong>@orgUser.Email</strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge @GetRoleBadgeClass(orgUser.Role)">
+                                        @orgUser.Role
+                                    </span>
+                                </td>
+                                <td>@(orgUser.GrantedByEmail ?? "Unknown")</td>
+                                <td>@orgUser.GrantedOn.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    @if (orgUser.IsActive && orgUser.RevokedOn == null)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Revoked</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+
+    [Parameter, EditorRequired]
+    public OrganizationViewModel? OrganizationViewModel { get; set; } = new();
+
+    public List<OrganizationUserViewModel> OrganizationUsers => OrganizationViewModel?.OrganizationUsers ?? new List<OrganizationUserViewModel>();
+
+    [Parameter, EditorRequired]
+    public bool IsOwner { get; set; } = false;
+    [Parameter, EditorRequired]
+    public bool IsAdministrator { get; set; } = false;
+
+    [Parameter, EditorRequired]
+    public bool IsCurrentOrganization { get; set; } = false;
+
+    [Parameter]
+    public EventCallback OnManageUsers { get; set; }
+
+    private string GetRoleBadgeClass(string role)
+    {
+        return role switch
+        {
+            ApplicationConstants.OrganizationRoles.Owner => "bg-primary",
+            ApplicationConstants.OrganizationRoles.Administrator => "bg-info",
+            ApplicationConstants.OrganizationRoles.PropertyManager => "bg-success",
+            ApplicationConstants.OrganizationRoles.User => "bg-secondary",
+            _ => "bg-secondary"
+        };
+    }
+  
+}

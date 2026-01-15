@@ -1,3 +1,5 @@
+using Aquiis.Core.Entities;
+
 namespace Aquiis.Core.Interfaces.Services;
 
 /// <summary>
@@ -30,4 +32,27 @@ public interface IUserContextService
     /// Gets the current user's OrganizationId (DEPRECATED: Use GetActiveOrganizationIdAsync).
     /// </summary>
     Task<Guid?> GetOrganizationIdAsync();
+
+    /// <summary>
+    /// Forces a refresh of the cached user data.
+    /// Call this if user data has been updated and you need to reload it.
+    /// </summary>
+    Task RefreshAsync();
+
+    Task<Organization?> GetActiveOrganizationAsync();
+
+    Task<string?> GetCurrentOrganizationRoleAsync();
+       
+    Task<bool> IsAccountOwnerAsync();
+   
+
+    /// <summary>
+    /// Switch the user's active organization
+    /// </summary>
+    Task<bool> SwitchOrganizationAsync(Guid organizationId);
+
+    /// <summary>
+    /// Check if the current user has a specific permission in their active organization
+    /// </summary>
+    Task<bool> HasPermissionAsync(string permission);
 }

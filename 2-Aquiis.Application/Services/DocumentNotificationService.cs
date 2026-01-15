@@ -47,7 +47,7 @@ public class DocumentNotificationService
             foreach (var organizationId in organizations)
             {
                 // Get admin users for this organization
-                var adminUsers = await _dbContext.UserOrganizations
+                var adminUsers = await _dbContext.OrganizationUsers
                     .Where(uom => uom.OrganizationId == organizationId &&
                                  uom.Role == "Admin" &&
                                  !uom.IsDeleted)

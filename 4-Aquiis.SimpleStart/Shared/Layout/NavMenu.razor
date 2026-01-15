@@ -1,6 +1,7 @@
 ﻿@implements IDisposable
 
 @inject NavigationManager NavigationManager
+@inject UserContextService UserContext
 @inject ThemeService ThemeService
 @inject IJSRuntime JSRuntime
 
@@ -22,13 +23,13 @@
         <OrganizationAuthorizeView Roles="Owner,Administrator">
                
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="administration/dashboard" Match="NavLinkMatch.All">
+                <NavLink class="nav-link" href="administration/settings/application" Match="NavLinkMatch.All">
                     <div><span class="bi bi-window-dock" aria-hidden="true"></span>Application</div>
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="administration/organizations">
-                    <div><span class="bi bi-building" aria-hidden="true"></span>Organizations</div>
+                <NavLink class="nav-link" href="@($"administration/organizations/{OrganizationId}")">
+                    <div><span class="bi bi-building" aria-hidden="true"></span>Organization</div>
                 </NavLink>
             </div>
         </OrganizationAuthorizeView>
@@ -51,58 +52,8 @@
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="propertymanagement/inspections">
-                    <div><span class="bi bi-calendar-check-fill" aria-hidden="true"></span>Inspections</div>
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="propertymanagement/checklists">
-                    <div><span class="bi bi-list-check" aria-hidden="true"></span>Checklists</div>
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="propertymanagement/prospectivetenants">
-                    <div><span class="bi bi-person-plus-fill" aria-hidden="true"></span>Prospects</div>
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="propertymanagement/tours">
-                    <div><span class="bi bi-calendar-event" aria-hidden="true"></span>Tours</div>
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="propertymanagement/tenants">
-                    <div><span class="bi bi-people-fill" aria-hidden="true"></span>Tenants</div>
-                </NavLink>
-            </div>
-                <div class="nav-item px-3">
-                <NavLink class="nav-link" href="propertymanagement/leases">
-                    <div><span class="bi bi-file-earmark-text-fill" aria-hidden="true"></span>Leases</div>
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="propertymanagement/invoices">
-                    <div><span class="bi bi-receipt" aria-hidden="true"></span>Invoices</div>
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="propertymanagement/payments">
-                    <div><span class="bi bi-cash-coin" aria-hidden="true"></span>Payments</div>
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="property-management/security-deposits">
-                    <div><span class="bi bi-piggy-bank-fill" aria-hidden="true"></span>Security Deposits</div>
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="propertymanagement/documents">
-                    <div><span class="bi bi-files" aria-hidden="true"></span>Documents</div>
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
                 <NavLink class="nav-link" href="propertymanagement/maintenance">
-                    <div><span class="bi bi-tools" aria-hidden="true"></span>Maintenance</div>
+                    <div><span class="bi bi-tools" aria-hidden="true"></span>Repairs</div>
                 </NavLink>
             </div>
             <div class="nav-item px-3">
@@ -173,12 +124,18 @@
     private string? currentUrl;
     private string currentTheme = "light";
 
-    protected override void OnInitialized()
+    private string OrganizationId = string.Empty;
+
+    protected override async Task OnInitializedAsync()
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
         ThemeService.OnThemeChanged += OnThemeChanged;
         currentTheme = ThemeService.CurrentTheme;
+        
+        var orgId = await UserContext.GetActiveOrganizationIdAsync();
+        OrganizationId = orgId?.ToString() ?? string.Empty;
+        Console.WriteLine($"NavMenu initialized. OrganizationId: {OrganizationId}");
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

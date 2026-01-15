@@ -51,21 +51,21 @@ public class OrganizationRoleAuthorizationHandler : AuthorizationHandler<Organiz
         }
 
         // Get user's role in the active organization
-        var userOrganization = await _dbContext.UserOrganizations
+        var OrganizationUser = await _dbContext.OrganizationUsers
             .Where(uo => uo.UserId == userId 
                       && uo.OrganizationId == user.ActiveOrganizationId 
                       && uo.IsActive 
                       && !uo.IsDeleted)
             .FirstOrDefaultAsync();
 
-        if (userOrganization == null)
+        if (OrganizationUser == null)
         {
             return;
         }
 
         // Check if user's role is in the allowed roles
         // If no roles specified (empty array), allow any authenticated org member
-        if (requirement.AllowedRoles.Length == 0 || requirement.AllowedRoles.Contains(userOrganization.Role))
+        if (requirement.AllowedRoles.Length == 0 || requirement.AllowedRoles.Contains(OrganizationUser.Role))
         {
             context.Succeed(requirement);
         }

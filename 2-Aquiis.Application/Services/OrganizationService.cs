@@ -37,8 +37,8 @@ namespace Aquiis.Application.Services
 
             _dbContext.Organizations.Add(organization);
 
-            // Create Owner entry in UserOrganizations
-            var userOrganization = new UserOrganization
+            // Create Owner entry in OrganizationUsers
+            var OrganizationUser = new OrganizationUser
             {
                 Id = Guid.NewGuid(),
                 UserId = ownerId,
@@ -51,7 +51,7 @@ namespace Aquiis.Application.Services
                 CreatedBy = ownerId
             };
 
-            _dbContext.UserOrganizations.Add(userOrganization);
+            _dbContext.OrganizationUsers.Add(OrganizationUser);
 
             // add organization settings record with defaults
             var settings = new OrganizationSettings
@@ -96,8 +96,8 @@ namespace Aquiis.Application.Services
 
             _dbContext.Organizations.Add(organization);
 
-            // Create Owner entry in UserOrganizations
-            var userOrganization = new UserOrganization
+            // Create Owner entry in OrganizationUsers
+            var OrganizationUser = new OrganizationUser
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
@@ -110,7 +110,7 @@ namespace Aquiis.Application.Services
                 CreatedBy = userId
             };
 
-            _dbContext.UserOrganizations.Add(userOrganization);
+            _dbContext.OrganizationUsers.Add(OrganizationUser);
             await _dbContext.SaveChangesAsync();
 
             // add organization settings record with defaults
@@ -143,7 +143,7 @@ namespace Aquiis.Application.Services
         public async Task<Organization?> GetOrganizationByIdAsync(Guid organizationId)
         {
             return await _dbContext.Organizations
-                .Include(o => o.UserOrganizations)
+                .Include(o => o.OrganizationUsers)
                 .FirstOrDefaultAsync(o => o.Id == organizationId && !o.IsDeleted);
         }
 
@@ -159,11 +159,11 @@ namespace Aquiis.Application.Services
         }
 
         /// <summary>
-        /// Get all organizations a user has access to (via UserOrganizations)
+        /// Get all organizations a user has access to (via OrganizationUsers)
         /// </summary>
-        public async Task<List<UserOrganization>> GetUserOrganizationsAsync(string userId)
+        public async Task<List<OrganizationUser>> GetOrganizationUsersAsync(string userId)
         {
-            return await _dbContext.UserOrganizations
+            return await _dbContext.OrganizationUsers
                 .Include(uo => uo.Organization)
                 .Where(uo => uo.UserId == userId && uo.IsActive && !uo.IsDeleted)
                 .Where(uo => !uo.Organization.IsDeleted)
@@ -205,8 +205,8 @@ namespace Aquiis.Application.Services
             organization.LastModifiedOn = DateTime.UtcNow;
             organization.LastModifiedBy = deletedBy;
 
-            // Soft delete all UserOrganizations entries
-            var userOrgs = await _dbContext.UserOrganizations
+            // Soft delete all OrganizationUsers entries
+            var userOrgs = await _dbContext.OrganizationUsers
                 .Where(uo => uo.OrganizationId == organizationId)
                 .ToListAsync();
 
@@ -250,7 +250,7 @@ namespace Aquiis.Application.Services
         /// </summary>
         public async Task<bool> CanAccessOrganizationAsync(string userId, Guid organizationId)
         {
-            return await _dbContext.UserOrganizations
+            return await _dbContext.OrganizationUsers
                 .AnyAsync(uo => uo.UserId == userId 
                     && uo.OrganizationId == organizationId 
                     && uo.IsActive 
@@ -262,7 +262,7 @@ namespace Aquiis.Application.Services
         /// </summary>
         public async Task<string?> GetUserRoleForOrganizationAsync(string userId, Guid organizationId)
         {
-            var userOrg = await _dbContext.UserOrganizations
+            var userOrg = await _dbContext.OrganizationUsers
                 .FirstOrDefaultAsync(uo => uo.UserId == userId 
                     && uo.OrganizationId == organizationId 
                     && uo.IsActive 
@@ -290,7 +290,7 @@ namespace Aquiis.Application.Services
                 return false;
 
             // Check if user already has access
-            var existing = await _dbContext.UserOrganizations
+            var existing = await _dbContext.OrganizationUsers
                 .FirstOrDefaultAsync(uo => uo.UserId == userId && uo.OrganizationId == organizationId);
 
             if (existing != null)
@@ -314,7 +314,7 @@ namespace Aquiis.Application.Services
             else
             {
                 // Create new access
-                var userOrganization = new UserOrganization
+                var OrganizationUser = new OrganizationUser
                 {
                     Id = Guid.NewGuid(),
                     UserId = userId,
@@ -327,7 +327,7 @@ namespace Aquiis.Application.Services
                     CreatedBy = grantedBy
                 };
 
-                _dbContext.UserOrganizations.Add(userOrganization);
+                _dbContext.OrganizationUsers.Add(OrganizationUser);
             }
 
             await _dbContext.SaveChangesAsync();
@@ -339,7 +339,7 @@ namespace Aquiis.Application.Services
         /// </summary>
         public async Task<bool> RevokeOrganizationAccessAsync(string userId, Guid organizationId, string revokedBy)
         {
-            var userOrg = await _dbContext.UserOrganizations
+            var userOrg = await _dbContext.OrganizationUsers
                 .FirstOrDefaultAsync(uo => uo.UserId == userId 
                     && uo.OrganizationId == organizationId 
                     && uo.IsActive);
@@ -373,7 +373,7 @@ namespace Aquiis.Application.Services
             if (!ApplicationConstants.OrganizationRoles.IsValid(newRole))
                 throw new ArgumentException($"Invalid role: {newRole}");
 
-            var userOrg = await _dbContext.UserOrganizations
+            var userOrg = await _dbContext.OrganizationUsers
                 .FirstOrDefaultAsync(uo => uo.UserId == userId 
                     && uo.OrganizationId == organizationId 
                     && uo.IsActive 
@@ -401,9 +401,9 @@ namespace Aquiis.Application.Services
         /// <summary>
         /// Get all users with access to an organization
         /// </summary>
-        public async Task<List<UserOrganization>> GetOrganizationUsersAsync(Guid organizationId)
+        public async Task<List<OrganizationUser>> GetOrganizationUsersAsync(Guid organizationId)
         {
-            return await _dbContext.UserOrganizations
+            return await _dbContext.OrganizationUsers
                 .Where(uo => uo.OrganizationId == organizationId && uo.IsActive && !uo.IsDeleted && uo.UserId != ApplicationConstants.SystemUser.Id)
                 .OrderBy(uo => uo.Role)
                 .ThenBy(uo => uo.UserId)
@@ -413,13 +413,13 @@ namespace Aquiis.Application.Services
         /// <summary>
         /// Get all organization assignments for a user (including revoked)
         /// </summary>
-        public async Task<List<UserOrganization>> GetUserAssignmentsAsync()
+        public async Task<List<OrganizationUser>> GetUserAssignmentsAsync()
         {
             var userId = await _userContext.GetUserIdAsync();
             if (string.IsNullOrEmpty(userId))
                 throw new InvalidOperationException("Cannot get user assignments: User ID is not available in context.");
 
-            return await _dbContext.UserOrganizations
+            return await _dbContext.OrganizationUsers
                 .Include(uo => uo.Organization)
                 .Where(uo => uo.UserId == userId && !uo.IsDeleted && uo.UserId != ApplicationConstants.SystemUser.Id)
                 .OrderByDescending(uo => uo.IsActive)
@@ -430,13 +430,13 @@ namespace Aquiis.Application.Services
         /// <summary>
         /// Get all organization assignments for a user (including revoked)
         /// </summary>
-        public async Task<List<UserOrganization>> GetActiveUserAssignmentsAsync()
+        public async Task<List<OrganizationUser>> GetActiveUserAssignmentsAsync()
         {
             var userId = await _userContext.GetUserIdAsync();
             if (string.IsNullOrEmpty(userId))
                 throw new InvalidOperationException("Cannot get user assignments: User ID is not available in context.");
 
-            return await _dbContext.UserOrganizations
+            return await _dbContext.OrganizationUsers
                 .Include(uo => uo.Organization)
                 .Where(uo => uo.UserId == userId && !uo.IsDeleted && uo.IsActive && uo.UserId != ApplicationConstants.SystemUser.Id)
                 .OrderByDescending(uo => uo.IsActive)

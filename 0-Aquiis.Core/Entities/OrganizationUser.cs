@@ -8,11 +8,11 @@ namespace Aquiis.Core.Entities
     /// <summary>
     /// Junction table for multi-organization user assignments with role-based permissions
     /// </summary>
-    public class UserOrganization
+    public class OrganizationUser
     {
 
         [RequiredGuid]
-        [Display(Name = "UserOrganization ID")]
+        [Display(Name = "OrganizationUser ID")]
         public Guid Id { get; set; } = Guid.NewGuid();
 
         /// <summary>

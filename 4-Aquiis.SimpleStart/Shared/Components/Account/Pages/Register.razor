@@ -60,11 +60,78 @@ else
                         <label for="Input.OrganizationName">Organization Name</label>
                         <ValidationMessage For="() => Input.OrganizationName" class="text-danger" />
                     </div>
+                    <div class="form-floating mb-3">
+                        <InputSelect @bind-Value="Input.State" id="Input.State" class="form-select" aria-required="true">
+                            <option value="">Select State</option>
+                            <option value="AL">Alabama</option>
+                            <option value="AK">Alaska</option>
+                            <option value="AZ">Arizona</option>
+                            <option value="AR">Arkansas</option>
+                            <option value="CA">California</option>
+                            <option value="CO">Colorado</option>
+                            <option value="CT">Connecticut</option>
+                            <option value="DE">Delaware</option>
+                            <option value="FL">Florida</option>
+                            <option value="GA">Georgia</option>
+                            <option value="HI">Hawaii</option>
+                            <option value="ID">Idaho</option>
+                            <option value="IL">Illinois</option>
+                            <option value="IN">Indiana</option>
+                            <option value="IA">Iowa</option>
+                            <option value="KS">Kansas</option>
+                            <option value="KY">Kentucky</option>
+                            <option value="LA">Louisiana</option>
+                            <option value="ME">Maine</option>
+                            <option value="MD">Maryland</option>
+                            <option value="MA">Massachusetts</option>
+                            <option value="MI">Michigan</option>
+                            <option value="MN">Minnesota</option>
+                            <option value="MS">Mississippi</option>
+                            <option value="MO">Missouri</option>
+                            <option value="MT">Montana</option>
+                            <option value="NE">Nebraska</option>
+                            <option value="NV">Nevada</option>
+                            <option value="NH">New Hampshire</option>
+                            <option value="NJ">New Jersey</option>
+                            <option value="NM">New Mexico</option>
+                            <option value="NY">New York</option>
+                            <option value="NC">North Carolina</option>
+                            <option value="ND">North Dakota</option>
+                            <option value="OH">Ohio</option>
+                            <option value="OK">Oklahoma</option>
+                            <option value="OR">Oregon</option>
+                            <option value="PA">Pennsylvania</option>
+                            <option value="RI">Rhode Island</option>
+                            <option value="SC">South Carolina</option>
+                            <option value="SD">South Dakota</option>
+                            <option value="TN">Tennessee</option>
+                            <option value="TX">Texas</option>
+                            <option value="UT">Utah</option>
+                            <option value="VT">Vermont</option>
+                            <option value="VA">Virginia</option>
+                            <option value="WA">Washington</option>
+                            <option value="WV">West Virginia</option>
+                            <option value="WI">Wisconsin</option>
+                            <option value="WY">Wyoming</option>
+                        </InputSelect>
+                        <label for="Input.State">State</label>
+                        <ValidationMessage For="() => Input.State" class="text-danger" />
+                    </div>
                 }
                 <div class="form-floating mb-3">
                     <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
                     <label for="Input.Email">Email</label>
                     <ValidationMessage For="() => Input.Email" class="text-danger" />
+                </div>
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="Input.FirstName" id="Input.FirstName" class="form-control" aria-required="true" placeholder="First Name" />
+                    <label for="Input.FirstName">First Name</label>
+                    <ValidationMessage For="() => Input.FirstName" class="text-danger" />
+                </div>
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="Input.LastName" id="Input.LastName" class="form-control" aria-required="true" placeholder="Last Name" />
+                    <label for="Input.LastName">Last Name</label>
+                    <ValidationMessage For="() => Input.LastName" class="text-danger" />
                 </div>
                 <div class="form-floating mb-3">
                     <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
@@ -142,6 +209,11 @@ else
         await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
         var emailStore = GetEmailStore();
         await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+        
+        // Set FirstName and LastName on ApplicationUser
+        user.FirstName = Input.FirstName;
+        user.LastName = Input.LastName;
+        
         var result = await UserManager.CreateAsync(user, Input.Password);
 
         if (!result.Succeeded)
@@ -153,6 +225,39 @@ else
         Logger.LogInformation("User created a new account with password.");
 
         var userId = await UserManager.GetUserIdAsync(user);
+
+        // Create UserProfile in ApplicationDbContext
+        try
+        {
+            var userProfile = new UserProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Email = Input.Email,
+                FirstName = Input.FirstName,
+                LastName = Input.LastName,
+                PhoneNumber = null,
+                OrganizationId = null, // Will be set during organization creation for first user
+                ActiveOrganizationId = null, // Will be set during organization creation for first user
+                CreatedOn = DateTime.UtcNow,
+                CreatedBy = userId,
+                IsDeleted = false
+            };
+
+            await DbContext.UserProfiles.AddAsync(userProfile);
+            await DbContext.SaveChangesAsync();
+
+            Logger.LogInformation("UserProfile created for user {UserId}", userId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating UserProfile for user {UserId}", userId);
+            identityErrors = new[] { new IdentityError { Description = $"Error creating user profile: {ex.Message}" } };
+            
+            // Clean up user account
+            await UserManager.DeleteAsync(user);
+            return;
+        }
 
         // First user setup - create organization and grant owner access
         if (_isFirstUser)
@@ -173,7 +278,7 @@ else
                     name: Input.OrganizationName!,
                     ownerId: userId,
                     displayName: Input.OrganizationName,
-                    state: null);
+                    state: Input.State);
 
                 if (organization != null)
                 {
@@ -181,6 +286,19 @@ else
                     user.ActiveOrganizationId = organization.Id;
                     user.OrganizationId = organization.Id;
                     await UserManager.UpdateAsync(user);
+
+                    // Update UserProfile with organization IDs
+                    var userProfile = await DbContext.UserProfiles
+                        .FirstOrDefaultAsync(up => up.UserId == userId);
+                    
+                    if (userProfile != null)
+                    {
+                        userProfile.OrganizationId = organization.Id;
+                        userProfile.ActiveOrganizationId = organization.Id;
+                        userProfile.LastModifiedOn = DateTime.UtcNow;
+                        userProfile.LastModifiedBy = userId;
+                        await DbContext.SaveChangesAsync();
+                    }
 
                     Logger.LogInformation("Organization {OrgName} created successfully for user {Email}", 
                         Input.OrganizationName, Input.Email);
@@ -255,9 +373,23 @@ else
         public string? OrganizationName { get; set; }
 
         [Required]
+        [Display(Name = "State")]
+        public string State { get; set; } = "";
+
+        [Required]
         [EmailAddress]
         [Display(Name = "Email")]
         public string Email { get; set; } = "";
+
+        [Required]
+        [StringLength(50, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 1)]
+        [Display(Name = "First Name")]
+        public string FirstName { get; set; } = "";
+
+        [Required]
+        [StringLength(50, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 1)]
+        [Display(Name = "Last Name")]
+        public string LastName { get; set; } = "";
 
         [Required]
         [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]

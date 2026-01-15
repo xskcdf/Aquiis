@@ -11,8 +11,10 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using Aquiis.SimpleStart.Shared.Components.Account
 @using Aquiis.SimpleStart.Shared.Authorization
+@using Aquiis.Infrastructure.Data
 
 @inject UserManager<ApplicationUser> UserManager
+@inject ApplicationDbContext AppDbContext
 @inject UserContextService UserContext
 @inject RoleManager<IdentityRole> RoleManager
 @inject OrganizationService OrganizationService
@@ -28,8 +30,8 @@
                 <a href="/administration/users/create" class="btn btn-primary">
                     <i class="bi bi-person-plus-fill"></i> Add User
                 </a>
-                <button class="btn btn-secondary" @onclick="BackToDashboard">
-                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                <button class="btn btn-outline-secondary" @onclick="Cancel">
+                    <i class="bi bi-arrow-left"></i> Back to Application Settings
                 </button>
             </div>
         </div>
@@ -405,13 +407,20 @@ else
     {
         try
         {
-            // Load all users with their roles
-            List<ApplicationUser>? users = await UserManager.Users.Where(u => u.ActiveOrganizationId == organizationId).ToListAsync();
+            // Load all users with their roles using UserProfile
+            var userProfiles = await AppDbContext.UserProfiles
+                .Where(up => up.ActiveOrganizationId == organizationId)
+                .ToListAsync();
+            
             allUsers.Clear();
             
-            foreach (var user in users)
+            foreach (var profile in userProfiles)
             {
-                // Get user's organization role from UserOrganizations table
+                // Get ApplicationUser from Identity for auth operations
+                var user = await UserManager.FindByIdAsync(profile.UserId);
+                if (user == null) continue;
+                
+                // Get user's organization role from OrganizationUsers table
                 var userOrgRole = await OrganizationService.GetUserRoleForOrganizationAsync(user.Id, organizationId);
                 var roles = userOrgRole != null ? new List<string> { userOrgRole } : new List<string>();
                 
@@ -419,7 +428,7 @@ else
                 
                 allUsers.Add(new UserInfo
                 {
-                    User = (ApplicationUser)user,
+                    User = user,
                     Roles = roles,
                     IsLockedOut = isLockedOut
                 });
@@ -608,5 +617,10 @@ else
     private class RoleEditModel
     {
         public string SelectedRole { get; set; } = string.Empty;
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/administration/settings/application");
     }
 }
