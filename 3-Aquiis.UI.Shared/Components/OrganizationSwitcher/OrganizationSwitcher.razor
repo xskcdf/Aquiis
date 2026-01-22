@@ -149,6 +149,11 @@ else {
                     
                     // Get current role in active organization
                     currentRole = await UserContext.GetCurrentOrganizationRoleAsync();
+
+                    if(currentRole == "PropertyManager")
+                    {
+                        currentRole = "Property Manager";
+                    }
                 }
                 catch (InvalidOperationException)
                 {
@@ -202,6 +207,7 @@ else {
             ApplicationConstants.OrganizationRoles.Owner => "bg-primary",
             ApplicationConstants.OrganizationRoles.Administrator => "bg-info",
             ApplicationConstants.OrganizationRoles.PropertyManager => "bg-success",
+            "Property Manager" => "bg-success", // Handle spaced version
             ApplicationConstants.OrganizationRoles.User => "bg-secondary",
             _ => "bg-secondary"
         };

@@ -1,0 +1,104 @@
+
+@namespace Aquiis.UI.Shared.Components.Entities.Leases
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" placeholder="Search leases..." 
+                   value="@SearchTerm" 
+                   @oninput="HandleSearchChanged" />
+        </div>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" value="@StatusFilter" @onchange="HandleStatusFilterChanged">
+            <option value="">All Lease Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Expired">Expired</option>
+            <option value="Terminated">Terminated</option>
+            <option value="Pending">Pending</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" value="@TenantFilter" @onchange="HandleTenantFilterChanged">
+            <option value="">All Tenants</option>
+            @foreach (var tenant in AvailableTenants)
+            {
+                <option value="@tenant.Id">@tenant.FullName</option>
+            }
+        </select>
+    </div>
+    @if (AllowGrouping)
+    {
+        <div class="col-md-3">
+            <div class="form-check form-switch pt-2">
+                <input class="form-check-input" type="checkbox" id="groupByProperty" 
+                       checked="@GroupByProperty" 
+                       @onchange="HandleGroupByPropertyChanged">
+                <label class="form-check-label" for="groupByProperty">
+                    Group by Property
+                </label>
+            </div>
+        </div>
+    }
+</div>
+@code {
+    [Parameter]
+    public string SearchTerm { get; set; } = string.Empty;
+
+    [Parameter]
+    public string StatusFilter { get; set; } = string.Empty;
+
+    [Parameter]
+    public Guid TenantFilter { get; set; } = Guid.Empty;
+
+    [Parameter]
+    public List<Tenant> AvailableTenants { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<string> OnSearchChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnStatusFilterChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnTenantFilterChanged { get; set; }
+
+    [Parameter]
+    public bool GroupByProperty { get; set; } = false;
+
+    [Parameter]
+    public bool AllowGrouping { get; set; } = true;
+
+    [Parameter]
+    public EventCallback<bool> OnGroupByPropertyChanged { get; set; }
+    
+    private async Task HandleSearchChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? string.Empty;
+        await OnSearchChanged.InvokeAsync(value);
+    }
+
+    private async Task HandleStatusFilterChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? string.Empty;
+        await OnStatusFilterChanged.InvokeAsync(value);
+    }
+
+    private async Task HandleTenantFilterChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? string.Empty;
+        Guid tenantId = Guid.Empty;
+        if (Guid.TryParse(value, out var parsedId))
+        {
+            tenantId = parsedId;
+        }
+        await OnTenantFilterChanged.InvokeAsync(tenantId);
+    }
+    private async Task HandleGroupByPropertyChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? "false";
+        bool isChecked = bool.TryParse(value, out var parsed) && parsed;
+        await OnGroupByPropertyChanged.InvokeAsync(isChecked);
+    }
+}

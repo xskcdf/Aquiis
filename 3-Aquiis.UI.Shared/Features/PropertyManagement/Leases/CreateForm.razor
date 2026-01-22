@@ -92,7 +92,7 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Status</label>
                             <InputSelect @bind-Value="leaseModel.Status" class="form-select">
-                                @foreach (var status in ApplicationConstants.LeaseStatuses.AllLeaseStatuses)
+                                @foreach (var status in ApplicationConstants.LeaseStatuses.DefaultStatuses)
                                 {
                                     <option value="@status">@status</option>
                                 }
@@ -309,7 +309,7 @@
 
             await PropertyService.UpdateAsync(property);
 
-            Navigation.NavigateTo("/propertymanagement/leases");
+            Navigation.NavigateTo("/propertymanagement/properties/" + leaseModel.PropertyId);
         }
         catch (Exception ex)
         {
@@ -327,12 +327,12 @@
 
     private void CreateTenant()
     {
-        Navigation.NavigateTo("/propertymanagement/tenants/create");
+        Navigation.NavigateTo("/propertymanagement/tenants/create/?PropertyId=" + leaseModel.PropertyId);
     }
 
     private void Cancel()
     {
-        Navigation.NavigateTo("/propertymanagement/leases");
+        Navigation.NavigateTo("/propertymanagement/properties/" + leaseModel.PropertyId);
     }
 
     public class LeaseModel

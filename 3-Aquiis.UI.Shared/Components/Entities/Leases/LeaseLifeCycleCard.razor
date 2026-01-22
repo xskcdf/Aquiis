@@ -1,0 +1,57 @@
+
+<div>
+@* Lease Lifecycle Management Card *@
+@if (Lease.Status == "Active" || Lease.Status == "MonthToMonth" || Lease.Status == "NoticeGiven")
+{
+    <div class="card mt-3 border-warning">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Lease Management</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-grid gap-2">
+                @if (Lease.Status == "Active" || Lease.Status == "MonthToMonth")
+                {
+                    <button class="btn btn-outline-warning" @onclick="() => OnShowTerminationNoticeModal.InvokeAsync(null)">
+                        <i class="bi bi-calendar-x"></i> Record Termination Notice
+                    </button>
+                    <button class="btn btn-outline-danger" @onclick="() => OnShowEarlyTerminationModal.InvokeAsync(null)">
+                        <i class="bi bi-x-octagon"></i> Early Termination
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="() => OnShowConvertMTMModal.InvokeAsync(null)">
+                        <i class="bi bi-arrow-repeat"></i> Convert to Month-to-Month
+                    </button>
+                }
+                @if (Lease.Status == "NoticeGiven")
+                {
+                    <div class="alert alert-info mb-2">
+                        <small>
+                            <strong>Notice Given:</strong> @Lease.TerminationNoticedOn?.ToString("MMM dd, yyyy")<br/>
+                            <strong>Expected Move-Out:</strong> @Lease.ExpectedMoveOutDate?.ToString("MMM dd, yyyy")
+                        </small>
+                    </div>
+                    <button class="btn btn-primary" @onclick="() => OnShowMoveOutModal.InvokeAsync(null)">
+                        <i class="bi bi-box-seam"></i> Complete Move-Out
+                    </button>
+                    <button class="btn btn-outline-danger" @onclick="() => OnShowEarlyTerminationModal.InvokeAsync(null)">
+                        <i class="bi bi-x-octagon"></i> Early Termination
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+</div>
+
+@code {
+    [Parameter]
+    public Lease Lease { get; set; } = new Lease();
+
+    [Parameter]
+    public EventCallback OnShowTerminationNoticeModal { get; set; }
+    [Parameter]
+    public EventCallback OnShowEarlyTerminationModal { get; set; }
+    [Parameter]
+    public EventCallback OnShowConvertMTMModal { get; set; }
+    [Parameter]
+    public EventCallback OnShowMoveOutModal { get; set; }
+}

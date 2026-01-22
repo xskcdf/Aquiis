@@ -247,12 +247,13 @@
             Notes = paymentModel.Notes!
         };
         await PaymentService.CreateAsync(payment);
-        Navigation.NavigateTo("/propertymanagement/payments");
+        
+        Navigation.NavigateTo($"/propertymanagement/invoices/{paymentModel.InvoiceId}");
     }
 
     private void Cancel()
     {
-        Navigation.NavigateTo("/propertymanagement/payments");
+        Navigation.NavigateTo($"/propertymanagement/invoices/{paymentModel.InvoiceId}");
     }
 
     public class PaymentModel

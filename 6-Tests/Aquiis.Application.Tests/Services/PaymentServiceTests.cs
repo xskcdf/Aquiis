@@ -515,10 +515,10 @@ namespace Aquiis.Application.Tests
             // Act
             await _service.CreateAsync(payment);
 
-            // Assert - Check invoice updated but not marked as paid
+            // Assert - Check invoice updated with partial payment status
             var invoice = await _context.Invoices.FindAsync(_testInvoiceId);
             Assert.NotNull(invoice);
-            Assert.Equal("Pending", invoice.Status);
+            Assert.Equal("Paid Partial", invoice.Status);
             Assert.Equal(750, invoice.AmountPaid);
         }
 

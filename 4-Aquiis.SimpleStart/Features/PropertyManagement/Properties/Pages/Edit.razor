@@ -1,8 +1,9 @@
 @page "/propertymanagement/properties/{PropertyId:guid}/edit"
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
+@using Aquiis.UI.Shared.Features.PropertyManagement.Properties
 
-<Aquiis.UI.Shared.Features.PropertyManagement.Properties.EditForm PropertyId="@PropertyId" />
+<PropertyEditForm PropertyId="@PropertyId" />
 
 @code {
     [Parameter]

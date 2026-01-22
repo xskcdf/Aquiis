@@ -1,10 +1,46 @@
 @page "/propertymanagement/properties/{PropertyId:guid}"
+
+@using Aquiis.UI.Shared.Features.PropertyManagement.Properties
+
+@inject PropertyService PropertyService
+@inject NavigationManager Navigation
+
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
-<Aquiis.UI.Shared.Features.PropertyManagement.Properties.ViewForm PropertyId="@PropertyId" />
+
+<PropertyViewForm
+    PropertyId="@PropertyId"
+    ShowCheckLists="false" />
 
 @code {
     [Parameter]
     public Guid PropertyId { get; set; }
+
+    private Property property = new Property();
+
+    protected override async Task OnInitializedAsync()
+    {
+        property = await PropertyService.GetByIdAsync(PropertyId) ?? new Property();
+    }
+
+    private void EditProperty()
+    {
+        Navigation.NavigateTo($"/propertymanagement/properties/{PropertyId}/edit");
+    }
+
+    private void CreateRequest()
+    {
+        Navigation.NavigateTo($"/propertymanagement/maintenance/create/{PropertyId}");
+    }
+
+    private void ViewRequest(Guid requestId)
+    {
+        Navigation.NavigateTo($"/propertymanagement/maintenance/{requestId}");
+    }
+
+    private void ViewAllRequests()
+    {
+        Navigation.NavigateTo($"/propertymanagement/maintenance/?PropertyId={PropertyId}");
+    }
 }

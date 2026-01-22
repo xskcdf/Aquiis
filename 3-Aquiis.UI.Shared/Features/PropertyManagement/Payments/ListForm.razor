@@ -329,7 +329,7 @@ else
 
         if (!string.IsNullOrEmpty(userId))
         {
-            payments = await PaymentService.GetAllAsync();
+            payments = await PaymentService.GetPaymentsWithRelationsAsync();
             FilterPayments();
             UpdateStatistics();
         }

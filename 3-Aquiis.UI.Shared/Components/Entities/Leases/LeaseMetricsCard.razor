@@ -1,0 +1,64 @@
+<div class="row mb-3">
+    @if(ShowActive){
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h6>Active Leases</h6>
+                <h4>@ActiveCount</h4>
+            </div>
+        </div>
+    </div>
+    }
+    @if(ShowExpiringSoon){
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h6>Expiring Soon</h6>
+                <h4>@ExpiringSoonCount</h4>
+            </div>
+        </div>
+    </div>
+    }
+    @if(ShowTotalCount){
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h6>Total Leases</h6>
+                <h4>@TotalCount</h4>
+            </div>
+        </div>
+    </div>
+    }
+     @if(ShowTotalMonthlyRent){
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h6>Total Rent/Month</h6>
+                <h4>@TotalMonthlyRent.ToString("C")</h4>
+            </div>
+        </div>
+    </div>
+    }
+</div>
+@code {
+    [Parameter]
+    public int ActiveCount { get; set; }
+
+    [Parameter]
+    public int ExpiringSoonCount { get; set; }
+
+    [Parameter]
+    public decimal TotalMonthlyRent { get; set; }
+
+    [Parameter]
+    public int TotalCount { get; set; }
+
+    [Parameter]
+    public bool ShowActive { get; set; } = false;
+    [Parameter]
+    public bool ShowExpiringSoon { get; set; } = false;
+    [Parameter]
+    public bool ShowTotalMonthlyRent { get; set; } = false;
+    [Parameter]
+    public bool ShowTotalCount { get; set; } = false;
+}

@@ -1,7 +1,6 @@
 using Aquiis.SimpleStart.Entities;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
 using Aquiis.Core.Entities;
 using System.Security.Claims;
 using Aquiis.Core.Constants;
@@ -140,6 +139,21 @@ namespace Aquiis.SimpleStart.Shared.Services
             return _userProfile?.FullName;
         }
 
+         /// <summary>
+        /// Updates the current user's profile information and refreshes the cache.
+        /// </summary>
+        public async Task<bool> CreateUserProfile(UserProfile profile)
+        {
+
+        
+            _dbContext.UserProfiles.Add(profile);
+            await _dbContext.SaveChangesAsync();
+
+            // Refresh cache to reflect changes
+            await RefreshAsync();
+            return true;
+        }
+
         /// <summary>
         /// Updates the current user's profile information and refreshes the cache.
         /// </summary>
@@ -164,6 +178,8 @@ namespace Aquiis.SimpleStart.Shared.Services
             await RefreshAsync();
             return true;
         }
+
+
 
         /// <summary>
         /// Checks if the current user is in the specified role.

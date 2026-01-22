@@ -28,40 +28,15 @@
 
 @if (ShowMetrics)
 {
-    <div class="row mb-3">
-        <div class="col-md-3">
-            <div class="card text-white bg-success">
-                <div class="card-body">
-                    <h6>Available</h6>
-                    <h4>@AvailableCount</h4>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-info">
-                <div class="card-body">
-                    <h6>Pending Lease</h6>
-                    <h4>@PendingCount</h4>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-warning">
-                <div class="card-body">
-                    <h6>Occupied</h6>
-                    <h4>@OccupiedCount</h4>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-primary">
-                <div class="card-body">
-                    <h6>Total Rent/Month</h6>
-                    <h4>@TotalMonthlyRent.ToString("C")</h4>
-                </div>
-            </div>
-        </div>
-    </div>
+    <PropertyMetricsCard 
+        ShowAvailable="true" 
+        ShowPending="false" 
+        ShowOccupied="true" 
+        ShowMonthlyRent="true"
+        AvailableCount="@AvailableCount"
+        PendingCount="@PendingCount"
+        OccupiedCount="@OccupiedCount"
+        TotalMonthlyRent="@TotalMonthlyRent" />
 }
 
 @if (ViewMode == PropertyListViewMode.Grid)
@@ -180,7 +155,8 @@ else
                                             <button class="btn btn-outline-secondary" @onclick="() => HandleEdit(property.Id)" title="Edit">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
-                                            <button class="btn btn-outline-danger" @onclick="() => HandleDelete(property.Id)" title="Delete">
+                                            <button class="btn btn-outline-danger" 
+                                                    @onclick="() => HandleDelete(property.Id)">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         }

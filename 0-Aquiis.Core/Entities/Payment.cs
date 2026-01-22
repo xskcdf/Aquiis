@@ -11,6 +11,11 @@ namespace Aquiis.Core.Entities {
         public Guid OrganizationId { get; set; } = Guid.Empty;
 
         [Required]
+        [StringLength(50)]
+        [Display(Name = "Payment Number")]
+        public string PaymentNumber { get; set; } = string.Empty;
+
+        [Required]
         public Guid InvoiceId { get; set; }
 
         [Required]

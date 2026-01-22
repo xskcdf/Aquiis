@@ -1,0 +1,70 @@
+<div class="row">
+    <div class="row mb-3">
+        @if(ShowAvailable){
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h6>Available</h6>
+                    <h4>@AvailableCount</h4>
+                </div>
+            </div>
+        </div>
+        }
+        @if(ShowPending){
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h6>Pending Lease</h6>
+                    <h4>@PendingCount</h4>
+                </div>
+            </div>
+        </div>
+        }
+        @if(ShowOccupied){
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h6>Occupied</h6>
+                    <h4>@OccupiedCount</h4>
+                </div>
+            </div>
+        </div>
+        }
+        @if(ShowMonthlyRent){
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h6>Total Rent/Month</h6>
+                    <h4>@TotalMonthlyRent.ToString("C")</h4>
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+</div>
+
+    @code {
+        [Parameter]
+        public bool ShowAvailable { get; set; } = true;
+
+        [Parameter]
+        public bool ShowPending { get; set; } = true;
+
+        [Parameter]
+        public bool ShowOccupied { get; set; } = true;
+        
+        [Parameter]
+        public bool ShowMonthlyRent { get; set; } = true;
+
+        [Parameter]
+        public int AvailableCount { get; set; }
+
+        [Parameter]
+        public int PendingCount { get; set; }
+
+        [Parameter]
+        public int OccupiedCount { get; set; }
+
+        [Parameter]
+        public decimal TotalMonthlyRent { get; set; }
+    }

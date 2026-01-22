@@ -1,0 +1,58 @@
+
+@namespace Aquiis.UI.Shared.Components.Entities.Leases
+
+<div class="card mt-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Lease Invoices</h5>
+        <span class="badge bg-secondary">@LeaseInvoices.Count</span>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            @foreach (var invoice in LeaseInvoices.OrderByDescending(i => i.InvoicedOn))
+            {
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1">
+                                <strong><a href="/propertymanagement/invoices/@invoice.Id" class="text-decoration-none">@invoice.InvoiceNumber</a></strong>
+                            </div>
+                            <small class="text-muted">
+                                @invoice.BalanceDue.ToString("C") | @invoice.InvoicedOn.ToString("MMM dd, yyyy")
+                            </small>
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-info" @onclick="() => OnViewInvoice.InvokeAsync(invoice.Id)" title="View">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            @if(invoice.BalanceDue > 0)
+                            {
+                            <button class="btn btn-outline-primary" @onclick="() => OnMakePayment.InvokeAsync(invoice.Id)" title="Make Payment">
+                                <i class="bi bi-credit-card"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+@code {
+    [Parameter, EditorRequired]
+    public Lease Lease { get; set; } = new Lease();
+
+    [Parameter, EditorRequired]
+    public List<Invoice> LeaseInvoices { get; set; } = new List<Invoice>();
+
+    [Parameter, EditorRequired]
+    public EventCallback<Guid> OnViewInvoice { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<Guid> OnMakePayment { get; set; }
+}

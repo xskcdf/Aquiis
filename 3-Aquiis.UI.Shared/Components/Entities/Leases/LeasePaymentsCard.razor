@@ -1,0 +1,51 @@
+
+@namespace Aquiis.UI.Shared.Components.Entities.Leases
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Invoice Payments</h5>
+    </div>
+    <div class="card-body">
+        @if (InvoicePayments != null && InvoicePayments.Any())
+        {
+            <div class="list-group">
+                @foreach (var payment in InvoicePayments.OrderByDescending(p => p.PaidOn))
+                {
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-1">
+                                    <strong>@payment.InvoiceId</strong>
+                                </div>
+                                <small class="text-muted">
+                                    @payment.Amount.ToString("C") | @payment.PaidOn.ToString("MMM dd, yyyy")
+                                </small>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-info" @onclick="() => OnViewPayment.InvokeAsync(payment.Id)" title="View">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">No payments found for this lease.</p>
+        }
+    </div>
+</div>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public Lease Lease { get; set; }
+
+    [Parameter, EditorRequired]
+    public IEnumerable<Payment> InvoicePayments { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnViewPayment { get; set; }
+}

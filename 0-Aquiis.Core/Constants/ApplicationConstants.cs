@@ -50,7 +50,7 @@ namespace Aquiis.Core.Constants
             /// <summary>
             /// PropertyManager - Full property management features (no admin/settings access)
             /// </summary>
-            public const string PropertyManager = "Property Manager";
+            public const string PropertyManager = "PropertyManager";
 
             /// <summary>
             /// Maintenance - Maintenance requests, work orders, and vendors
@@ -176,6 +176,7 @@ namespace Aquiis.Core.Constants
             public const string Paid = "Paid";
             public const string Overdue = "Overdue";
             public const string Cancelled = "Cancelled";
+            public const string Voided = "Voided";
 
             public static IReadOnlyList<string> AllInvoiceStatuses { get; } = new List<string>
             {
@@ -183,7 +184,8 @@ namespace Aquiis.Core.Constants
                 PaidPartial,
                 Paid,
                 Overdue,
-                Cancelled
+                Cancelled,
+                Voided
             };
         }
 
@@ -193,13 +195,15 @@ namespace Aquiis.Core.Constants
             public const string Pending = "Pending";
             public const string Failed = "Failed";
             public const string Refunded = "Refunded";
+            public const string Voided = "Voided";
 
             public static IReadOnlyList<string> AllPaymentStatuses { get; } = new List<string>
             {
                 Completed,
                 Pending,
                 Failed,
-                Refunded
+                Refunded,
+                Voided
             };
         }
         public static class InspectionTypes
@@ -274,6 +278,13 @@ namespace Aquiis.Core.Constants
                 Interrupted,
                 Terminated,
                 Expired
+            };
+
+            public static IReadOnlyList<string> DefaultStatuses { get; } = new List<string>
+            {
+                Active,
+                MonthToMonth,
+                Terminated
             };
         }
 

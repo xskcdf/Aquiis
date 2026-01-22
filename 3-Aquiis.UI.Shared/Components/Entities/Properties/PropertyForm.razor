@@ -1,22 +1,13 @@
-@namespace Aquiis.UI.Shared.Components.Entities.Properties
-@using Aquiis.Core.Constants
-@using Microsoft.AspNetCore.Components.Forms
-@using System.ComponentModel.DataAnnotations
 
-<EditForm Model="@Model" OnValidSubmit="@HandleValidSubmit" FormName="@FormName">
+@namespace Aquiis.UI.Shared.Components.Entities.Properties
+
+ <EditForm Model="Model" OnValidSubmit="() => OnValidSubmit.InvokeAsync(Model)" FormName="@FormName">
     <DataAnnotationsValidator />
     
     @if (!string.IsNullOrEmpty(ErrorMessage))
     {
         <div class="alert alert-danger" role="alert">
             @ErrorMessage
-        </div>
-    }
-
-    @if (!string.IsNullOrEmpty(SuccessMessage))
-    {
-        <div class="alert alert-success" role="alert">
-            @SuccessMessage
         </div>
     }
 
@@ -34,11 +25,11 @@
             <InputText @bind-Value="Model.UnitNumber" class="form-control" placeholder="e.g., Apt 2B, Unit 101" />
             <ValidationMessage For="() => Model.UnitNumber" class="text-danger" />
         </div>
-        <div class="col-md-4 mb-3">
+        @* <div class="col-md-4 mb-3">
             <label class="form-label" for="@Model.ZipCode">Postal Code</label>
             <InputText @bind-Value="Model.ZipCode" class="form-control" placeholder="#####-####" />
             <ValidationMessage For="() => Model.ZipCode" class="text-danger" />
-        </div>
+        </div> *@
     </div>
 
     <div class="row">
@@ -57,6 +48,11 @@
                 }
             </InputSelect>
             <ValidationMessage For="() => Model.State" class="text-danger" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label class="form-label" for="@Model.ZipCode">Postal Code</label>
+            <InputText @bind-Value="Model.ZipCode" class="form-control" placeholder="#####-####" />
+            <ValidationMessage For="() => Model.ZipCode" class="text-danger" />
         </div>
     </div>
 
@@ -142,96 +138,30 @@
             }
             @SubmitButtonText
         </button>
-        @if (ShowCancelButton)
-        {
-            <button type="button" class="btn btn-secondary" @onclick="HandleCancel">Cancel</button>
-        }
-        @if (ShowViewButton && OnView.HasDelegate)
-        {
-            <button type="button" class="btn btn-outline-primary" @onclick="HandleView">View Property</button>
-        }
+        <button type="button" class="btn btn-secondary" @onclick="() => OnCancel.InvokeAsync()">Cancel</button>
     </div>
 </EditForm>
-
 @code {
-    /// <summary>
-    /// Form model containing property data
-    /// </summary>
+
     [Parameter, EditorRequired]
-    public PropertyFormModel Model { get; set; } = new();
-    
-    /// <summary>
-    /// Form name for SSR scenarios
-    /// </summary>
+    public PropertyFormModel Model {get; set;} = new PropertyFormModel(); 
+                        
     [Parameter]
-    public string FormName { get; set; } = "property-form";
-    
-    /// <summary>
-    /// Text for submit button
-    /// </summary>
+    public string FormName { get; set; } = "create-property";
+
     [Parameter]
-    public string SubmitButtonText { get; set; } = "Save Property";
-    
-    /// <summary>
-    /// Whether form is currently submitting
-    /// </summary>
+    public string SubmitButtonText { get; set; } = "Submit";
+
     [Parameter]
-    public bool IsSubmitting { get; set; }
-    
-    /// <summary>
-    /// Error message to display
-    /// </summary>
+    public bool IsSubmitting { get; set; } = false;
+
     [Parameter]
     public string ErrorMessage { get; set; } = string.Empty;
-    
-    /// <summary>
-    /// Success message to display
-    /// </summary>
-    [Parameter]
-    public string SuccessMessage { get; set; } = string.Empty;
-    
-    /// <summary>
-    /// Whether to show cancel button
-    /// </summary>
-    [Parameter]
-    public bool ShowCancelButton { get; set; } = true;
-    
-    /// <summary>
-    /// Whether to show view button (for edit mode)
-    /// </summary>
-    [Parameter]
-    public bool ShowViewButton { get; set; } = false;
-    
-    /// <summary>
-    /// Callback when form is validly submitted
-    /// </summary>
+
     [Parameter]
     public EventCallback<PropertyFormModel> OnValidSubmit { get; set; }
-    
-    /// <summary>
-    /// Callback when cancel is clicked
-    /// </summary>
+
     [Parameter]
     public EventCallback OnCancel { get; set; }
-    
-    /// <summary>
-    /// Callback when view is clicked
-    /// </summary>
-    [Parameter]
-    public EventCallback OnView { get; set; }
-    
-    private async Task HandleValidSubmit()
-    {
-        await OnValidSubmit.InvokeAsync(Model);
-    }
-    
-    private async Task HandleCancel()
-    {
-        await OnCancel.InvokeAsync();
-    }
-    
-    private async Task HandleView()
-    {
-        await OnView.InvokeAsync();
-    }
+
 }

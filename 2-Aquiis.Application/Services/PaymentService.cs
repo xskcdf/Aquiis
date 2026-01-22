@@ -105,6 +105,12 @@ namespace Aquiis.Application.Services
         /// </summary>
         public override async Task<Payment> CreateAsync(Payment entity)
         {
+            // Auto-generate payment number if not provided
+            if (string.IsNullOrWhiteSpace(entity.PaymentNumber))
+            {
+                entity.PaymentNumber = await GeneratePaymentNumberAsync();
+            }
+
             var payment = await base.CreateAsync(entity);
             await UpdateInvoiceAfterPaymentChangeAsync(payment.InvoiceId);
             return payment;
@@ -252,6 +258,34 @@ namespace Aquiis.Application.Services
             }
         }
 
+         /// <summary>
+        /// Gets payments with all related entities loaded.
+        /// </summary>
+        public async Task<List<Payment>> GetPaymentsWithRelationsAsync()
+        {
+            try
+            {
+                var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+
+                return await _context.Payments
+                    .Include(p => p.Invoice)
+                        .ThenInclude(i => i.Lease)
+                            .ThenInclude(l => l.Property)
+                    .Include(p => p.Invoice)
+                        .ThenInclude(i => i.Lease)
+                            .ThenInclude(l => l.Tenant)
+                    .Include(p => p.Document)
+                    .Where(p => !p.IsDeleted
+                        && p.OrganizationId == organizationId)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                await HandleExceptionAsync(ex, "GetPaymentsWithRelations");
+                throw;
+            }
+        }
+
         /// <summary>
         /// Calculates the total payments received within a date range.
         /// </summary>
@@ -340,6 +374,32 @@ namespace Aquiis.Application.Services
         }
 
         /// <summary>
+        /// Generates a unique payment number in the format PYMT-YYYYMMDD-####.
+        /// </summary>
+        public async Task<string> GeneratePaymentNumberAsync()
+        {
+            try
+            {
+                var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+                var today = DateTime.Now.Date;
+                
+                // Get count of payments for today to generate sequential number
+                var todayPaymentCount = await _context.Payments
+                    .Where(p => p.OrganizationId == organizationId 
+                        && p.PaidOn.Date == today)
+                    .CountAsync();
+
+                var nextNumber = todayPaymentCount + 1;
+                return $"PYMT-{DateTime.Now:yyyyMMdd}-{nextNumber:D4}";
+            }
+            catch (Exception ex)
+            {
+                await HandleExceptionAsync(ex, "GeneratePaymentNumber");
+                throw;
+            }
+        }
+
+        /// <summary>
         /// Updates the invoice status and paid amount after a payment change.
         /// </summary>
         private async Task UpdateInvoiceAfterPaymentChangeAsync(Guid invoiceId)
@@ -362,36 +422,41 @@ namespace Aquiis.Application.Services
                     var totalDue = invoice.Amount + (invoice.LateFeeAmount ?? 0);
 
                     // Update invoice status based on payment
-                    if (totalPaid >= totalDue)
+                    // Don't change status if invoice is Cancelled or Voided
+                    if (invoice.Status != ApplicationConstants.InvoiceStatuses.Cancelled 
+                        && invoice.Status != ApplicationConstants.InvoiceStatuses.Voided)
                     {
-                        invoice.Status = ApplicationConstants.InvoiceStatuses.Paid;
-                        invoice.PaidOn = invoice.Payments
-                            .Where(p => !p.IsDeleted)
-                            .OrderByDescending(p => p.PaidOn)
-                            .FirstOrDefault()?.PaidOn ?? DateTime.UtcNow;
-                    }
-                    else if (totalPaid > 0 && invoice.Status != ApplicationConstants.InvoiceStatuses.Cancelled)
-                    {
-                        // Invoice is partially paid
-                        if (invoice.DueOn < DateTime.Today)
+                        if (totalPaid >= totalDue)
                         {
-                            invoice.Status = ApplicationConstants.InvoiceStatuses.Overdue;
+                            invoice.Status = ApplicationConstants.InvoiceStatuses.Paid;
+                            invoice.PaidOn = invoice.Payments
+                                .Where(p => !p.IsDeleted)
+                                .OrderByDescending(p => p.PaidOn)
+                                .FirstOrDefault()?.PaidOn ?? DateTime.UtcNow;
+                        }
+                        else if (totalPaid > 0)
+                        {
+                            // Invoice is partially paid
+                            if (invoice.DueOn < DateTime.Today)
+                            {
+                                invoice.Status = ApplicationConstants.InvoiceStatuses.Overdue;
+                            }
+                            else
+                            {
+                                invoice.Status = ApplicationConstants.InvoiceStatuses.PaidPartial;
+                            }
                         }
                         else
                         {
-                            invoice.Status = ApplicationConstants.InvoiceStatuses.Pending;
-                        }
-                    }
-                    else if (invoice.Status != ApplicationConstants.InvoiceStatuses.Cancelled)
-                    {
-                        // No payments
-                        if (invoice.DueOn < DateTime.Today)
-                        {
-                            invoice.Status = ApplicationConstants.InvoiceStatuses.Overdue;
-                        }
-                        else
-                        {
-                            invoice.Status = ApplicationConstants.InvoiceStatuses.Pending;
+                            // No payments
+                            if (invoice.DueOn < DateTime.Today)
+                            {
+                                invoice.Status = ApplicationConstants.InvoiceStatuses.Overdue;
+                            }
+                            else
+                            {
+                                invoice.Status = ApplicationConstants.InvoiceStatuses.Pending;
+                            }
                         }
                     }
 

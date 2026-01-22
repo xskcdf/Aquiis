@@ -102,12 +102,29 @@
 </div>
 
 @code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "PropertyId")]
+    public Guid? PropertyId { get; set; }
+
     private TenantModel tenantModel = new TenantModel();
     private bool isSubmitting = false;
     private string errorMessage = string.Empty;
 
     [CascadingParameter]
     private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        // Manually parse PropertyId from query string for InteractiveServer rendermode
+        var uri = new Uri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        var propertyIdString = query["PropertyId"];
+        
+        if (!string.IsNullOrEmpty(propertyIdString) && Guid.TryParse(propertyIdString, out var propertyId))
+        {
+            PropertyId = propertyId;
+        }
+    }
 
     private async Task SaveTenant()
     {
@@ -151,8 +168,8 @@
                 IsActive = true
             };
 
-            await TenantService.CreateAsync(tenant);
-            NavigationManager.NavigateTo("/propertymanagement/tenants");
+            var newTenant = await TenantService.CreateAsync(tenant);
+            NavigationManager.NavigateTo("/propertymanagement/leases/create/?PropertyId=" + (PropertyId.HasValue ? PropertyId.ToString() : "") + "&TenantId=" + newTenant.Id);
         }
         catch (Exception ex)
         {
@@ -166,7 +183,7 @@
 
     private void Cancel()
     {
-        NavigationManager.NavigateTo("/propertymanagement/tenants");
+        NavigationManager.NavigateTo("/propertymanagement/leases/create/?PropertyId=" + (PropertyId.HasValue ? PropertyId.ToString() : ""));
     }
 
     public class TenantModel

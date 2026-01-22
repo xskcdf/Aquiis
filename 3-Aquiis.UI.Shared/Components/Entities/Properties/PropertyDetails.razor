@@ -8,6 +8,12 @@
         <span class="badge @GetAvailabilityBadgeClass()">
             @(Property.IsAvailable ? "Available" : "Occupied")
         </span>
+        @if (OnEdit.HasDelegate)
+        {
+            <button class="btn btn-sm btn-outline-primary" @onclick="OnEdit">
+                <i class="bi bi-pencil-square"></i> Edit
+            </button>
+        }
     </div>
     <div class="card-body">
         <div class="row">
@@ -79,6 +85,9 @@
     /// </summary>
     [Parameter, EditorRequired]
     public Property Property { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnEdit { get; set; }
     
     /// <summary>
     /// Whether to show created/modified dates

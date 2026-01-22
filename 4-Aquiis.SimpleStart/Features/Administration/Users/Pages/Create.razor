@@ -249,6 +249,22 @@
                 return;
             }
 
+            var newUserProfile = new UserProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = newUser.Id,
+                FirstName = newUser.FirstName,
+                LastName = newUser.LastName,
+                Email = newUser.Email,
+                PhoneNumber = newUser.PhoneNumber,
+                ActiveOrganizationId = currentOrganizationId.Value,
+                OrganizationId = currentOrganizationId.Value,
+                CreatedBy = currentUserId,
+                CreatedOn = DateTime.UtcNow
+            };
+
+            await UserContext.CreateUserProfile(newUserProfile);
+
             successMessage = $"User account created successfully! Username: {userModel.Email}, Role: {userModel.SelectedRole}";
             
             // Reset form

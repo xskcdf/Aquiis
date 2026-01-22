@@ -110,6 +110,38 @@ namespace Aquiis.Application.Services
                 var property = await _context.Properties.FindAsync(entity.PropertyId);
                 if (property != null)
                 {
+                    property.Status = ApplicationConstants.PropertyStatuses.Occupied;
+                    property.IsAvailable = false;
+                    property.LastModifiedOn = DateTime.UtcNow;
+                    property.LastModifiedBy = await _userContext.GetUserIdAsync();
+                    _context.Properties.Update(property);
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            return lease;
+        }
+
+        /// <summary>
+        /// Updates a lease and manages property status based on lease status changes.
+        /// </summary>
+        public override async Task<Lease> UpdateAsync(Lease entity)
+        {
+            // Get the existing lease to check for status changes
+            var existingLease = await _context.Leases.AsNoTracking()
+                .FirstOrDefaultAsync(l => l.Id == entity.Id);
+
+            var lease = await base.UpdateAsync(entity);
+
+            // Handle property status when lease becomes active
+            if (existingLease != null && 
+                existingLease.Status != ApplicationConstants.LeaseStatuses.Active &&
+                entity.Status == ApplicationConstants.LeaseStatuses.Active)
+            {
+                var property = await _context.Properties.FindAsync(entity.PropertyId);
+                if (property != null)
+                {
+                    property.Status = ApplicationConstants.PropertyStatuses.Occupied;
                     property.IsAvailable = false;
                     property.LastModifiedOn = DateTime.UtcNow;
                     property.LastModifiedBy = await _userContext.GetUserIdAsync();
@@ -205,7 +237,7 @@ namespace Aquiis.Application.Services
                     .Include(l => l.Property)
                     .Include(l => l.Tenant)
                     .Where(l => !l.IsDeleted && l.Property.OrganizationId == organizationId)
-                    .OrderByDescending(l => l.CreatedOn)
+                    .OrderByDescending(l => l.StartDate)
                     .ToListAsync();
             }
             catch (Exception ex)

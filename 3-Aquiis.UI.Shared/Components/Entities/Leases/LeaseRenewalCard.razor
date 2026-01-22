@@ -1,0 +1,164 @@
+<div class="col-md-4">
+        @if (Lease.IsExpiringSoon)
+        {
+            <div class="card border-warning mb-3">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Renewal Alert
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">
+                        <strong>Expires in:</strong> 
+                        <span class="text-danger fw-bold">@Lease.DaysRemaining days</span>
+                    </p>
+                    <p class="mb-2">
+                        <strong>End Date:</strong> @Lease.EndDate.ToString("MMM dd, yyyy")
+                    </p>
+                    
+                    @if (!string.IsNullOrEmpty(Lease.RenewalStatus))
+                    {
+                        <p class="mb-2">
+                            <strong>Status:</strong> 
+                            <span class="badge bg-@GetRenewalStatusBadgeClass(Lease.RenewalStatus)">
+                                @Lease.RenewalStatus
+                            </span>
+                        </p>
+                    }
+
+                    @if (Lease.ProposedRenewalRent.HasValue)
+                    {
+                        <p class="mb-2">
+                            <strong>Proposed Rent:</strong> @Lease.ProposedRenewalRent.Value.ToString("C")
+                            @if (Lease.ProposedRenewalRent != Lease.MonthlyRent)
+                            {
+                                var increase = Lease.ProposedRenewalRent.Value - Lease.MonthlyRent;
+                                var percentage = (increase / Lease.MonthlyRent) * 100;
+                                <small class="text-muted">
+                                    (@(increase > 0 ? "+" : "")@increase.ToString("C"), @percentage.ToString("F1")%)
+                                </small>
+                            }
+                        </p>
+                    }
+
+                    @if (Lease.RenewalNotificationSentOn.HasValue)
+                    {
+                        <small class="text-muted d-block mb-2">
+                            Notification sent: @Lease.RenewalNotificationSentOn.Value.ToString("MMM dd, yyyy")
+                        </small>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Lease.RenewalNotes))
+                    {
+                        <hr/>
+                        <small>
+                            <strong>Notes:</strong><br/>
+                            @Lease.RenewalNotes
+                        </small>
+                    }
+
+                    <div class="d-grid gap-2 mt-3">
+                        @if (Lease.RenewalStatus == "Pending" || string.IsNullOrEmpty(Lease.RenewalStatus))
+                        {
+                            <button class="btn btn-success btn-sm" @onclick="() => ShowRenewalOfferModal()">
+                                <i class="bi bi-envelope-check"></i> Send Renewal Offer
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm" @onclick="GenerateRenewalOfferPdf" disabled="@isGeneratingPdf">
+                                @if (isGeneratingPdf)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-file-pdf"></i>
+                                }
+                                Generate Offer Letter
+                            </button>
+                        }
+                        @if (Lease.RenewalStatus == "Offered")
+                        {
+                            <button class="btn btn-outline-success btn-sm" @onclick="() => MarkRenewalAccepted()">
+                                <i class="bi bi-check-circle"></i> Mark as Accepted
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm" @onclick="() => MarkRenewalDeclined()">
+                                <i class="bi bi-x-circle"></i> Mark as Declined
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm" @onclick="GenerateRenewalOfferPdf" disabled="@isGeneratingPdf">
+                                @if (isGeneratingPdf)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-file-pdf"></i>
+                                }
+                                Generate Offer Letter
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+@code {
+    [Parameter, EditorRequired]
+    public Lease Lease { get; set; }
+
+    private bool isGeneratingPdf = false;
+    
+    private void ShowRenewalOfferModal()
+    {
+        // Logic to show modal for sending renewal offer
+    }
+
+    private async Task GenerateRenewalOfferPdf()
+    {
+        isGeneratingPdf = true;
+        try
+        {
+            // Logic to generate PDF
+            await Task.Delay(2000); // Simulate PDF generation delay
+        }
+        finally
+        {
+            isGeneratingPdf = false;
+        }
+    }
+
+    private void MarkRenewalAccepted()
+    {
+        // Logic to mark renewal as accepted
+    }
+
+    private void MarkRenewalDeclined()
+    {
+        // Logic to mark renewal as declined
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Active" => "bg-success",
+            "Pending" => "bg-warning",
+            "Expired" => "bg-secondary",
+            "Terminated" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetRenewalStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Pending" => "secondary",
+            "Offered" => "info",
+            "Accepted" => "success",
+            "Declined" => "danger",
+            "Expired" => "dark",
+            _ => "secondary"
+        };
+    }
+    
+}

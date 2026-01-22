@@ -255,7 +255,7 @@
 
             await InvoiceService.CreateAsync(invoice);
 
-            NavigationManager.NavigateTo("/propertymanagement/invoices");
+            NavigationManager.NavigateTo($"/propertymanagement/leases/{invoiceModel.LeaseId}");
         }
         catch (Exception ex)
         {
@@ -269,7 +269,7 @@
 
     private void Cancel()
     {
-        NavigationManager.NavigateTo("/propertymanagement/invoices");
+        NavigationManager.NavigateTo($"/propertymanagement/leases/{invoiceModel.LeaseId}");
     }
 
     public class InvoiceModel

@@ -1,5 +1,523 @@
 @page "/propertymanagement/leases"
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using Aquiis.Core.Entities
+@using Aquiis.Application.Services
+@using Aquiis.UI.Shared.Components.Entities.Leases
+@inject NavigationManager NavigationManager
+@inject LeaseService LeaseService
+@inject TenantService TenantService
+@inject PropertyService PropertyService
+@inject IJSRuntime JSRuntime
+
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
-<Aquiis.UI.Shared.Features.PropertyManagement.Leases.ListForm />
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1><span class="bi bi-file-earmark-text-fill" aria-hidden="true"></span> Leases</h1>
+        @if (filterTenant != null)
+        {
+            <p class="text-muted mb-0">
+                Showing leases for tenant: <strong>@filterTenant.FullName</strong>
+                <button class="btn btn-sm btn-outline-secondary ms-2" @onclick="ClearFilter">
+                    <i class="bi bi-x"></i> Clear Filter
+                </button>
+            </p>
+        }
+        else if (filterProperty != null)
+        {
+            <p class="text-muted mb-0">
+                Showing leases for property: <strong>@filterProperty.Address</strong>
+                <button class="btn btn-sm btn-outline-secondary ms-2" @onclick="ClearFilter">
+                    <i class="bi bi-x"></i> Clear Filter
+                </button>
+            </p>
+        }
+    </div>
+    <div class="btn-group">
+        @* Hidden features available in Professional *@
+        @* <button class="btn btn-outline-info" @onclick="ViewLeaseOffers">
+            <i class="bi bi-file-earmark-check"></i> View Lease Offers
+        </button>
+        <button class="btn btn-primary" @onclick="CreateLease">
+            <i class="bi bi-plus-lg"></i> Add Lease
+        </button> *@
+        @if (filterTenant != null)
+        {
+            @* <button class="btn btn-outline-success" @onclick="CreateLeaseForTenant">
+                <i class="bi bi-plus-lg"></i> Add Lease for @filterTenant.FullName
+            </button> *@
+        }
+        else if (filterProperty != null)
+        {
+            <button class="btn btn-outline-success" @onclick="CreateLeaseForProperty">
+                <i class="bi bi-plus-lg"></i> Add Lease for This Property
+            </button>
+        }
+    </div>
+</div>
+
+@if (leases == null)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else if (!leases.Any())
+{
+    <div class="alert alert-info">
+        @if (filterTenant != null)
+        {
+            <h4>No Leases Found for @filterTenant.FullName</h4>
+            <p>This tenant doesn't have any lease agreements yet.</p>
+            <button class="btn btn-primary" @onclick="CreateLeaseForTenant">Create First Lease for @filterTenant.FullName</button>
+            <button class="btn btn-outline-secondary ms-2" @onclick="ClearFilter">View All Leases</button>
+        }
+        else if (filterProperty != null)
+        {
+            <h4>No Leases Found for @filterProperty.Address</h4>
+            <p>This property doesn't have any lease agreements yet.</p>
+            <button class="btn btn-primary" @onclick="CreateLeaseForProperty">Create First Lease for This Property</button>
+            <button class="btn btn-outline-secondary ms-2" @onclick="ClearFilter">View All Leases</button>
+        }
+        else
+        {
+            <h4>No Leases Found</h4>
+            <p>Get started by converting a lease offer to your first lease agreement.</p>
+            <button class="btn btn-primary" @onclick="CreateLease">Create First Lease</button>
+        }
+    </div>
+}
+else
+{
+    <LeaseListView 
+        Leases="@(groupByProperty ? filteredLeases : pagedLeases)"
+        GroupedLeases="@groupedLeases"
+        AvailableTenants="@(availableTenants ?? new())"
+        ExpandedProperties="@expandedProperties"
+        GroupByProperty="@groupByProperty"
+        ShowMetrics="true"
+        ShowActions="true"
+        ShowEditDelete="true"
+        SearchTerm="@searchTerm"
+        StatusFilter="@selectedLeaseStatus"
+        TenantFilter="@(selectedTenantId?.ToString() ?? string.Empty)"
+        SortColumn="@sortColumn"
+        SortAscending="@sortAscending"
+        ActiveCount="@activeCount"
+        ExpiringSoonCount="@expiringSoonCount"
+        TotalMonthlyRent="@totalMonthlyRent"
+        OnSearchChanged="@HandleSearchChanged"
+        OnStatusFilterChanged="@HandleStatusFilterChanged"
+        OnTenantFilterChanged="@HandleTenantFilterChanged"
+        OnGroupByPropertyChanged="@HandleGroupByPropertyChanged"
+        OnSort="@HandleSort"
+        OnTogglePropertyGroup="@HandleTogglePropertyGroup"
+        OnView="@HandleView"
+        OnEdit="@HandleEdit"
+        OnDelete="@HandleDelete" />
+    
+    @if (totalPages > 1 && !groupByProperty)
+    {
+        <div class="card-footer">
+            <nav aria-label="Leases pagination">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        Showing @((currentPage - 1) * pageSize + 1) to @Math.Min(currentPage * pageSize, totalRecords) of @totalRecords leases
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <label class="me-2">Page size:</label>
+                        <select class="form-select form-select-sm me-3" style="width: auto;" @bind="pageSize" @bind:after="() => { currentPage = 1; FilterLeases(); }">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                        </select>
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                <button class="page-link" @onclick="() => GoToPage(1)" disabled="@(currentPage == 1)">First</button>
+                            </li>
+                            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                <button class="page-link" @onclick="() => GoToPage(currentPage - 1)" disabled="@(currentPage == 1)">Previous</button>
+                            </li>
+                            @for (int pageNum = Math.Max(1, currentPage - 2); pageNum <= Math.Min(totalPages, currentPage + 2); pageNum++)
+                            {
+                                var pageNumber = pageNum;
+                                <li class="page-item @(currentPage == pageNumber ? "active" : "")">
+                                    <button class="page-link" @onclick="() => GoToPage(pageNumber)">@pageNumber</button>
+                                </li>
+                            }
+                            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                <button class="page-link" @onclick="() => GoToPage(currentPage + 1)" disabled="@(currentPage == totalPages)">Next</button>
+                            </li>
+                            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                <button class="page-link" @onclick="() => GoToPage(totalPages)" disabled="@(currentPage == totalPages)">Last</button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public Guid? TenantId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public Guid? PropertyId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? LeaseId { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    private List<Lease>? leases;
+    private List<Lease> filteredLeases = new();
+    private List<Lease> pagedLeases = new();
+    private IEnumerable<IGrouping<Guid, Lease>> groupedLeases = Enumerable.Empty<IGrouping<Guid, Lease>>();
+    private HashSet<int> expandedProperties = new();
+    private string searchTerm = string.Empty;
+    private string selectedLeaseStatus = string.Empty;
+    private Guid? selectedTenantId;
+    private List<Tenant>? availableTenants;
+    private int activeCount = 0;
+    private int expiringSoonCount = 0;
+    private decimal totalMonthlyRent = 0;
+    private Tenant? filterTenant;
+    private Property? filterProperty;
+    private bool groupByProperty = true;
+    
+    // Paging variables
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages = 1;
+    private int totalRecords = 0;
+    
+    // Sorting variables
+    private string sortColumn = "StartDate";
+    private bool sortAscending = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFilterEntities();
+        await LoadLeases();
+        LoadFilterOptions();
+        FilterLeases();
+        CalculateMetrics();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && LeaseId.HasValue)
+        {
+            await JSRuntime.InvokeVoidAsync("scrollToElement", $"lease-{LeaseId.Value}");
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadFilterEntities();
+        await LoadLeases();
+        LoadFilterOptions();
+        FilterLeases();
+        CalculateMetrics();
+        StateHasChanged();
+    }
+
+    private async Task LoadFilterEntities()
+    {
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userId)) return;
+
+        if (TenantId.HasValue)
+        {
+            filterTenant = await TenantService.GetByIdAsync(TenantId.Value);
+        }
+
+        if (PropertyId.HasValue)
+        {
+            filterProperty = await PropertyService.GetByIdAsync(PropertyId.Value);
+        }
+    }
+
+    private async Task LoadLeases()
+    {
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userId))
+        {
+            leases = new List<Lease>();
+            return;
+        }
+
+        var allLeases = await LeaseService.GetLeasesWithRelationsAsync();
+        leases = allLeases
+            .Where(l => 
+                   (!TenantId.HasValue || l.TenantId == TenantId.Value) &&
+                   (!PropertyId.HasValue || l.PropertyId == PropertyId.Value))
+            .ToList();
+    }
+
+    private void LoadFilterOptions()
+    {
+        if (leases != null)
+        {
+            // Load available tenants from leases
+            availableTenants = leases
+                .Where(l => l.Tenant != null)
+                .Select(l => l.Tenant!)
+                .DistinctBy(t => t.Id)
+                .OrderBy(t => t.FirstName)
+                .ThenBy(t => t.LastName)
+                .ToList();
+        }
+    }
+
+    private void FilterLeases()
+    {
+        if (leases == null)
+        {
+            filteredLeases = new();
+            pagedLeases = new();
+            CalculateMetrics();
+            return;
+        }
+
+        filteredLeases = leases.Where(l =>
+            (string.IsNullOrEmpty(searchTerm) ||
+             l.Property?.Address.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true ||
+             (l.Tenant != null && l.Tenant.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+             l.Notes.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+             l.Terms.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(selectedLeaseStatus) || l.Status == selectedLeaseStatus) &&
+            (!selectedTenantId.HasValue || l.TenantId == selectedTenantId.Value)
+        ).ToList();
+        
+        // Apply sorting
+        ApplySorting();
+        
+        if (groupByProperty)
+        {
+            groupedLeases = filteredLeases
+                .Where(l => l.PropertyId != Guid.Empty)
+                .GroupBy(l => l.PropertyId)
+                .OrderBy(g => g.First().Property?.Address)
+                .ToList();
+        }
+        else
+        {
+            // Apply paging
+            totalRecords = filteredLeases.Count;
+            totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+            if (currentPage > totalPages) currentPage = Math.Max(1, totalPages);
+            
+            pagedLeases = filteredLeases
+                .Skip((currentPage - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+        }
+        
+        CalculateMetrics();
+    }
+    
+    // Event handlers for LeaseListView component
+    private async Task HandleSearchChanged(string value)
+    {
+        searchTerm = value;
+        FilterLeases();
+        await Task.CompletedTask;
+    }
+    
+    private async Task HandleStatusFilterChanged(string value)
+    {
+        selectedLeaseStatus = value;
+        FilterLeases();
+        await Task.CompletedTask;
+    }
+    
+    private async Task HandleTenantFilterChanged(string value)
+    {
+        selectedTenantId = string.IsNullOrEmpty(value) ? null : Guid.Parse(value);
+        FilterLeases();
+        await Task.CompletedTask;
+    }
+    
+    private async Task HandleGroupByPropertyChanged(bool value)
+    {
+        groupByProperty = value;
+        FilterLeases();
+        await Task.CompletedTask;
+    }
+    
+    private async Task HandleSort((string Column, bool Ascending) sort)
+    {
+        sortColumn = sort.Column;
+        sortAscending = sort.Ascending;
+        currentPage = 1;
+        FilterLeases();
+        await Task.CompletedTask;
+    }
+    
+    private async Task HandleTogglePropertyGroup(Guid propertyId)
+    {
+        TogglePropertyGroup(propertyId);
+        await Task.CompletedTask;
+    }
+    
+    private async Task HandleView(Guid leaseId)
+    {
+        ViewLease(leaseId);
+        await Task.CompletedTask;
+    }
+    
+    private async Task HandleEdit(Guid leaseId)
+    {
+        EditLease(leaseId);
+        await Task.CompletedTask;
+    }
+    
+    private async Task HandleDelete(Guid leaseId)
+    {
+        await DeleteLease(leaseId);
+    }
+    
+    private void TogglePropertyGroup(Guid propertyId)
+    {
+        if (expandedProperties.Contains(propertyId.GetHashCode()))
+        {
+            expandedProperties.Remove(propertyId.GetHashCode());
+        }
+        else
+        {
+            expandedProperties.Add(propertyId.GetHashCode());
+        }
+    }
+    
+    private void ApplySorting()
+    {
+        filteredLeases = sortColumn switch
+        {
+            "Property" => sortAscending
+                ? filteredLeases.OrderBy(l => l.Property?.Address).ToList()
+                : filteredLeases.OrderByDescending(l => l.Property?.Address).ToList(),
+            "Tenant" => sortAscending
+                ? filteredLeases.OrderBy(l => l.Tenant?.FullName).ToList()
+                : filteredLeases.OrderByDescending(l => l.Tenant?.FullName).ToList(),
+            "StartDate" => sortAscending
+                ? filteredLeases.OrderBy(l => l.StartDate).ToList()
+                : filteredLeases.OrderByDescending(l => l.StartDate).ToList(),
+            "EndDate" => sortAscending
+                ? filteredLeases.OrderBy(l => l.EndDate).ToList()
+                : filteredLeases.OrderByDescending(l => l.EndDate).ToList(),
+            "MonthlyRent" => sortAscending
+                ? filteredLeases.OrderBy(l => l.MonthlyRent).ToList()
+                : filteredLeases.OrderByDescending(l => l.MonthlyRent).ToList(),
+            "Status" => sortAscending
+                ? filteredLeases.OrderBy(l => l.Status).ToList()
+                : filteredLeases.OrderByDescending(l => l.Status).ToList(),
+            _ => filteredLeases
+        };
+    }
+    
+    private void GoToPage(int page)
+    {
+        if (page >= 1 && page <= totalPages)
+        {
+            currentPage = page;
+            FilterLeases();
+        }
+    }
+
+    private void CalculateMetrics()
+    {
+        if (filteredLeases != null && filteredLeases.Any())
+        {
+            activeCount = filteredLeases.Count(l => l.Status == "Active");
+            
+            // Expiring within 30 days
+            var thirtyDaysFromNow = DateTime.Now.AddDays(30);
+            expiringSoonCount = filteredLeases.Count(l => 
+                l.Status == "Active" && l.EndDate <= thirtyDaysFromNow);
+            
+            totalMonthlyRent = filteredLeases
+                .Where(l => l.Status == "Active")
+                .Sum(l => l.MonthlyRent);
+        }
+        else
+        {
+            activeCount = 0;
+            expiringSoonCount = 0;
+            totalMonthlyRent = 0;
+        }
+    }
+
+    private void ViewLeaseOffers()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/leaseoffers");
+    }
+
+    private void CreateLease()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/leaseoffers");
+    }
+
+    private void CreateLeaseForTenant()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/leaseoffers");
+    }
+
+    private void CreateLeaseForProperty()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/leaseoffers");
+    }
+
+    private void ClearFilter()
+    {
+        TenantId = null;
+        PropertyId = null;
+        filterTenant = null;
+        filterProperty = null;
+        selectedLeaseStatus = string.Empty;
+        selectedTenantId = null;
+        searchTerm = string.Empty;
+        NavigationManager.NavigateTo("/propertymanagement/leases", forceLoad: true);
+    }
+
+    private void ViewLease(Guid id)
+    {
+        NavigationManager.NavigateTo($"/propertymanagement/leases/{id}");
+    }
+
+    private void EditLease(Guid id)
+    {
+        NavigationManager.NavigateTo($"/propertymanagement/leases/{id}/edit");
+    }
+
+    private async Task DeleteLease(Guid id)
+    {
+        var authState = await AuthenticationStateTask;
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userId))
+            return;
+
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete lease {id}?");
+        if (!confirmed)
+            return;
+
+        await LeaseService.DeleteAsync(id);
+        await LoadLeases();
+    }
+}

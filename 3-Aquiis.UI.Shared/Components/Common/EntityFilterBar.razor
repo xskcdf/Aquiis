@@ -1,0 +1,164 @@
+@namespace Aquiis.UI.Shared.Components.Common
+@typeparam TStatus
+@typeparam TPriority
+@typeparam TType
+
+<div class="row mb-3">
+    @* Search Box *@
+    @if (ShowSearch)
+    {
+        <div class="col-md-3">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" 
+                       placeholder="@SearchPlaceholder" 
+                       value="@SearchTerm" 
+                       @oninput="HandleSearchInput" />
+            </div>
+        </div>
+    }
+
+    @* Status Filter *@
+    @if (ShowStatusFilter && StatusOptions.Any())
+    {
+        <div class="col-md-3">
+            <select class="form-select" value="@StatusFilter" @onchange="HandleStatusChange">
+                <option value="">@StatusLabel</option>
+                @foreach (var status in StatusOptions)
+                {
+                    <option value="@status">@status</option>
+                }
+            </select>
+        </div>
+    }
+
+    @* Priority Filter *@
+    @if (ShowPriorityFilter && PriorityOptions.Any())
+    {
+        <div class="col-md-3">
+            <select class="form-select" value="@PriorityFilter" @onchange="HandlePriorityChange">
+                <option value="">@PriorityLabel</option>
+                @foreach (var priority in PriorityOptions)
+                {
+                    <option value="@priority">@priority</option>
+                }
+            </select>
+        </div>
+    }
+
+    @* Type Filter *@
+    @if (ShowTypeFilter && TypeOptions.Any())
+    {
+        <div class="col-md-3">
+            <select class="form-select" value="@TypeFilter" @onchange="HandleTypeChange">
+                <option value="">@TypeLabel</option>
+                @foreach (var type in TypeOptions)
+                {
+                    <option value="@type">@type</option>
+                }
+            </select>
+        </div>
+    }
+
+    @* Custom Secondary Filter *@
+    @if (SecondaryFilter != null)
+    {
+        <div class="col-md-3">
+            @SecondaryFilter
+        </div>
+    }
+
+    @* Group Toggle *@
+    @if (ShowGroupToggle && GroupedDataAvailable)
+    {
+        <div class="col-md-auto">
+            <div class="form-check form-switch pt-2">
+                <input class="form-check-input" type="checkbox" id="@GroupToggleId"
+                       checked="@GroupByProperty" 
+                       @onchange="HandleGroupToggle">
+                <label class="form-check-label" for="@GroupToggleId">@GroupLabel</label>
+            </div>
+        </div>
+    }
+
+    @* Clear Filters Button *@
+    @if (ShowClearButton)
+    {
+        <div class="col-md-auto">
+            <button class="btn btn-outline-secondary" @onclick="OnClearFilters">
+                <i class="bi bi-x-circle"></i> Clear Filters
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    // Search parameters
+    [Parameter] public bool ShowSearch { get; set; } = true;
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search...";
+    [Parameter] public string SearchTerm { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> OnSearchChanged { get; set; }
+
+    // Status filter parameters
+    [Parameter] public bool ShowStatusFilter { get; set; } = true;
+    [Parameter] public string StatusLabel { get; set; } = "All Statuses";
+    [Parameter] public string StatusFilter { get; set; } = string.Empty;
+    [Parameter] public List<TStatus> StatusOptions { get; set; } = new();
+    [Parameter] public EventCallback<string> OnStatusChanged { get; set; }
+
+    // Priority filter parameters
+    [Parameter] public bool ShowPriorityFilter { get; set; } = false;
+    [Parameter] public string PriorityLabel { get; set; } = "All Priorities";
+    [Parameter] public string PriorityFilter { get; set; } = string.Empty;
+    [Parameter] public List<TPriority> PriorityOptions { get; set; } = new();
+    [Parameter] public EventCallback<string> OnPriorityChanged { get; set; }
+
+    // Type filter parameters
+    [Parameter] public bool ShowTypeFilter { get; set; } = false;
+    [Parameter] public string TypeLabel { get; set; } = "All Types";
+    [Parameter] public string TypeFilter { get; set; } = string.Empty;
+    [Parameter] public List<TType> TypeOptions { get; set; } = new();
+    [Parameter] public EventCallback<string> OnTypeChanged { get; set; }
+
+    // Custom secondary filter
+    [Parameter] public RenderFragment? SecondaryFilter { get; set; }
+
+    // Group toggle parameters
+    [Parameter] public bool ShowGroupToggle { get; set; } = false;
+    [Parameter] public bool GroupedDataAvailable { get; set; }
+    [Parameter] public string GroupLabel { get; set; } = "Group by Property";
+    [Parameter] public bool GroupByProperty { get; set; }
+    [Parameter] public EventCallback<bool> OnGroupToggled { get; set; }
+
+    // Clear button parameters
+    [Parameter] public bool ShowClearButton { get; set; } = false;
+    [Parameter] public EventCallback OnClearFilters { get; set; }
+
+    // Generate unique ID for the toggle to avoid label conflicts
+    private string GroupToggleId => $"groupToggle_{Guid.NewGuid():N}";
+
+    private async Task HandleSearchInput(ChangeEventArgs e)
+    {
+        await OnSearchChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty);
+    }
+
+    private async Task HandleStatusChange(ChangeEventArgs e)
+    {
+        await OnStatusChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty);
+    }
+
+    private async Task HandlePriorityChange(ChangeEventArgs e)
+    {
+        await OnPriorityChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty);
+    }
+
+    private async Task HandleTypeChange(ChangeEventArgs e)
+    {
+        await OnTypeChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty);
+    }
+
+    private async Task HandleGroupToggle(ChangeEventArgs e)
+    {
+        await OnGroupToggled.InvokeAsync(e.Value is bool boolValue && boolValue);
+    }
+}

@@ -1,0 +1,42 @@
+
+<div>
+    @* Lease Summary Card *@
+    <div class="card mt-3">
+        <div class="card-header">
+            <h5 class="mb-0">Lease Summary</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Duration:</strong> @((Lease.EndDate - Lease.StartDate).Days) days</p>
+            <p><strong>Total Rent:</strong> @((Lease.MonthlyRent * 12).ToString("C"))/year</p>
+            @if (Lease.IsActive)
+            {
+                <p><strong>Days Remaining:</strong> @Lease.DaysRemaining</p>
+            }
+            @if (RecentInvoices.Any())
+            {
+                <hr />
+                <small class="text-muted">
+                    <strong>Recent Invoices:</strong><br />
+                    @foreach (var invoice in RecentInvoices.Take(3))
+                    {
+                        <span class="badge @(invoice.Status == "Paid" ? "bg-success" : "bg-warning") me-1">
+                            <a href="#" @onclick="() => OnViewInvoice.InvokeAsync(invoice.Id)">@invoice.InvoiceNumber</a>
+                        </span>
+                    }
+                </small>
+            }
+        </div>
+    </div>
+</div>
+@code {
+    [Parameter, EditorRequired]
+    public Lease Lease { get; set; } = new Lease();
+
+    [Parameter]
+    public EventCallback<Guid> OnViewInvoice { get; set; }
+
+    [Parameter]
+    public List<Invoice> RecentInvoices { get; set; } = new List<Invoice>();
+
+    
+}

@@ -78,7 +78,7 @@ else
                             <div class="col-md-6">
                                 <label class="text-muted small">Invoice Number</label>
                                 <p class="fw-bold">
-                                    <a href="/propertymanagement/invoices/view/@payment.Invoice.Id">
+                                    <a href="/propertymanagement/invoices/@payment.Invoice.Id">
                                         @payment.Invoice.InvoiceNumber
                                     </a>
                                 </p>
@@ -246,18 +246,18 @@ else
                                 <i class="bi bi-download"></i> Download Receipt
                             </button>
                         }
-                        <a href="/propertymanagement/invoices/view/@payment.InvoiceId" class="btn btn-outline-primary">
+                        <a href="/propertymanagement/invoices/@payment.InvoiceId" class="btn btn-outline-primary">
                             <i class="bi bi-receipt"></i> View Invoice
                         </a>
                         @if (payment.Invoice?.Lease != null)
                         {
-                            <a href="/propertymanagement/leases/view/@payment.Invoice.LeaseId" class="btn btn-outline-secondary">
+                            <a href="/propertymanagement/leases/@payment.Invoice.LeaseId" class="btn btn-outline-secondary">
                                 <i class="bi bi-file-text"></i> View Lease
                             </a>
-                            <a href="/propertymanagement/properties/view/@payment.Invoice.Lease.PropertyId" class="btn btn-outline-secondary">
+                            <a href="/propertymanagement/properties/@payment.Invoice.Lease.PropertyId" class="btn btn-outline-secondary">
                                 <i class="bi bi-house"></i> View Property
                             </a>
-                            <a href="/propertymanagement/tenants/view/@payment.Invoice.Lease.TenantId" class="btn btn-outline-secondary">
+                            <a href="/propertymanagement/tenants/@payment.Invoice.Lease.TenantId" class="btn btn-outline-secondary">
                                 <i class="bi bi-person"></i> View Tenant
                             </a>
                         }
@@ -289,6 +289,40 @@ else
                             }
                         </div>
                     }
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Status Guide</h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted d-block mb-3">Payment status definitions:</small>
+                    
+                    <div class="d-flex align-items-start mb-2">
+                        <span class="badge bg-success me-2" style="min-width: 100px;">Completed</span>
+                        <span class="small">Payment successfully processed</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-start mb-2">
+                        <span class="badge bg-warning me-2" style="min-width: 100px;">Pending</span>
+                        <span class="small">Payment submitted, awaiting clearance</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-start mb-2">
+                        <span class="badge bg-danger me-2" style="min-width: 100px;">Failed</span>
+                        <span class="small">Payment attempt failed (bounced check, declined card)</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-start mb-2">
+                        <span class="badge bg-info me-2" style="min-width: 100px;">Refunded</span>
+                        <span class="small">Payment returned to payer</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-start">
+                        <span class="badge bg-secondary me-2" style="min-width: 100px;">Voided</span>
+                        <span class="small">Created in error, cancelled before processing</span>
+                    </div>
                 </div>
             </div>
         </div>

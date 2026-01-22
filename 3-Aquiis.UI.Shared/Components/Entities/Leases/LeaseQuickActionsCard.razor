@@ -1,0 +1,74 @@
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Quick Actions</h5>
+    </div>
+    <div class="card-body">
+        <div class="d-grid gap-2">
+            <button class="btn btn-outline-primary" @onclick="() => OnEdit.InvokeAsync()">
+                <i class="bi bi-pencil"></i> Edit Lease
+            </button>
+            <button class="btn btn-outline-success" @onclick="() => OnCreateInvoice.InvokeAsync(Lease.Id)">
+                <i class="bi bi-receipt"></i> Create Invoice
+            </button>
+            <button class="btn btn-outline-info" @onclick="() => OnViewInvoices.InvokeAsync(Lease.Id)">
+                <i class="bi bi-list-check"></i> View Invoices
+            </button>
+            <button class="btn btn-outline-secondary" @onclick="() => OnViewDocuments.InvokeAsync(Lease.Id)">
+                <i class="bi bi-folder"></i> View Documents
+            </button>
+            @if (Lease.DocumentId == null)
+            {
+                <button class="btn btn-outline-warning" @onclick="() => OnGenerateLeaseDocument.InvokeAsync(Lease.Id)" disabled="@isGenerating">
+                    @if (isGenerating)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        <span>Generating...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-file-pdf"></i>
+                        <span> Generate PDF</span>
+                    }
+                </button>
+            }
+            else
+            {
+                <button class="btn btn-primary" @onclick="() => OnViewDocument.InvokeAsync(Lease.Id)">
+                    <i class="bi bi-eye"></i> View PDF
+                </button>
+                <button class="btn btn-outline-primary" @onclick="() => OnDownloadDocument.InvokeAsync(Lease.Id)">
+                    <i class="bi bi-download"></i> Download PDF
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Lease Lease { get; set; } = new Lease();
+
+    [Parameter]
+    public EventCallback OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnCreateInvoice { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnViewInvoices { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnViewDocuments { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnGenerateLeaseDocument { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnViewDocument { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnDownloadDocument { get; set; }
+
+    private bool isGenerating = false;
+}

@@ -1,0 +1,94 @@
+
+@namespace Aquiis.UI.Shared.Components.Entities.Leases
+@using Microsoft.AspNetCore.Http
+
+<div class="card mt-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Documents</h5>
+        <span class="badge bg-secondary">@LeaseDocuments.Count</span>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            @foreach (var doc in LeaseDocuments.OrderByDescending(d => d.CreatedOn))
+            {
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="bi @GetFileIcon(doc.FileExtension) me-2"></i>
+                                <strong>@doc.FileName</strong>
+                            </div>
+                            @if (!string.IsNullOrEmpty(doc.Description))
+                            {
+                                <small class="text-muted d-block">@doc.Description</small>
+                            }
+                            <small class="text-muted">
+                                <span class="badge @GetDocumentTypeBadge(doc.DocumentType)">@doc.DocumentType</span>
+                                @doc.FileSizeFormatted | @doc.CreatedOn.ToString("MMM dd, yyyy")
+                            </small>
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-info" @onclick="() => ViewDocument(doc)" title="View">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-outline-primary" @onclick="() => DownloadDocument(doc)" title="Download">
+                                <i class="bi bi-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="mt-2">
+            <button class="btn btn-sm btn-outline-secondary w-100" @onclick="ViewDocuments">
+                <i class="bi bi-folder"></i> View All Documents
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public Lease Lease { get; set; } = new Lease();
+
+    [Parameter, EditorRequired]
+    public List<Document> LeaseDocuments { get; set; } = new List<Document>();
+
+    private string GetFileIcon(string? extension)
+    {
+        return extension?.ToLower() switch
+        {
+            ".pdf" => "bi-file-earmark-pdf-fill text-danger",
+            ".doc" or ".docx" => "bi-file-earmark-word-fill text-primary",
+            ".xls" or ".xlsx" => "bi-file-earmark-excel-fill text-success",
+            ".png" or ".jpg" or ".jpeg" => "bi-file-earmark-image-fill text-warning",
+            _ => "bi-file-earmark-fill text-secondary",
+        };
+    }
+
+    private string GetDocumentTypeBadge(string documentType)
+    {
+        return documentType.ToLower() switch
+        {
+            "lease agreement" => "bg-primary",
+            "inspection report" => "bg-info",
+            "maintenance record" => "bg-warning",
+            _ => "bg-secondary",
+        };
+    }
+
+    private void ViewDocument(Document doc)
+    {
+        // Implement document viewing logic here
+    }
+
+    private void DownloadDocument(Document doc)
+    {
+        // Implement document downloading logic here
+    }
+
+    private void ViewDocuments()
+    {
+        // Implement navigation to documents page here
+    }
+}

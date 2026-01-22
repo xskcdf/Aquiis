@@ -1,5 +1,177 @@
 @page "/propertymanagement/properties"
+@using Aquiis.Core.Entities
+
+@inject PropertyService PropertyService
+@inject NavigationManager NavigationManager
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager", "User")]
 @rendermode InteractiveServer
 
-<Aquiis.UI.Shared.Features.PropertyManagement.Properties.ListForm />
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><span class="bi bi-house-fill" aria-hidden="true"></span> Properties</h1>
+    <div class="btn-group">
+        <div class="btn-group me-2" role="group">
+            <button class="btn btn-outline-secondary @(viewMode == PropertyListViewMode.Grid ? "active" : "")" 
+                    @onclick="() => SetViewMode(PropertyListViewMode.Grid)" title="Grid View">
+                <i class="bi bi-grid-3x3-gap"></i>
+            </button>
+            <button class="btn btn-outline-secondary @(viewMode == PropertyListViewMode.Table ? "active" : "")" 
+                    @onclick="() => SetViewMode(PropertyListViewMode.Table)" title="List View">
+                <i class="bi bi-list-ul"></i>
+            </button>
+        </div>
+        @if (Properties.Count < maxProperties)
+        {
+            <button class="btn btn-primary" @onclick="CreateProperty">
+                <i class="bi bi-plus-lg"></i> Add Property
+            </button>
+        }
+    </div>
+</div>
+<hr />
+<PropertyMetricsCard
+    AvailableCount="@availableProperties"
+    OccupiedCount="@occupiedProperties"
+    TotalMonthlyRent="@totalMonthlyRent"
+    ShowPending="false" />
+<hr />
+<PropertyListView Properties="@filteredProperties"
+    ViewMode="@viewMode"
+    SortColumn="@sortColumn"
+    SortAscending="@sortAscending"
+    StatusFilter="@statusFilter"
+    AvailableCount="@availableProperties"
+    OccupiedCount="@occupiedProperties"
+    TotalMonthlyRent="@totalMonthlyRent"
+    OnSort="HandleSort"
+    OnEdit="EditProperty"
+    OnView="ViewPropertyDetails"
+    OnDelete="DeleteProperty"
+    OnStatusFilterChanged="StatusFilterChanged"
+    OnClearFilters="ClearFilters"
+    OnSearchChanged="SearchChanged"
+    SearchTerm="@searchTerm"
+    ShowMetrics="false" />
+
+@code {
+    private List<Property> Properties = new List<Property>();
+    private List<Property> filteredProperties = new List<Property>();
+    private PropertyListViewMode viewMode = PropertyListViewMode.Table;
+    private string sortColumn = nameof(Property.Address);
+    private bool sortAscending = true;
+    private string statusFilter = string.Empty;
+
+    private string searchTerm = string.Empty;
+
+    private int availableProperties = 0;
+
+    private int maxProperties = 9;
+
+    private int occupiedProperties = 0;
+
+    private decimal totalMonthlyRent = 0.00m;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Properties = await PropertyService.GetAllAsync();
+        
+        availableProperties = Properties.Where(p => p.IsAvailable).Count();
+        occupiedProperties = Properties.Where(p => !p.IsAvailable).Count();
+        totalMonthlyRent = Properties.Where(p => !p.IsAvailable).Sum(p => p.MonthlyRent);
+        
+        ApplySort();
+    }
+
+    private void HandleSort((string Column, bool Ascending) sortInfo)
+    {
+        sortColumn = sortInfo.Column;
+        sortAscending = sortInfo.Ascending;
+        ApplySort();
+    }
+
+    private void ApplySort()
+    {
+        // Apply status filter first
+        var propertiesToSort = string.IsNullOrEmpty(statusFilter) 
+            ? Properties 
+            : Properties.Where(p => p.Status == statusFilter).ToList();
+        
+        // Then apply sorting
+        filteredProperties = sortColumn switch
+        {
+            nameof(Property.Address) => sortAscending 
+                ? propertiesToSort.OrderBy(p => p.Address).ToList()
+                : propertiesToSort.OrderByDescending(p => p.Address).ToList(),
+            nameof(Property.City) => sortAscending
+                ? propertiesToSort.OrderBy(p => p.City).ToList()
+                : propertiesToSort.OrderByDescending(p => p.City).ToList(),
+            nameof(Property.PropertyType) => sortAscending
+                ? propertiesToSort.OrderBy(p => p.PropertyType).ToList()
+                : propertiesToSort.OrderByDescending(p => p.PropertyType).ToList(),
+            nameof(Property.SquareFeet) => sortAscending
+                ? propertiesToSort.OrderBy(p => p.SquareFeet).ToList()
+                : propertiesToSort.OrderByDescending(p => p.SquareFeet).ToList(),
+            nameof(Property.Status) => sortAscending
+                ? propertiesToSort.OrderBy(p => p.Status).ToList()
+                : propertiesToSort.OrderByDescending(p => p.Status).ToList(),
+            nameof(Property.MonthlyRent) => sortAscending
+                ? propertiesToSort.OrderBy(p => p.MonthlyRent).ToList()
+                : propertiesToSort.OrderByDescending(p => p.MonthlyRent).ToList(),
+            _ => propertiesToSort.OrderBy(p => p.Address).ToList()
+        };
+    }
+
+    private void SetViewMode(PropertyListViewMode mode)
+    {
+        viewMode = mode;
+    }
+
+    private void StatusFilterChanged(string status)
+    {
+        statusFilter = status;
+        ApplySort();
+    }
+
+    private void ClearFilters()
+    {
+        StatusFilterChanged(string.Empty);
+        SearchChanged(string.Empty);
+    }
+
+    private void SearchChanged(string term)
+    {
+        searchTerm = term;
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            ApplySort();
+        }
+        else
+        {
+            filteredProperties = filteredProperties
+                .Where(p => p.Address.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                            p.City.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                            p.PropertyType.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    private void CreateProperty()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/properties/create");
+    }
+
+    private void EditProperty(Guid propertyId)
+    {
+        NavigationManager.NavigateTo($"/propertymanagement/properties/{propertyId}/edit");
+    }
+
+    private void ViewPropertyDetails(Guid propertyId)
+    {
+        NavigationManager.NavigateTo($"/propertymanagement/properties/{propertyId}");
+    }
+
+    private void DeleteProperty(Guid propertyId)
+    {
+        NavigationManager.NavigateTo($"/propertymanagement/properties/delete/{propertyId}");
+    }
+}

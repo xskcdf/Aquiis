@@ -112,74 +112,77 @@ else
             </div>
 
             <!-- Maintenance Requests Section -->
-            <div class="card mt-3">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Maintenance Requests</h5>
-                    <button class="btn btn-sm btn-primary" @onclick="CreateMaintenanceRequest">
-                        <i class="bi bi-plus-circle"></i> New Request
-                    </button>
-                </div>
-                <div class="card-body">
-                    @if (maintenanceRequests.Any())
-                    {
-                        <div class="list-group">
-                            @foreach (var request in maintenanceRequests.OrderByDescending(r => r.RequestedOn).Take(5))
-                            {
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div class="flex-grow-1">
-                                            <div class="d-flex align-items-center mb-1">
-                                                <strong class="me-2">@request.Title</strong>
-                                                <span class="badge @request.PriorityBadgeClass me-1">@request.Priority</span>
-                                                <span class="badge @request.StatusBadgeClass">@request.Status</span>
-                                                @if (request.IsOverdue)
-                                                {
-                                                    <i class="bi bi-exclamation-triangle-fill text-danger ms-2" title="Overdue"></i>
-                                                }
+            @if(ShowMaintenanceRequests)
+            {
+                <div class="card mt-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Maintenance Requests</h5>
+                        <button class="btn btn-sm btn-primary" @onclick="CreateMaintenanceRequest">
+                            <i class="bi bi-plus-circle"></i> New Request
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        @if (maintenanceRequests.Any())
+                        {
+                            <div class="list-group">
+                                @foreach (var request in maintenanceRequests.OrderByDescending(r => r.RequestedOn).Take(5))
+                                {
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex align-items-center mb-1">
+                                                    <strong class="me-2">@request.Title</strong>
+                                                    <span class="badge @request.PriorityBadgeClass me-1">@request.Priority</span>
+                                                    <span class="badge @request.StatusBadgeClass">@request.Status</span>
+                                                    @if (request.IsOverdue)
+                                                    {
+                                                        <i class="bi bi-exclamation-triangle-fill text-danger ms-2" title="Overdue"></i>
+                                                    }
+                                                </div>
+                                                <small class="text-muted d-block mb-1">@request.RequestType</small>
+                                                <small class="text-muted">
+                                                    Requested: @request.RequestedOn.ToString("MMM dd, yyyy")
+                                                    @if (request.ScheduledOn.HasValue)
+                                                    {
+                                                        <span> | Scheduled: @request.ScheduledOn.Value.ToString("MMM dd, yyyy")</span>
+                                                    }
+                                                </small>
                                             </div>
-                                            <small class="text-muted d-block mb-1">@request.RequestType</small>
-                                            <small class="text-muted">
-                                                Requested: @request.RequestedOn.ToString("MMM dd, yyyy")
-                                                @if (request.ScheduledOn.HasValue)
-                                                {
-                                                    <span> | Scheduled: @request.ScheduledOn.Value.ToString("MMM dd, yyyy")</span>
-                                                }
-                                            </small>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewMaintenanceRequest(request.Id)">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
                                         </div>
-                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewMaintenanceRequest(request.Id)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
                                     </div>
+                                }
+                            </div>
+                            @if (maintenanceRequests.Count > 5)
+                            {
+                                <div class="mt-2">
+                                    <small class="text-muted">Showing 5 of @maintenanceRequests.Count requests</small>
                                 </div>
                             }
-                        </div>
-                        @if (maintenanceRequests.Count > 5)
-                        {
                             <div class="mt-2">
-                                <small class="text-muted">Showing 5 of @maintenanceRequests.Count requests</small>
+                                <button class="btn btn-sm btn-outline-secondary w-100" @onclick="ViewAllMaintenanceRequests">
+                                    <i class="bi bi-list-ul"></i> View All Maintenance Requests
+                                </button>
                             </div>
                         }
-                        <div class="mt-2">
-                            <button class="btn btn-sm btn-outline-secondary w-100" @onclick="ViewAllMaintenanceRequests">
-                                <i class="bi bi-list-ul"></i> View All Maintenance Requests
-                            </button>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="text-center text-muted py-3">
-                            <i class="bi bi-tools" style="font-size: 2rem;"></i>
-                            <p class="mb-0 mt-2">No maintenance requests for this property</p>
-                            <button class="btn btn-sm btn-primary mt-2" @onclick="CreateMaintenanceRequest">
-                                <i class="bi bi-plus-circle"></i> Create First Request
-                            </button>
-                        </div>
-                    }
+                        else
+                        {
+                            <div class="text-center text-muted py-3">
+                                <i class="bi bi-tools" style="font-size: 2rem;"></i>
+                                <p class="mb-0 mt-2">No maintenance requests for this property</p>
+                                <button class="btn btn-sm btn-primary mt-2" @onclick="CreateMaintenanceRequest">
+                                    <i class="bi bi-plus-circle"></i> Create First Request
+                                </button>
+                            </div>
+                        }
+                    </div>
                 </div>
-            </div>
-            
+            }
+
             <!-- Documents Section -->
-            @if (propertyDocuments.Any())
+            @if (ShowDocuments && propertyDocuments.Any())
             {
                 <div class="card mt-3">
                     <div class="card-header d-flex justify-content-between align-items-center">
@@ -261,81 +264,85 @@ else
             </div>
 
             <!-- Routine Inspection Status Card -->
-            <div class="card mt-3">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Routine Inspection</h5>
-                </div>
-                <div class="card-body">
-                    @if (property.LastRoutineInspectionDate.HasValue)
-                    {
-                        <div class="mb-3">
-                            <strong>Last Routine Inspection:</strong>
-                            <p class="mb-0">@property.LastRoutineInspectionDate.Value.ToString("MMM dd, yyyy")</p>
-                            @if (propertyInspections.Any())
-                            {
-                                var lastInspection = propertyInspections.Where(i => i.CompletedOn == property.LastRoutineInspectionDate.Value && i.InspectionType == "Routine").FirstOrDefault();
-                                if (lastInspection != null)
+            @if(ShowInspections)
+            {
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Routine Inspection</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (property.LastRoutineInspectionDate.HasValue)
+                        {
+                            <div class="mb-3">
+                                <strong>Last Routine Inspection:</strong>
+                                <p class="mb-0">@property.LastRoutineInspectionDate.Value.ToString("MMM dd, yyyy")</p>
+                                @if (propertyInspections.Any())
                                 {
-                                    <small>
-                                        <a href="/propertymanagement/inspections/view/@lastInspection.Id" class="text-decoration-none">
-                                            <i class="bi bi-eye"></i> View Last Routine Inspection
-                                        </a>
-                                    </small>
+                                    var lastInspection = propertyInspections.Where(i => i.CompletedOn == property.LastRoutineInspectionDate.Value && i.InspectionType == "Routine").FirstOrDefault();
+                                    if (lastInspection != null)
+                                    {
+                                        <small>
+                                            <a href="/propertymanagement/inspections/@lastInspection.Id" class="text-decoration-none">
+                                                <i class="bi bi-eye"></i> View Last Routine Inspection
+                                            </a>
+                                        </small>
+                                    }
                                 }
-                            }
-                        </div>
-                    }
-                    
-                    @if (property.NextRoutineInspectionDueDate.HasValue)
-                    {
-                        <div class="mb-3">
-                            <strong>Next Routine Inspection Due:</strong>
-                            <p class="mb-0">@property.NextRoutineInspectionDueDate.Value.ToString("MMM dd, yyyy")</p>
-                        </div>
+                            </div>
+                        }
                         
-                        <div class="mb-3">
-                            <strong>Status:</strong>
-                            <p class="mb-0">
-                                <span class="badge @GetInspectionStatusBadge(property.InspectionStatus)">
-                                    @property.InspectionStatus
-                                </span>
-                            </p>
-                        </div>
-
-                        @if (property.IsInspectionOverdue)
+                        @if (property.NextRoutineInspectionDueDate.HasValue)
                         {
-                            <div class="alert alert-danger py-2 mb-2">
-                                <small>
-                                    <i class="bi bi-exclamation-triangle-fill"></i>
-                                    <strong>Overdue by @property.DaysOverdue days</strong>
-                                </small>
+                            <div class="mb-3">
+                                <strong>Next Routine Inspection Due:</strong>
+                                <p class="mb-0">@property.NextRoutineInspectionDueDate.Value.ToString("MMM dd, yyyy")</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>Status:</strong>
+                                <p class="mb-0">
+                                    <span class="badge @GetInspectionStatusBadge(property.InspectionStatus)">
+                                        @property.InspectionStatus
+                                    </span>
+                                </p>
+                            </div>
+
+                            @if (property.IsInspectionOverdue)
+                            {
+                                <div class="alert alert-danger py-2 mb-2">
+                                    <small>
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        <strong>Overdue by @property.DaysOverdue days</strong>
+                                    </small>
+                                </div>
+                            }
+                            else if (property.DaysUntilInspectionDue <= 30)
+                            {
+                                <div class="alert alert-warning py-2 mb-2">
+                                    <small>
+                                        <i class="bi bi-exclamation-circle-fill"></i>
+                                        <strong>Due in @property.DaysUntilInspectionDue days</strong>
+                                    </small>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="alert alert-info py-2 mb-2">
+                                <small><i class="bi bi-info-circle"></i> No inspection scheduled</small>
                             </div>
                         }
-                        else if (property.DaysUntilInspectionDue <= 30)
-                        {
-                            <div class="alert alert-warning py-2 mb-2">
-                                <small>
-                                    <i class="bi bi-exclamation-circle-fill"></i>
-                                    <strong>Due in @property.DaysUntilInspectionDue days</strong>
-                                </small>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        <div class="alert alert-info py-2 mb-2">
-                            <small><i class="bi bi-info-circle"></i> No inspection scheduled</small>
-                        </div>
-                    }
 
-                    <div class="d-grid">
-                        <button class="btn btn-sm btn-outline-warning" @onclick="CreateInspection">
-                            <i class="bi bi-clipboard-check"></i> Complete Routine Inspection
-                        </button>
+                        <div class="d-grid">
+                            <button class="btn btn-sm btn-outline-warning" @onclick="CreateInspection">
+                                <i class="bi bi-clipboard-check"></i> Complete Routine Inspection
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
 
+            <!-- Active Leases Section -->
             @if (activeLeases.Any())
             {
                 <div class="card mt-3">
@@ -360,72 +367,75 @@ else
             }
 
             <!-- Completed Checklists Section -->
-            <div class="card mt-3">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Completed Checklists</h5>
-                    <button class="btn btn-sm btn-primary" @onclick="CreateChecklist">
-                        <i class="bi bi-plus-circle"></i> New Checklist
-                    </button>
-                </div>
-                <div class="card-body">
-                    @if (propertyChecklists.Any())
-                    {
-                        <div class="list-group">
-                            @foreach (var checklist in propertyChecklists.OrderByDescending(c => c.CompletedOn ?? c.CreatedOn).Take(5))
-                            {
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div class="flex-grow-1">
-                                            <div class="d-flex align-items-center mb-1">
-                                                <strong class="me-2">@checklist.Name</strong>
-                                                <span class="badge @GetChecklistStatusBadge(checklist.Status)">@checklist.Status</span>
+            @if(ShowCheckLists)
+            {
+                <div class="card mt-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Completed Checklists</h5>
+                        <button class="btn btn-sm btn-primary" @onclick="CreateChecklist">
+                            <i class="bi bi-plus-circle"></i> New Checklist
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        @if (propertyChecklists.Any())
+                        {
+                            <div class="list-group">
+                                @foreach (var checklist in propertyChecklists.OrderByDescending(c => c.CompletedOn ?? c.CreatedOn).Take(5))
+                                {
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex align-items-center mb-1">
+                                                    <strong class="me-2">@checklist.Name</strong>
+                                                    <span class="badge @GetChecklistStatusBadge(checklist.Status)">@checklist.Status</span>
+                                                </div>
+                                                <small class="text-muted d-block mb-1">@checklist.ChecklistType</small>
+                                                <small class="text-muted">
+                                                    @if (checklist.CompletedOn.HasValue)
+                                                    {
+                                                        <span>Completed: @checklist.CompletedOn.Value.ToString("MMM dd, yyyy")</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>Created: @checklist.CreatedOn.ToString("MMM dd, yyyy")</span>
+                                                    }
+                                                </small>
                                             </div>
-                                            <small class="text-muted d-block mb-1">@checklist.ChecklistType</small>
-                                            <small class="text-muted">
-                                                @if (checklist.CompletedOn.HasValue)
-                                                {
-                                                    <span>Completed: @checklist.CompletedOn.Value.ToString("MMM dd, yyyy")</span>
-                                                }
-                                                else
-                                                {
-                                                    <span>Created: @checklist.CreatedOn.ToString("MMM dd, yyyy")</span>
-                                                }
-                                            </small>
-                                        </div>
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary" @onclick="() => ViewChecklist(checklist.Id)">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                            @if (checklist.Status != ApplicationConstants.ChecklistStatuses.Completed)
-                                            {
-                                                <button class="btn btn-outline-success" @onclick="() => CompleteChecklist(checklist.Id)">
-                                                    <i class="bi bi-check-circle"></i>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary" @onclick="() => ViewChecklist(checklist.Id)">
+                                                    <i class="bi bi-eye"></i>
                                                 </button>
-                                            }
+                                                @if (checklist.Status != ApplicationConstants.ChecklistStatuses.Completed)
+                                                {
+                                                    <button class="btn btn-outline-success" @onclick="() => CompleteChecklist(checklist.Id)">
+                                                        <i class="bi bi-check-circle"></i>
+                                                    </button>
+                                                }
+                                            </div>
                                         </div>
                                     </div>
+                                }
+                            </div>
+                            @if (propertyChecklists.Count > 5)
+                            {
+                                <div class="mt-2">
+                                    <small class="text-muted">Showing 5 of @propertyChecklists.Count checklists</small>
                                 </div>
                             }
-                        </div>
-                        @if (propertyChecklists.Count > 5)
+                        }
+                        else
                         {
-                            <div class="mt-2">
-                                <small class="text-muted">Showing 5 of @propertyChecklists.Count checklists</small>
+                            <div class="text-center text-muted py-3">
+                                <i class="bi bi-list-check" style="font-size: 2rem;"></i>
+                                <p class="mb-0 mt-2">No checklists for this property</p>
+                                <button class="btn btn-sm btn-primary mt-2" @onclick="CreateChecklist">
+                                    <i class="bi bi-plus-circle"></i> Create First Checklist
+                                </button>
                             </div>
                         }
-                    }
-                    else
-                    {
-                        <div class="text-center text-muted py-3">
-                            <i class="bi bi-list-check" style="font-size: 2rem;"></i>
-                            <p class="mb-0 mt-2">No checklists for this property</p>
-                            <button class="btn btn-sm btn-primary mt-2" @onclick="CreateChecklist">
-                                <i class="bi bi-plus-circle"></i> Create First Checklist
-                            </button>
-                        </div>
-                    }
+                    </div>
                 </div>
-            </div>
+            }
         </div>
     </div>
 }
@@ -433,6 +443,18 @@ else
 @code {
     [Parameter]
     public Guid PropertyId { get; set; }
+
+    [Parameter]
+    public bool ShowCheckLists { get; set; } = true;
+
+    [Parameter]
+    public bool ShowDocuments { get; set; } = true;
+
+    [Parameter]
+    public bool ShowMaintenanceRequests { get; set; } = true;
+
+    [Parameter]
+    public bool ShowInspections { get; set; } = true;
 
     private Guid LeaseId { get; set; }
     private List<Lease> activeLeases = new();
@@ -490,16 +512,16 @@ else
     }
 
     private void EditProperty() => NavigationManager.NavigateTo($"/propertymanagement/properties/{PropertyId}/edit");
-    private void CreateLease() => NavigationManager.NavigateTo($"/propertymanagement/leases/create/?propertyid={PropertyId}");
+    private void CreateLease() => NavigationManager.NavigateTo($"/propertymanagement/leases/create/?PropertyId={PropertyId}");
     private void ViewLease() => NavigationManager.NavigateTo($"/propertymanagement/leases/{LeaseId}");
-    private void ViewDocuments() => NavigationManager.NavigateTo($"/propertymanagement/documents/?propertyid={PropertyId}");
+    private void ViewDocuments() => NavigationManager.NavigateTo($"/propertymanagement/documents/?PropertyId={PropertyId}");
     private void CreateInspection() => NavigationManager.NavigateTo($"/propertymanagement/inspections/create/{PropertyId}");
     private void CreateMaintenanceRequest() => NavigationManager.NavigateTo($"/propertymanagement/maintenance/create?PropertyId={PropertyId}");
     private void ViewMaintenanceRequest(Guid requestId) => NavigationManager.NavigateTo($"/propertymanagement/maintenance/{requestId}");
     private void ViewAllMaintenanceRequests() => NavigationManager.NavigateTo($"/propertymanagement/maintenance?propertyId={PropertyId}");
     private void BackToList() => NavigationManager.NavigateTo("/propertymanagement/properties");
     private void CreateChecklist() => NavigationManager.NavigateTo("/propertymanagement/checklists");
-    private void ViewChecklist(Guid checklistId) => NavigationManager.NavigateTo($"/propertymanagement/checklists/view/{checklistId}");
+    private void ViewChecklist(Guid checklistId) => NavigationManager.NavigateTo($"/propertymanagement/checklists/{checklistId}");
     private void CompleteChecklist(Guid checklistId) => NavigationManager.NavigateTo($"/propertymanagement/checklists/complete/{checklistId}");
 
     private async Task ViewDocument(Document doc)
