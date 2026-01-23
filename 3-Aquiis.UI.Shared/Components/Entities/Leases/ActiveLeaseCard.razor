@@ -1,0 +1,187 @@
+@using Aquiis.Core.Entities
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-file-text"></i> Active Lease
+        </h5>
+        @if (Lease != null && ShowViewButton && OnViewLease.HasDelegate)
+        {
+            <button class="btn btn-sm btn-outline-primary" @onclick="() => OnViewLease.InvokeAsync(Lease.Id)">
+                <i class="bi bi-eye"></i> View Details
+            </button>
+        }
+    </div>
+    <div class="card-body">
+        @if (Lease == null)
+        {
+            <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle"></i> No active lease for this property.
+                @if (ShowCreateButton && OnCreateLease.HasDelegate)
+                {
+                    <button class="btn btn-sm btn-primary ms-2" @onclick="OnCreateLease">
+                        <i class="bi bi-plus-circle"></i> Create Lease
+                    </button>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="text-muted small">Tenant</label>
+                        <div class="fw-bold">
+                            @if (Lease.Tenant != null)
+                            {
+                                <i class="bi bi-person"></i> @Lease.Tenant.FullName
+                                @if (ShowTenantContact && !string.IsNullOrEmpty(Lease.Tenant.Email))
+                                {
+                                    <br>
+                                    <small class="text-muted">@Lease.Tenant.Email</small>
+                                }
+                                @if (ShowTenantContact && !string.IsNullOrEmpty(Lease.Tenant.PhoneNumber))
+                                {
+                                    <br>
+                                    <small class="text-muted">@Lease.Tenant.PhoneNumber</small>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">Not assigned</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="text-muted small">Status</label>
+                        <div>
+                            <span class="badge @GetStatusBadgeClass(Lease.Status)">@Lease.Status</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="text-muted small">Lease Term</label>
+                        <div>
+                            <i class="bi bi-calendar-range"></i>
+                            <strong>@Lease.StartDate.ToString("MMM dd, yyyy")</strong> to
+                            <strong>@Lease.EndDate.ToString("MMM dd, yyyy")</strong>
+                        </div>
+                        <small class="text-muted">@GetRemainingDays() remaining</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="text-muted small">Monthly Rent</label>
+                        <div class="fs-4 text-primary fw-bold">
+                            @Lease.MonthlyRent.ToString("C")
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (ShowFinancialDetails)
+            {
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="text-muted small">Security Deposit</label>
+                            <div class="fw-bold">@Lease.SecurityDeposit.ToString("C")</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+
+                    </div>
+                </div>
+            }
+
+            @if (IsExpiringSoon)
+            {
+                <div class="alert alert-warning mb-0 mt-2">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Lease expiring soon!</strong> This lease expires in @GetDaysUntilExpiration() days.
+                    @if (ShowRenewButton && OnRenewLease.HasDelegate)
+                    {
+                        <button class="btn btn-sm btn-warning ms-2" @onclick="() => OnRenewLease.InvokeAsync(Lease.Id)">
+                            <i class="bi bi-arrow-repeat"></i> Renew Lease
+                        </button>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Lease? Lease { get; set; }
+
+    [Parameter]
+    public bool ShowViewButton { get; set; } = true;
+
+    [Parameter]
+    public bool ShowCreateButton { get; set; } = true;
+
+    [Parameter]
+    public bool ShowRenewButton { get; set; } = true;
+
+    [Parameter]
+    public bool ShowTenantContact { get; set; } = true;
+
+    [Parameter]
+    public bool ShowFinancialDetails { get; set; } = true;
+
+    [Parameter]
+    public EventCallback<Guid> OnViewLease { get; set; }
+
+    [Parameter]
+    public EventCallback OnCreateLease { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnRenewLease { get; set; }
+
+    private bool IsExpiringSoon => Lease != null && Lease.EndDate <= DateTime.Today.AddDays(60) && Lease.EndDate >= DateTime.Today;
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Active" => "bg-success",
+            "Pending" => "bg-warning",
+            "Expired" => "bg-danger",
+            "Terminated" => "bg-secondary",
+            "Offered" => "bg-info",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetRemainingDays()
+    {
+        if (Lease == null) return "";
+
+        var days = (Lease.EndDate - DateTime.Today).Days;
+        
+        if (days < 0)
+            return "Expired";
+        if (days == 0)
+            return "Expires today";
+        if (days == 1)
+            return "1 day";
+        if (days < 30)
+            return $"{days} days";
+        
+        var months = days / 30;
+        return months == 1 ? "1 month" : $"{months} months";
+    }
+
+    private int GetDaysUntilExpiration()
+    {
+        if (Lease == null) return 0;
+        return (Lease.EndDate - DateTime.Today).Days;
+    }
+}

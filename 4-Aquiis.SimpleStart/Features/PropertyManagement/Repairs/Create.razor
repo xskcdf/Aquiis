@@ -1,0 +1,276 @@
+@page "/propertymanagement/repairs/create"
+@page "/propertymanagement/repairs/create/{PropertyId:guid}"
+
+
+@using Aquiis.Core.Entities
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
+@inject RepairService RepairService
+@inject PropertyService PropertyService
+@inject NavigationManager Navigation
+@inject ToastService ToastService
+@rendermode InteractiveServer
+
+<PageTitle>New Repair - Aquiis</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="bi bi-tools me-2"></i>New Repair
+        </h1>
+        <button class="btn btn-outline-secondary" @onclick="Cancel">
+            <i class="bi bi-x-lg me-1"></i>Cancel
+        </button>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Repair Information</h5>
+                </div>
+                <div class="card-body">
+                    <EditForm Model="@model" OnValidSubmit="HandleSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="alert alert-danger" />
+
+                        <div class="row g-3">
+                            <div class="row mt-3">
+                                <!-- Property Selection -->
+                                <div class="col-md-6">
+                                    <label class="form-label">Property <span class="text-danger">*</span></label>
+                                    <InputSelect class="form-select" @bind-Value="model.PropertyId">
+                                        <option value="@Guid.Empty">-- Select Property --</option>
+                                        @foreach (var property in properties)
+                                        {
+                                            <option value="@property.Id">@property.Address</option>
+                                        }
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => model.PropertyId)" />
+                                </div>
+
+                                <!-- Repair Type -->
+                                <div class="col-md-6">
+                                    <label class="form-label">Repair Type <span class="text-danger">*</span></label>
+                                    <InputSelect class="form-select" @bind-Value="model.RepairType">
+                                        <option value="">-- Select Type --</option>
+                                        @foreach (var type in ApplicationConstants.RepairTypes.AllRepairTypes)
+                                        {
+                                            <option value="@type">@type</option>
+                                        }
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => model.RepairType)" />
+                                </div>
+                            </div>
+
+                            <div class="row mt-3">
+                                <!-- Description -->
+                                <div class="col-12">
+                                    <label class="form-label">Description <span class="text-danger">*</span></label>
+                                    <InputTextArea class="form-control" @bind-Value="model.Description" rows="3"
+                                                placeholder="Describe the repair work performed..." />
+                                    <ValidationMessage For="@(() => model.Description)" />
+                                </div>
+                            </div>
+
+                            <div class="row mt-3">
+                                <!-- Contractor/Company Name -->
+                                <div class="col-md-6">
+                                    <label class="form-label">Contractor/Company Name</label>
+                                    <InputText class="form-control" @bind-Value="model.ContractorName"
+                                            placeholder="Company or person name" />
+                                    <small class="form-text text-muted">e.g., "ABC Plumbing" or "John Doe"</small>
+                                </div>
+
+                                <!-- Contact Person -->
+                                <div class="col-md-6">
+                                    <label class="form-label">Contact Person</label>
+                                    <InputText class="form-control" @bind-Value="model.ContactPerson"
+                                            placeholder="Specific person (optional)" />
+                                    <small class="form-text text-muted">e.g., "Jane Smith" at company</small>
+                                </div>
+                            </div>
+
+                            <div class="row mt-3">
+                                <!-- Contractor Phone -->
+                                <div class="col-md-6">
+                                    <label class="form-label">Contractor Phone</label>
+                                    <InputText class="form-control" @bind-Value="model.ContractorPhone" 
+                                            placeholder="(555) 123-4567" />
+                                </div>
+                            </div>
+
+                            <div class="row mt-3">
+                                <!-- Completed On -->
+                                <div class="col-md-6">
+                                    <label class="form-label">Completed On</label>
+                                    <InputDate class="form-control" @bind-Value="model.CompletedOn" />
+                                    <small class="form-text text-muted">Leave blank if work is still in progress</small>
+                                </div>
+
+                                <!-- Duration -->
+                                <div class="col-md-6">
+                                    <label class="form-label">Duration (minutes)</label>
+                                    <InputNumber class="form-control" @bind-Value="model.DurationMinutes" />
+                                    <ValidationMessage For="@(() => model.DurationMinutes)" />
+                                </div>
+                            </div>
+
+                            <div class="row mt-3">
+                                <!-- Parts Replaced -->
+                                <div class="col-md-12">
+                                    <label class="form-label">Parts Replaced</label>
+                                    <InputTextArea class="form-control" @bind-Value="model.PartsReplaced" rows="2"
+                                                placeholder="List parts or materials used..." />
+                                </div>
+                            </div>
+
+                            <div class="row mt-3">
+                                 <!-- Cost -->
+                                <div class="col-md-6">
+                                    <label class="form-label">Cost</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <InputNumber class="form-control" @bind-Value="model.Cost" />
+                                    </div>
+                                    <ValidationMessage For="@(() => model.Cost)" />
+                                </div>
+
+                                <!-- Warranty Info -->
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <InputCheckbox class="form-check-input" @bind-Value="model.WarrantyApplies" id="warrantyCheck" />
+                                        <label class="form-check-label" for="warrantyCheck">
+                                            Warranty Applies
+                                        </label>
+                                    </div>
+                                </div>
+
+                                @if (model.WarrantyApplies)
+                                {
+                                    <div class="col-md-3">
+                                        <label class="form-label">Warranty Expires On</label>
+                                        <InputDate class="form-control" @bind-Value="model.WarrantyExpiresOn" />
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="row mt-3">
+                                <!-- Notes -->
+                                <div class="col-12">
+                                    <label class="form-label">Additional Notes</label>
+                                    <InputTextArea class="form-control" @bind-Value="model.Notes" rows="3"
+                                                placeholder="Any additional information. Warranty details, special instructions, etc." />
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <hr />
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">
+                                            Cancel
+                                        </button>
+                                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                            @if (isSubmitting)
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-1"></span>
+                                            }
+                                            <i class="bi bi-check-lg me-1"></i>Save Repair
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-info-circle me-2"></i>About Repairs</h6>
+                    <p class="card-text small">
+                        Use this form to log work performed on your properties. This is ideal for:
+                    </p>
+                    <ul class="small">
+                        <li>Quick repairs that don't need workflow tracking</li>
+                        <li>Historical work completed before using this system</li>
+                        <li>Work currently in progress (leave Completed On blank)</li>
+                        <li>Contractor work with warranty tracking</li>
+                    </ul>
+                    <hr />
+                    <p class="card-text small mb-0">
+                        <strong>Tip:</strong> Leave "Completed On" blank if the work is still in progress, or hasn't been started yet. 
+                        You can mark it complete later by editing the repair.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public Guid? PropertyId { get; set; }
+    private RepairFormModel model = new();
+    private List<Property> properties = new();
+    private bool isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            properties = await PropertyService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading properties: {ex.Message}");
+        }
+        if (PropertyId.HasValue && PropertyId != Guid.Empty)
+        {
+            model.PropertyId = PropertyId.Value;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        isSubmitting = true;
+        try
+        {
+            // Map form model to entity - service will set tracking fields
+            var repair = new Repair
+            {
+                PropertyId = model.PropertyId,
+                Description = model.Description,
+                RepairType = model.RepairType,
+                ContractorName = model.ContractorName,
+                ContactPerson = model.ContactPerson,
+                ContractorPhone = model.ContractorPhone,
+                CompletedOn = model.CompletedOn,
+                Cost = model.Cost,
+                DurationMinutes = model.DurationMinutes,
+                PartsReplaced = model.PartsReplaced,
+                Notes = model.Notes,
+                WarrantyApplies = model.WarrantyApplies,
+                WarrantyExpiresOn = model.WarrantyExpiresOn,
+                MaintenanceRequestId = model.MaintenanceRequestId,
+                LeaseId = model.LeaseId
+            };
+
+            await RepairService.CreateAsync(repair);
+            ToastService.ShowSuccess("Repair logged successfully.");
+            Navigation.NavigateTo("/propertymanagement/repairs");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error saving repair: {ex.Message}");
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel() => Navigation.NavigateTo("/propertymanagement/repairs");
+}
+

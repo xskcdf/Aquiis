@@ -5,7 +5,7 @@
 @using Aquiis.Application.Services.PdfGenerators
 @using Microsoft.AspNetCore.Authorization
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
-@inject FinancialReportService FinancialReportService
+@inject SimpleStartFinancialReportService FinancialReportService
 @inject FinancialReportPdfGenerator PdfGenerator
 @inject AuthenticationStateProvider AuthenticationStateProvider
 

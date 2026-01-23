@@ -124,6 +124,8 @@ namespace Aquiis.Core.Entities
         // Navigation properties
         public virtual ICollection<Lease> Leases { get; set; } = new List<Lease>();
         public virtual ICollection<Document> Documents { get; set; } = new List<Document>();
+        public virtual ICollection<Repair> Repairs { get; set; } = new List<Repair>();
+        public virtual ICollection<MaintenanceRequest> MaintenanceRequests { get; set; } = new List<MaintenanceRequest>();
 
         // Computed property for pending application count
         [NotMapped]

@@ -69,6 +69,8 @@ namespace Aquiis.Application.Services
                 return await _context.Properties
                     .Include(p => p.Leases)
                     .Include(p => p.Documents)
+                    .Include(p => p.Repairs)
+                    .Include(p => p.MaintenanceRequests)
                     .FirstOrDefaultAsync(p => p.Id == propertyId && 
                                             p.OrganizationId == organizationId && 
                                             !p.IsDeleted);
@@ -98,6 +100,8 @@ namespace Aquiis.Application.Services
                 return await _context.Properties
                     .Include(p => p.Leases)
                     .Include(p => p.Documents)
+                    .Include(p => p.Repairs)
+                    .Include(p => p.MaintenanceRequests)
                     .Where(p => !p.IsDeleted && p.OrganizationId == organizationId)
                     .ToListAsync();
             }
@@ -255,6 +259,150 @@ namespace Aquiis.Application.Services
             catch (Exception ex)
             {
                 await HandleExceptionAsync(ex, "CalculateOccupancyRate");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Calculates the annual occupancy rate for a single property based on days occupied.
+        /// Default period starts April 1 of current year (fiscal year).
+        /// </summary>
+        /// <param name="propertyId">Property ID to calculate occupancy for</param>
+        /// <param name="periodStart">Start date of annual period (defaults to April 1 of current year)</param>
+        /// <returns>Occupancy rate as percentage (0-100)</returns>
+        public async Task<decimal> CalculatePropertyOccupancyRateAsync(Guid propertyId, DateTime? periodStart = null)
+        {
+            try
+            {
+                var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+
+                // Default to April 1 of current year if not specified
+                var startDate = periodStart ?? new DateTime(DateTime.Today.Year, 4, 1);
+                var endDate = startDate.AddYears(1).AddDays(-1);
+
+                // Get all leases for this property that overlap with the period
+                // Include all occupied statuses: Active, Renewed, Month-to-Month, Notice Given, Terminated
+                var leases = await _context.Leases
+                    .Where(l => l.PropertyId == propertyId &&
+                               l.OrganizationId == organizationId &&
+                               !l.IsDeleted &&
+                               (l.Status == ApplicationConstants.LeaseStatuses.Active || 
+                                l.Status == ApplicationConstants.LeaseStatuses.Renewed ||
+                                l.Status == ApplicationConstants.LeaseStatuses.MonthToMonth ||
+                                l.Status == ApplicationConstants.LeaseStatuses.NoticeGiven ||
+                                l.Status == ApplicationConstants.LeaseStatuses.Terminated) &&
+                               l.StartDate <= endDate)
+                    .ToListAsync();
+
+                // Calculate days occupied within the period
+                var daysOccupied = 0;
+                foreach (var lease in leases)
+                {
+                    // For terminated leases, use ActualMoveOutDate; otherwise use EndDate
+                    var effectiveEndDate = lease.Status == ApplicationConstants.LeaseStatuses.Terminated && lease.ActualMoveOutDate.HasValue
+                        ? lease.ActualMoveOutDate.Value
+                        : lease.EndDate;
+                    
+                    // Only count if lease overlaps with report period
+                    if (effectiveEndDate >= startDate)
+                    {
+                        var leaseStart = lease.StartDate < startDate ? startDate : lease.StartDate;
+                        var leaseEnd = effectiveEndDate > endDate ? endDate : effectiveEndDate;
+                    
+                        if (leaseEnd >= leaseStart)
+                        {
+                            daysOccupied += (leaseEnd - leaseStart).Days + 1; // +1 to include both start and end dates
+                        }
+                    }
+                }
+
+                // Calculate total days in period
+                var totalDays = (endDate - startDate).Days + 1;
+
+                // Return occupancy rate as percentage
+                return totalDays > 0 ? (decimal)daysOccupied / totalDays * 100 : 0;
+            }
+            catch (Exception ex)
+            {
+                await HandleExceptionAsync(ex, "CalculatePropertyOccupancyRate");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Calculates the annual occupancy rate for the entire portfolio.
+        /// Average of all properties' occupancy rates weighted by number of properties.
+        /// Default period starts April 1 of current year (fiscal year).
+        /// </summary>
+        /// <param name="periodStart">Start date of annual period (defaults to April 1 of current year)</param>
+        /// <returns>Portfolio occupancy rate as percentage (0-100)</returns>
+        public async Task<decimal> CalculatePortfolioOccupancyRateAsync(DateTime? periodStart = null)
+        {
+            try
+            {
+                var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+
+                // Get all properties for the organization
+                var properties = await _context.Properties
+                    .Where(p => !p.IsDeleted && p.OrganizationId == organizationId)
+                    .Select(p => p.Id)
+                    .ToListAsync();
+
+                if (properties.Count == 0)
+                {
+                    return 0;
+                }
+
+                // Calculate total occupied days and total available days across all properties
+                var startDate = periodStart ?? new DateTime(DateTime.Today.Year, 4, 1);
+                var endDate = startDate.AddYears(1).AddDays(-1);
+                var totalDays = (endDate - startDate).Days + 1;
+
+                var totalDaysOccupied = 0;
+                var totalDaysAvailable = properties.Count * totalDays;
+
+                // For each property, calculate days occupied
+                foreach (var propertyId in properties)
+                {
+                    var leases = await _context.Leases
+                        .Where(l => l.PropertyId == propertyId &&
+                                   l.OrganizationId == organizationId &&
+                                   !l.IsDeleted &&
+                                   (l.Status == ApplicationConstants.LeaseStatuses.Active || 
+                                    l.Status == ApplicationConstants.LeaseStatuses.Renewed ||
+                                    l.Status == ApplicationConstants.LeaseStatuses.MonthToMonth ||
+                                    l.Status == ApplicationConstants.LeaseStatuses.NoticeGiven ||
+                                    l.Status == ApplicationConstants.LeaseStatuses.Terminated) &&
+                                   l.StartDate <= endDate)
+                        .ToListAsync();
+
+                    foreach (var lease in leases)
+                    {
+                        // For terminated leases, use ActualMoveOutDate; otherwise use EndDate
+                        var effectiveEndDate = lease.Status == ApplicationConstants.LeaseStatuses.Terminated && lease.ActualMoveOutDate.HasValue
+                            ? lease.ActualMoveOutDate.Value
+                            : lease.EndDate;
+                        
+                        // Only count if lease overlaps with report period
+                        if (effectiveEndDate >= startDate)
+                        {
+                            var leaseStart = lease.StartDate < startDate ? startDate : lease.StartDate;
+                            var leaseEnd = effectiveEndDate > endDate ? endDate : effectiveEndDate;
+                        
+                            if (leaseEnd >= leaseStart)
+                            {
+                                totalDaysOccupied += (leaseEnd - leaseStart).Days + 1;
+                            }
+                        }
+                    }
+                }
+
+                // Return portfolio occupancy rate
+                return totalDaysAvailable > 0 ? (decimal)totalDaysOccupied / totalDaysAvailable * 100 : 0;
+            }
+            catch (Exception ex)
+            {
+                await HandleExceptionAsync(ex, "CalculatePortfolioOccupancyRate");
                 throw;
             }
         }

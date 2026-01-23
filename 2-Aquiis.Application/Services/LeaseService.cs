@@ -210,6 +210,7 @@ namespace Aquiis.Application.Services
                     .Include(l => l.Document)
                     .Include(l => l.Documents)
                     .Include(l => l.Invoices)
+                        .ThenInclude(i => i.Payments)
                     .Where(l => l.Id == leaseId
                         && !l.IsDeleted
                         && l.Property.OrganizationId == organizationId)

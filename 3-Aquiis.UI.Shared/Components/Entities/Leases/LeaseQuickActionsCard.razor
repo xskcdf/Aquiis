@@ -19,8 +19,8 @@
             </button>
             @if (Lease.DocumentId == null)
             {
-                <button class="btn btn-outline-warning" @onclick="() => OnGenerateLeaseDocument.InvokeAsync(Lease.Id)" disabled="@isGenerating">
-                    @if (isGenerating)
+                <button class="btn btn-outline-warning" @onclick="() => OnGenerateLeaseDocument.InvokeAsync(Lease.Id)" disabled="@IsGenerating">
+                    @if (IsGenerating)
                     {
                         <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                         <span>Generating...</span>
@@ -69,6 +69,6 @@
 
     [Parameter]
     public EventCallback<Guid> OnDownloadDocument { get; set; }
-
-    private bool isGenerating = false;
+    [Parameter]
+    public bool IsGenerating { get; set; } = false;
 }

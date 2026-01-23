@@ -1,0 +1,134 @@
+@using Aquiis.Core.Entities
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <strong>Inspection Date:</strong>
+        <p>@Inspection.CompletedOn.ToString("MMMM dd, yyyy")</p>
+    </div>
+    <div class="col-md-3">
+        <strong>Type:</strong>
+        <p><span class="badge bg-info">@Inspection.InspectionType</span></p>
+    </div>
+    <div class="col-md-3">
+        <strong>Overall Condition:</strong>
+        <p><span class="badge @GetConditionBadge(Inspection.OverallCondition)">@Inspection.OverallCondition</span></p>
+    </div>
+    <div class="col-md-3">
+        <strong>Inspected By:</strong>
+        <p>@(Inspection.InspectedBy ?? "Not specified")</p>
+    </div>
+</div>
+
+@if (Inspection.Lease != null)
+{
+    <div class="row mb-3">
+        <div class="col-12">
+            <strong>Tenant:</strong> @Inspection.Lease.Tenant?.FullName
+        </div>
+    </div>
+}
+
+<!-- Inspection Sections -->
+<InspectionSectionView Title="Exterior" Icon="house" Items="GetExteriorItems(Inspection)" />
+<InspectionSectionView Title="Interior" Icon="door-open" Items="GetInteriorItems(Inspection)" />
+<InspectionSectionView Title="Kitchen" Icon="cup-hot" Items="GetKitchenItems(Inspection)" />
+<InspectionSectionView Title="Bathroom" Icon="droplet" Items="GetBathroomItems(Inspection)" />
+<InspectionSectionView Title="Systems & Safety" Icon="gear" Items="GetSystemsItems(Inspection)" />
+
+<!-- Overall Assessment -->
+@if (!string.IsNullOrEmpty(Inspection.GeneralNotes))
+{
+    <div class="card mb-2">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-clipboard-data"></i> General Notes</h6>
+        </div>
+        <div class="card-body">
+            <p class="mb-0">@Inspection.GeneralNotes</p>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Inspection.ActionItemsRequired))
+{
+    <div class="alert alert-warning mb-0">
+        <strong><i class="bi bi-exclamation-triangle"></i> Action Items Required:</strong>
+        <p class="mb-0 mt-2">@Inspection.ActionItemsRequired</p>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Inspection Inspection { get; set; } = default!;
+
+    private string GetConditionBadge(string condition)
+    {
+        return condition switch
+        {
+            "Excellent" => "bg-success",
+            "Good" => "bg-info",
+            "Fair" => "bg-warning",
+            "Poor" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private List<(string Label, bool IsGood, string? Notes)> GetExteriorItems(Inspection inspection)
+    {
+        return new List<(string Label, bool IsGood, string? Notes)>
+        {
+            ("Roof", inspection.ExteriorRoofGood, inspection.ExteriorRoofNotes),
+            ("Gutters & Downspouts", inspection.ExteriorGuttersGood, inspection.ExteriorGuttersNotes),
+            ("Siding/Exterior Walls", inspection.ExteriorSidingGood, inspection.ExteriorSidingNotes),
+            ("Windows (Exterior)", inspection.ExteriorWindowsGood, inspection.ExteriorWindowsNotes),
+            ("Doors (Exterior)", inspection.ExteriorDoorsGood, inspection.ExteriorDoorsNotes),
+            ("Foundation", inspection.ExteriorFoundationGood, inspection.ExteriorFoundationNotes),
+            ("Landscaping", inspection.LandscapingGood, inspection.LandscapingNotes)
+        };
+    }
+
+    private List<(string Label, bool IsGood, string? Notes)> GetInteriorItems(Inspection inspection)
+    {
+        return new List<(string Label, bool IsGood, string? Notes)>
+        {
+            ("Walls", inspection.InteriorWallsGood, inspection.InteriorWallsNotes),
+            ("Ceilings", inspection.InteriorCeilingsGood, inspection.InteriorCeilingsNotes),
+            ("Floors", inspection.InteriorFloorsGood, inspection.InteriorFloorsNotes),
+            ("Doors (Interior)", inspection.InteriorDoorsGood, inspection.InteriorDoorsNotes),
+            ("Windows (Interior)", inspection.InteriorWindowsGood, inspection.InteriorWindowsNotes)
+        };
+    }
+
+    private List<(string Label, bool IsGood, string? Notes)> GetKitchenItems(Inspection inspection)
+    {
+        return new List<(string Label, bool IsGood, string? Notes)>
+        {
+            ("Appliances", inspection.KitchenAppliancesGood, inspection.KitchenAppliancesNotes),
+            ("Cabinets", inspection.KitchenCabinetsGood, inspection.KitchenCabinetsNotes),
+            ("Countertops", inspection.KitchenCountersGood, inspection.KitchenCountersNotes),
+            ("Sink & Plumbing", inspection.KitchenSinkPlumbingGood, inspection.KitchenSinkPlumbingNotes)
+        };
+    }
+
+    private List<(string Label, bool IsGood, string? Notes)> GetBathroomItems(Inspection inspection)
+    {
+        return new List<(string Label, bool IsGood, string? Notes)>
+        {
+            ("Toilet", inspection.BathroomToiletGood, inspection.BathroomToiletNotes),
+            ("Sink & Vanity", inspection.BathroomSinkGood, inspection.BathroomSinkNotes),
+            ("Tub/Shower", inspection.BathroomTubShowerGood, inspection.BathroomTubShowerNotes),
+            ("Ventilation", inspection.BathroomVentilationGood, inspection.BathroomVentilationNotes)
+        };
+    }
+
+    private List<(string Label, bool IsGood, string? Notes)> GetSystemsItems(Inspection inspection)
+    {
+        return new List<(string Label, bool IsGood, string? Notes)>
+        {
+            ("HVAC System", inspection.HvacSystemGood, inspection.HvacSystemNotes),
+            ("Electrical System", inspection.ElectricalSystemGood, inspection.ElectricalSystemNotes),
+            ("Plumbing System", inspection.PlumbingSystemGood, inspection.PlumbingSystemNotes),
+            ("Smoke Detectors", inspection.SmokeDetectorsGood, inspection.SmokeDetectorsNotes),
+            ("Carbon Monoxide Detectors", inspection.CarbonMonoxideDetectorsGood, inspection.CarbonMonoxideDetectorsNotes)
+        };
+    }
+}

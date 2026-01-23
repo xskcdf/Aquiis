@@ -1,0 +1,163 @@
+@using Aquiis.Core.Entities
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-tools"></i> Repairs
+        </h5>
+        @if (ShowAddButton && OnAddRepair.HasDelegate)
+        {
+            <button class="btn btn-sm btn-primary" @onclick="OnAddRepair">
+                <i class="bi bi-plus-circle"></i> Add Repair
+            </button>
+        }
+    </div>
+    <div class="card-body">
+        @if (Repairs == null)
+        {
+            <div class="text-center py-3">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        }
+        else if (!Repairs.Any())
+        {
+            <p class="text-muted text-center py-3">No repairs recorded for this property.</p>
+        }
+        else
+        {
+            <div class="list-group list-group-flush">
+                @foreach (var repair in Repairs.OrderByDescending(r => r.CompletedOn ?? r.CreatedOn))
+                {
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">
+                                    @if (ShowLinks && OnViewRepair.HasDelegate)
+                                    {
+                                        <a href="javascript:void(0)" @onclick="() => OnViewRepair.InvokeAsync(repair.Id)" class="text-decoration-none">
+                                            @repair.Description
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        @repair.Description
+                                    }
+                                </h6>
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <span class="badge bg-secondary me-2">@repair.RepairType</span>
+                                        @if (!string.IsNullOrEmpty(repair.ContractorName))
+                                        {
+                                            <i class="bi bi-person"></i> @repair.ContractorName
+                                        }
+                                    </small>
+                                </div>
+                                @if (!string.IsNullOrEmpty(repair.PartsReplaced))
+                                {
+                                    <small class="text-muted d-block">
+                                        <i class="bi bi-gear"></i> Parts: @repair.PartsReplaced
+                                    </small>
+                                }
+                            </div>
+                            <div class="text-end ms-3">
+                                @if (repair.CompletedOn.HasValue)
+                                {
+                                    <span class="badge bg-success mb-1">Completed</span>
+                                    <br>
+                                    <small class="text-muted">@repair.CompletedOn.Value.ToString("MMM dd, yyyy")</small>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning mb-1">In Progress</span>
+                                    <br>
+                                    <small class="text-muted">Started @repair.CreatedOn.ToString("MMM dd, yyyy")</small>
+                                }
+                                @if (repair.Cost > 0)
+                                {
+                                    <div class="mt-1">
+                                        <strong class="text-primary">@repair.Cost.ToString("C")</strong>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        @if (repair.DurationMinutes > 0 || repair.WarrantyApplies)
+                        {
+                            <div class="mt-2 pt-2 border-top">
+                                <small class="text-muted">
+                                    @if (repair.DurationMinutes > 0)
+                                    {
+                                        <span class="me-3">
+                                            <i class="bi bi-clock"></i> Duration: @FormatDuration(repair.DurationMinutes)
+                                        </span>
+                                    }
+                                    @if (repair.WarrantyApplies && repair.WarrantyExpiresOn.HasValue)
+                                    {
+                                        <span>
+                                            <i class="bi bi-shield-check"></i> Warranty until @repair.WarrantyExpiresOn.Value.ToString("MMM dd, yyyy")
+                                        </span>
+                                    }
+                                </small>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            @if (ShowTotalCost)
+            {
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <strong>Total Repair Costs:</strong>
+                        <strong class="text-primary">@Repairs.Sum(r => r.Cost).ToString("C")</strong>
+                    </div>
+                    @if (Repairs.Any(r => !r.CompletedOn.HasValue))
+                    {
+                        <div class="d-flex justify-content-between mt-1">
+                            <small class="text-muted">In Progress:</small>
+                            <small class="text-muted">@Repairs.Where(r => !r.CompletedOn.HasValue).Sum(r => r.Cost).ToString("C")</small>
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public List<Repair>? Repairs { get; set; }
+
+    [Parameter]
+    public bool ShowAddButton { get; set; } = true;
+
+    [Parameter]
+    public bool ShowLinks { get; set; } = true;
+
+    [Parameter]
+    public bool ShowTotalCost { get; set; } = true;
+
+    [Parameter]
+    public EventCallback OnAddRepair { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnViewRepair { get; set; }
+
+    [Parameter]
+    public EventCallback OnViewAllRepairs { get; set; }
+
+    private string FormatDuration(int minutes)
+    {
+        if (minutes < 60)
+            return $"{minutes} min";
+        
+        var hours = minutes / 60;
+        var remainingMinutes = minutes % 60;
+        
+        if (remainingMinutes == 0)
+            return $"{hours} hr";
+        
+        return $"{hours} hr {remainingMinutes} min";
+    }
+}

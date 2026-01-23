@@ -40,21 +40,82 @@
             </div>
         </div>
         }
+        @if(ShowTotal){
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h6>Total Properties</h6>
+                    <h4>@TotalPropertiesCount</h4>
+                </div>
+            </div>
+        </div>
+        }
+        @if(ShowActiveLeases){
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h6>Active Leases</h6>
+                    <h4>@ActiveLeasesCount</h4>
+                </div>
+            </div>
+        </div>
+        }
+        @if(ShowActiveTenants){
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h6>Active Tenants</h6>
+                    <h4>@ActiveTenantsCount</h4>
+                </div>
+            </div>
+        </div>
+        }
+        @if(ShowOccupancyRate){
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h6>Occupancy Rate</h6>
+                    <h4>@OccupancyRate.ToString("P")</h4>
+                </div>
+            </div>
+        </div>
+        }
     </div>
 </div>
 
     @code {
         [Parameter]
+        public bool ShowTotal { get; set; } = true;
+
+        [Parameter]
         public bool ShowAvailable { get; set; } = true;
 
         [Parameter]
-        public bool ShowPending { get; set; } = true;
+        public bool ShowPending { get; set; } = false;
 
         [Parameter]
         public bool ShowOccupied { get; set; } = true;
         
         [Parameter]
         public bool ShowMonthlyRent { get; set; } = true;
+
+        [Parameter]
+        public bool ShowActiveTenants { get; set; } = false;
+
+        [Parameter]
+        public bool ShowActiveLeases { get; set; } = false;
+
+        [Parameter]
+        public bool ShowOccupancyRate { get; set; } = false;
+
+        [Parameter]
+        public int TotalPropertiesCount { get; set; }
+
+        [Parameter]
+        public int ActiveTenantsCount { get; set; }
+
+        [Parameter]
+        public int ActiveLeasesCount { get; set; }
 
         [Parameter]
         public int AvailableCount { get; set; }
@@ -67,4 +128,7 @@
 
         [Parameter]
         public decimal TotalMonthlyRent { get; set; }
+
+        [Parameter]
+        public decimal OccupancyRate { get; set; }
     }

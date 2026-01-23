@@ -67,6 +67,23 @@ namespace Aquiis.Core.Entities
         public virtual Property? Property { get; set; }
         public virtual Lease? Lease { get; set; }
 
+        /// <summary>
+        /// Collection of repairs that comprise this maintenance request.
+        /// A MaintenanceRequest CONSISTS of one or more Repairs (composition relationship).
+        /// Professional product: MR must have at least one repair before completion.
+        /// </summary>
+        public virtual ICollection<Repair> Repairs { get; set; } = new List<Repair>();
+
+        // Computed properties for repair aggregation
+        [NotMapped]
+        public decimal TotalRepairCost => Repairs?.Sum(r => r.Cost) ?? 0;
+
+        [NotMapped]
+        public int RepairCount => Repairs?.Count ?? 0;
+
+        [NotMapped]
+        public int TotalRepairDuration => Repairs?.Sum(r => r.DurationMinutes) ?? 0;
+
         // Computed property for days open
         [NotMapped]
         public int DaysOpen

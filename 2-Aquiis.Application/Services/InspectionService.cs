@@ -2,7 +2,6 @@ using Aquiis.Core.Interfaces.Services;
 using Aquiis.Core.Constants;
 using Aquiis.Core.Entities;
 using Aquiis.Core.Interfaces;
-using Aquiis.Application.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -113,6 +112,25 @@ namespace Aquiis.Application.Services
                 .Where(i => i.PropertyId == propertyId && !i.IsDeleted && i.OrganizationId == organizationId)
                 .OrderByDescending(i => i.CompletedOn)
                 .ToListAsync();
+        }
+
+        /// <summary>
+        /// Gets the most recent routine inspection for a property.
+        /// </summary>
+        public async Task<Inspection?> GetLastRoutineInspectionAsync(Guid propertyId)
+        {
+            var organizationId = await GetActiveOrganizationIdAsync();
+
+            return await _context.Inspections
+                .Include(i => i.Property)
+                .Include(i => i.Lease)
+                    .ThenInclude(l => l!.Tenant)
+                .Where(i => i.PropertyId == propertyId 
+                    && i.InspectionType == ApplicationConstants.InspectionTypes.Routine
+                    && !i.IsDeleted 
+                    && i.OrganizationId == organizationId)
+                .OrderByDescending(i => i.CompletedOn)
+                .FirstOrDefaultAsync();
         }
 
         /// <summary>

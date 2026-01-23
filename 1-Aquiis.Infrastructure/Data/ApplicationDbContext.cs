@@ -69,6 +69,7 @@ namespace Aquiis.Infrastructure.Data
         public DbSet<Document> Documents { get; set; }
         public DbSet<Inspection> Inspections { get; set; }
         public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
+        public DbSet<Repair> Repairs { get; set; }
         public DbSet<OrganizationSettings> OrganizationSettings { get; set; }
         public DbSet<SchemaVersion> SchemaVersions { get; set; }
         public DbSet<ChecklistTemplate> ChecklistTemplates { get; set; }
@@ -271,7 +272,7 @@ namespace Aquiis.Infrastructure.Data
             modelBuilder.Entity<MaintenanceRequest>(entity =>
             {
                 entity.HasOne(m => m.Property)
-                    .WithMany()
+                    .WithMany(p => p.MaintenanceRequests)
                     .HasForeignKey(m => m.PropertyId)
                     .OnDelete(DeleteBehavior.Restrict);
 
@@ -287,6 +288,39 @@ namespace Aquiis.Infrastructure.Data
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.Priority);
                 entity.HasIndex(e => e.RequestedOn);
+            });
+
+            // Configure Repair entity
+            modelBuilder.Entity<Repair>(entity =>
+            {
+                // Required relationship: Property (Restrict - can't delete property with repairs)
+                entity.HasOne(r => r.Property)
+                    .WithMany(p => p.Repairs)
+                    .HasForeignKey(r => r.PropertyId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Optional relationship: MaintenanceRequest (SetNull - repairs can outlive MR)
+                entity.HasOne(r => r.MaintenanceRequest)
+                    .WithMany(mr => mr.Repairs)
+                    .HasForeignKey(r => r.MaintenanceRequestId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                // Optional relationship: Lease (SetNull - repairs can outlive lease)
+                entity.HasOne(r => r.Lease)
+                    .WithMany()
+                    .HasForeignKey(r => r.LeaseId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                // Decimal precision for Cost field
+                entity.Property(e => e.Cost).HasPrecision(18, 2);
+                
+                // Indexes for query optimization
+                entity.HasIndex(e => e.OrganizationId);
+                entity.HasIndex(e => e.PropertyId);
+                entity.HasIndex(e => e.MaintenanceRequestId);
+                entity.HasIndex(e => e.LeaseId);
+                entity.HasIndex(e => e.CompletedOn);
+                entity.HasIndex(e => e.RepairType);
             });
 
             // Configure OrganizationSettings entity

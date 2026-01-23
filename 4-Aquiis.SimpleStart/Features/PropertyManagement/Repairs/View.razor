@@ -1,0 +1,356 @@
+@page "/propertymanagement/repairs/{id:guid}"
+@attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
+
+@inject RepairService RepairService
+@inject NavigationManager Navigation
+@inject ToastService ToastService
+@rendermode InteractiveServer
+
+<PageTitle>Repair Details - Aquiis</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="bi bi-tools me-2"></i>Repair Details
+        </h1>
+        <div class="btn-group">
+            <button class="btn btn-outline-primary" @onclick="NavigateToEdit">
+                <i class="bi bi-pencil me-1"></i>Edit
+            </button>
+            <button class="btn btn-outline-secondary" @onclick="Back">
+                <i class="bi bi-arrow-left me-1"></i>Back to List
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading repair details...</p>
+        </div>
+    }
+    else if (repair == null)
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Repair not found.
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Status Banner -->
+                @if (!repair.IsCompleted)
+                {
+                    <div class="alert alert-warning">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-clock me-2"></i>
+                                <strong>In Progress</strong> - This repair has not been marked as completed yet.
+                            </div>
+                            <button class="btn btn-sm btn-success" @onclick="MarkComplete">
+                                <i class="bi bi-check-circle me-1"></i>Mark Complete
+                            </button>
+                        </div>
+                    </div>
+                }
+                else if (repair.IsUnderWarranty)
+                {
+                    <div class="alert alert-info">
+                        <i class="bi bi-shield-check me-2"></i>
+                        <strong>Under Warranty</strong> - Expires @repair.WarrantyExpiresOn?.ToShortDateString()
+                    </div>
+                }
+
+                <!-- Basic Information -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">Basic Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-3">Property:</dt>
+                            <dd class="col-sm-9">
+                                <strong>@repair.Property?.Address</strong>
+                                <br /><small class="text-muted">@repair.Property?.Address</small>
+                            </dd>
+
+                            <dt class="col-sm-3">Repair Type:</dt>
+                            <dd class="col-sm-9">
+                                <span class="badge bg-secondary">@repair.RepairType</span>
+                            </dd>
+
+                            <dt class="col-sm-3">Description:</dt>
+                            <dd class="col-sm-9">@repair.Description</dd>
+
+                            @if (repair.CompletedOn.HasValue)
+                            {
+                                <dt class="col-sm-3">Completed On:</dt>
+                                <dd class="col-sm-9">@repair.CompletedOn.Value.ToLongDateString()</dd>
+                            }
+
+                            @if (!string.IsNullOrEmpty(repair.ContractorName))
+                            {
+                                <dt class="col-sm-3">Contractor/Company:</dt>
+                                <dd class="col-sm-9">@repair.ContractorName</dd>
+                            }
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Cost and Time -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">Cost & Duration</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted small mb-1">Total Cost</h6>
+                                <p class="h4 text-primary mb-0">
+                                    @repair.Cost.ToString("C")
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted small mb-1">Duration</h6>
+                                <p class="h4 text-secondary mb-0">
+                                    @if (repair.DurationMinutes > 0)
+                                    {
+                                        @repair.DurationDisplay
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Not specified</span>
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contractor Information -->
+                @if (!string.IsNullOrEmpty(repair.ContractorName) || !string.IsNullOrEmpty(repair.ContactPerson) || !string.IsNullOrEmpty(repair.ContractorPhone))
+                {
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">Contractor Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                @if (!string.IsNullOrEmpty(repair.ContractorName))
+                                {
+                                    <dt class="col-sm-3">Company/Name:</dt>
+                                    <dd class="col-sm-9">@repair.ContractorName</dd>
+                                }
+
+                                @if (!string.IsNullOrEmpty(repair.ContactPerson))
+                                {
+                                    <dt class="col-sm-3">Contact Person:</dt>
+                                    <dd class="col-sm-9">@repair.ContactPerson</dd>
+                                }
+
+                                @if (!string.IsNullOrEmpty(repair.ContractorPhone))
+                                {
+                                    <dt class="col-sm-3">Phone:</dt>
+                                    <dd class="col-sm-9">
+                                        <a href="tel:@repair.ContractorPhone">@repair.ContractorPhone</a>
+                                    </dd>
+                                }
+                            </dl>
+                        </div>
+                    </div>
+                }
+
+                <!-- Parts and Materials -->
+                @if (!string.IsNullOrEmpty(repair.PartsReplaced))
+                {
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">Parts & Materials</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0">@repair.PartsReplaced</p>
+                        </div>
+                    </div>
+                }
+
+                <!-- Warranty Information -->
+                @if (repair.WarrantyApplies)
+                {
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-shield-check me-2"></i>Warranty Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-3">Status:</dt>
+                                <dd class="col-sm-9">
+                                    @if (repair.IsUnderWarranty)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Expired</span>
+                                    }
+                                </dd>
+
+                                @if (repair.WarrantyExpiresOn.HasValue)
+                                {
+                                    <dt class="col-sm-3">Expires On:</dt>
+                                    <dd class="col-sm-9">@repair.WarrantyExpiresOn.Value.ToLongDateString()</dd>
+                                }
+                            </dl>
+                        </div>
+                    </div>
+                }
+
+                <!-- Additional Notes -->
+                @if (!string.IsNullOrEmpty(repair.Notes))
+                {
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">Additional Notes</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0 white-space-pre-wrap">@repair.Notes</p>
+                        </div>
+                    </div>
+                }
+
+                <!-- Related Maintenance Request -->
+                @if (repair.MaintenanceRequestId.HasValue)
+                {
+                    <div class="card mb-3 border-primary">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="bi bi-link-45deg me-2"></i>Part of Maintenance Request
+                            </h6>
+                            <p class="card-text small mb-0">
+                                This repair is associated with a maintenance request workflow.
+                            </p>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Audit Information -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="card-title mb-0">Audit Trail</h6>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0 small">
+                            <dt class="col-sm-5">Created:</dt>
+                            <dd class="col-sm-7">@repair.CreatedOn.ToShortDateString()</dd>
+
+                            <dt class="col-sm-5">Created By:</dt>
+                            <dd class="col-sm-7">@repair.CreatedBy</dd>
+
+                            @if (repair.LastModifiedOn.HasValue)
+                            {
+                                <dt class="col-sm-5">Last Modified:</dt>
+                                <dd class="col-sm-7">@repair.LastModifiedOn.Value.ToShortDateString()</dd>
+
+                                <dt class="col-sm-5">Modified By:</dt>
+                                <dd class="col-sm-7">@repair.LastModifiedBy</dd>
+                            }
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h6 class="card-title mb-0">Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" @onclick="NavigateToEdit">
+                                <i class="bi bi-pencil me-1"></i>Edit Repair
+                            </button>
+                            @if (!repair.IsCompleted)
+                            {
+                                <button class="btn btn-success" @onclick="MarkComplete">
+                                    <i class="bi bi-check-circle me-1"></i>Mark as Completed
+                                </button>
+                            }
+                            <button class="btn btn-outline-danger" @onclick="DeleteRepair">
+                                <i class="bi bi-trash me-1"></i>Delete Repair
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private Repair? repair;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            repair = await RepairService.GetByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error loading repair: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task MarkComplete()
+    {
+        if (repair == null) return;
+
+        try
+        {
+            await RepairService.CompleteRepairAsync(repair.Id);
+            ToastService.ShowSuccess("Repair marked as completed.");
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error completing repair: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteRepair()
+    {
+        try
+        {
+            await RepairService.DeleteAsync(Id);
+            ToastService.ShowSuccess("Repair deleted successfully.");
+            Navigation.NavigateTo("/propertymanagement/repairs");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error deleting repair: {ex.Message}");
+        }
+    }
+
+    private void NavigateToEdit() => Navigation.NavigateTo($"/propertymanagement/repairs/edit/{Id}");
+    private void Back() => Navigation.NavigateTo("/propertymanagement/repairs");
+}

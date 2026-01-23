@@ -3,6 +3,10 @@
 @using Aquiis.UI.Shared.Components.Entities.Leases
 
 @inject LeaseService LeaseService
+@inject DocumentService DocumentService
+@inject InvoiceService InvoiceService
+@inject IJSRuntime JSRuntime
+@inject LeasePdfGenerator LeasePdfGenerator
 @inject NavigationManager Navigation
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
@@ -38,7 +42,8 @@
                 OnDownloadDocument="DownloadDocument"
                 OnViewDocuments="ViewDocuments"
                 OnViewInvoices="ViewInvoices"
-                OnEdit="EditLease" />
+                OnEdit="EditLease"
+                IsGenerating="isGenerating" />
 
             <LeaseSummaryCard Lease="lease" RecentInvoices="@recentInvoices" OnViewInvoice="ViewInvoice" />
 
@@ -58,7 +63,6 @@
         <div class="col-md-4">
         </div>
     </div>
-@* <Aquiis.UI.Shared.Features.PropertyManagement.Leases.ViewForm LeaseId="@Id" /> *@
 
 @code {
     [Parameter]
@@ -66,9 +70,15 @@
 
     private Lease lease = new Lease();
 
+    private Document? document = null;
+
     private List<Invoice> recentInvoices = new List<Invoice>();
 
     private List<Document> LeaseDocuments = new List<Document>();
+    
+    private List<Payment> payments = new List<Payment>();
+
+    private bool isGenerating = false; // flag to indicate if pdf document generation is in progress
 
     protected override async Task OnInitializedAsync()
     {
@@ -79,6 +89,40 @@
         LeaseDocuments = lease.Documents!
                 .OrderByDescending(d => d.CreatedOn)
                 .ToList();
+
+        payments = lease.Invoices
+                .SelectMany(i => i.Payments)
+                .OrderBy(p => p.PaidOn)
+                .ToList();
+
+        // Load the document if it exists
+        if (lease.DocumentId != null)
+        {
+            document = await DocumentService.GetByIdAsync(lease.DocumentId.Value);
+        }
+    }
+
+    private async Task LoadLease()
+    {
+
+        lease = await LeaseService.GetByIdAsync(lease.Id) ?? new Lease();
+
+        if (lease == null)
+        {
+            return;
+        }
+
+        var invoices = await InvoiceService.GetInvoicesByLeaseIdAsync(lease.Id);
+        recentInvoices = invoices
+            .OrderByDescending(i => i.DueOn)
+            .Take(5)
+            .ToList();
+
+        // Load the document if it exists
+        if (lease.DocumentId != null)
+        {
+            document = await DocumentService.GetByIdAsync(lease.DocumentId.Value);
+        }
     }
 
     private void BackToProperty()
@@ -106,20 +150,75 @@
         // Implement document generation logic here
     }
 
-    private void ViewDocument(Guid leaseId)
+    private async Task ViewDocument()
     {
-        // Implement document viewing logic here
-        // Navigate to the lease document or open in viewer
-        if (lease.DocumentId.HasValue)
+        if (document != null)
         {
-            Navigation.NavigateTo($"/propertymanagement/documents/{lease.DocumentId}");
+            var base64Data = Convert.ToBase64String(document.FileData);
+            await JSRuntime.InvokeVoidAsync("viewFile", base64Data, document.FileType);
         }
     }
 
-    private void DownloadDocument(Guid leaseId)
+    private async Task GenerateLeaseDocument()
     {
-        // Implement document downloading logic here
-        // Trigger download for the lease document
+        isGenerating = true;
+        StateHasChanged();
+
+        try
+        {
+            // Generate the PDF
+            byte[] pdfBytes = await LeasePdfGenerator.GenerateLeasePdf(lease!);
+
+            // Create the document entity
+            var document = new Document
+            {
+                FileName = $"Lease_{lease!.Property?.Address?.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf",
+                FileExtension = ".pdf",
+                FileData = pdfBytes,
+                FileSize = pdfBytes.Length,
+                FileType = "application/pdf",
+                DocumentType = "Lease Agreement",
+                Description = "Auto-generated lease agreement",
+                LeaseId = lease.Id,
+                PropertyId = lease.PropertyId,
+                TenantId = lease.TenantId,
+            };
+
+            // Save to database
+            await DocumentService.CreateAsync(document);
+
+            // Update lease with DocumentId
+            lease.DocumentId = document.Id;
+            
+            await LeaseService.UpdateAsync(lease);
+
+            // Reload lease and document
+            await LoadLease();
+            StateHasChanged();
+
+            await JSRuntime.InvokeVoidAsync("alert", "Lease document generated successfully!");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error generating lease document: {ex.Message}");
+        }
+        finally
+        {
+            isGenerating = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DownloadDocument()
+    {
+        if (document != null)
+        {
+            var fileName = document.FileName;
+            var fileData = document.FileData;
+            var mimeType = document.FileType;
+
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(fileData), mimeType);
+        }
     }
 
     private void ViewDocuments(Guid leaseId)

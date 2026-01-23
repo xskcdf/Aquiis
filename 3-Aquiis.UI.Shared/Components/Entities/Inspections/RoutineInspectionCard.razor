@@ -1,0 +1,148 @@
+@using Aquiis.Core.Entities
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-clipboard-check"></i> Routine Inspections
+        </h5>
+        @if (ShowScheduleButton && OnCompleteInspection.HasDelegate)
+        {
+            <button class="btn btn-sm btn-primary" @onclick="OnCompleteInspection">
+                <i class="bi bi-calendar-plus"></i> Schedule Inspection
+            </button>
+        }
+    </div>
+    <div class="card-body">
+        <div class="row">
+            @if (LastInspection != null)
+            {
+                <div class="col-md-6">
+                    <div class="border-end pe-3">
+                        <h6 class="text-muted mb-2">Last Inspection</h6>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-calendar-check text-success me-2" style="font-size: 1.5rem;"></i>
+                            <div>
+                                <div class="fw-bold">@LastInspection.CompletedOn.ToString("MMMM dd, yyyy")</div>
+                                <small class="text-muted">@GetDaysAgo(LastInspection.CompletedOn)</small>
+                            </div>
+                        </div>
+                        @if (ShowLastInspectionDetails)
+                        {
+                            <div class="mt-3">
+                                <small class="text-muted d-block">Type: <strong>@LastInspection.InspectionType</strong></small>
+                                @if (!string.IsNullOrEmpty(LastInspection.InspectedBy))
+                                {
+                                    <small class="text-muted d-block">Inspector: @LastInspection.InspectedBy</small>
+                                }
+                            </div>
+                            @if (ShowViewButton && OnViewInspection.HasDelegate)
+                            {
+                                <button class="btn btn-sm btn-outline-primary mt-2" @onclick="() => OnViewInspection.InvokeAsync(LastInspection.Id)">
+                                    <i class="bi bi-eye"></i> View Report
+                                </button>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="col-md-6">
+                    <div class="border-end pe-3">
+                        <h6 class="text-muted mb-2">Last Inspection</h6>
+                        <p class="text-muted">No inspections recorded</p>
+                    </div>
+                </div>
+            }
+
+            <div class="col-md-6 @(LastInspection != null ? "ps-3" : "")">
+                <h6 class="text-muted mb-2">Next Inspection</h6>
+                @if (NextInspectionDate.HasValue)
+                {
+                    <div class="d-flex align-items-center mb-2">
+                        @if (IsOverdue)
+                        {
+                            <i class="bi bi-exclamation-triangle text-danger me-2" style="font-size: 1.5rem;"></i>
+                            <div>
+                                <div class="fw-bold text-danger">@NextInspectionDate.Value.ToString("MMMM dd, yyyy")</div>
+                                <small class="text-danger">Overdue by @GetOverdueDays() days</small>
+                            </div>
+                        }
+                        else if (IsDueSoon)
+                        {
+                            <i class="bi bi-calendar-event text-warning me-2" style="font-size: 1.5rem;"></i>
+                            <div>
+                                <div class="fw-bold text-warning">@NextInspectionDate.Value.ToString("MMMM dd, yyyy")</div>
+                                <small class="text-muted">Due in @GetDaysUntil() days</small>
+                            </div>
+                        }
+                        else
+                        {
+                            <i class="bi bi-calendar-event text-primary me-2" style="font-size: 1.5rem;"></i>
+                            <div>
+                                <div class="fw-bold">@NextInspectionDate.Value.ToString("MMMM dd, yyyy")</div>
+                                <small class="text-muted">In @GetDaysUntil() days</small>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">Not scheduled</p>
+                    @if (ShowScheduleButton && OnCompleteInspection.HasDelegate)
+                    {
+                        <button class="btn btn-sm btn-warning" @onclick="OnCompleteInspection">
+                            <i class="bi bi-calendar-plus"></i> Schedule Now
+                        </button>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Inspection? LastInspection { get; set; }
+
+    [Parameter]
+    public DateTime? NextInspectionDate { get; set; }
+
+    [Parameter]
+    public bool ShowScheduleButton { get; set; } = true;
+
+    [Parameter]
+    public bool ShowViewButton { get; set; } = true;
+
+    [Parameter]
+    public bool ShowLastInspectionDetails { get; set; } = true;
+
+    [Parameter]
+    public EventCallback OnCompleteInspection { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnViewInspection { get; set; }
+
+    private bool IsOverdue => NextInspectionDate.HasValue && NextInspectionDate.Value < DateTime.Today;
+    private bool IsDueSoon => NextInspectionDate.HasValue && NextInspectionDate.Value >= DateTime.Today && NextInspectionDate.Value <= DateTime.Today.AddDays(30);
+
+    private string GetDaysAgo(DateTime date)
+    {
+        var days = (DateTime.Today - date.Date).Days;
+        if (days == 0) return "Today";
+        if (days == 1) return "Yesterday";
+        return $"{days} days ago";
+    }
+
+    private int GetDaysUntil()
+    {
+        if (!NextInspectionDate.HasValue) return 0;
+        return (NextInspectionDate.Value.Date - DateTime.Today).Days;
+    }
+
+    private int GetOverdueDays()
+    {
+        if (!NextInspectionDate.HasValue) return 0;
+        return (DateTime.Today - NextInspectionDate.Value.Date).Days;
+    }
+}

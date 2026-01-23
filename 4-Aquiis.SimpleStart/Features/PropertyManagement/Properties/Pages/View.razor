@@ -1,27 +1,234 @@
 @page "/propertymanagement/properties/{PropertyId:guid}"
 
+@using Aquiis.SimpleStart.Features.PropertyManagement.SecurityDeposits.Pages
+@using Aquiis.SimpleStart.Features.PropertyManagement.Inspections
+@using Aquiis.UI.Shared.Components.Common
+@using Aquiis.UI.Shared.Components.Entities.Documents
+@using Aquiis.UI.Shared.Components.Entities.Inspections
+@using Aquiis.UI.Shared.Components.Entities.Repairs
 @using Aquiis.UI.Shared.Features.PropertyManagement.Properties
+@using Aquiis.UI.Shared.Features.PropertyManagement.Leases
 
 @inject PropertyService PropertyService
+@inject InspectionService InspectionService
+@inject LeaseService LeaseService
+@inject RepairService RepairService
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @rendermode InteractiveServer
 
 
-<PropertyViewForm
-    PropertyId="@PropertyId"
-    ShowCheckLists="false" />
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Property Details</h1>
+        <div class="btn-group">
+            <button class="btn btn-primary" @onclick="EditProperty">
+                <i class="bi bi-pencil"></i> Edit
+            </button>
+            <button class="btn btn-secondary" @onclick="BackToList">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </button>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-md-8">
+
+            <PropertyDetails Property="@property" />
+            <div class="mt-4">
+                <RepairsListView
+                    Repairs="@property.Repairs.ToList()"
+                    OnViewRepair="ViewRepair"
+                    OnAddRepair="CreateRepair"
+                    OnViewAllRepairs="ViewAllRepairs" />
+            </div>
+            <div class="mt-4">
+                <DocumentListView 
+                    Documents="@property.Documents.ToList()" OnViewDocument="ViewDocument"  />
+            </div>
+
+        </div>
+        <div class="col-md-4">
+                <!-- #region Quick Actions Card-->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary" @onclick="EditProperty">
+                                <i class="bi bi-pencil"></i> Edit Property
+                            </button>
+                            @if (property.IsAvailable)
+                            {
+                                <button class="btn btn-outline-success" @onclick="CreateLease">
+                                    <i class="bi bi-file-plus"></i> New Lease
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-outline-info" @onclick="ViewLease">
+                                    <i class="bi bi-file-text"></i> View Lease
+                                </button>
+                            }
+                            <button class="btn btn-outline-warning" @onclick="CompleteInspection">
+                                <i class="bi bi-clipboard-check"></i> Complete Inspection
+                            </button>
+                            <button class="btn btn-outline-secondary" @onclick="ViewDocuments">
+                                <i class="bi bi-folder"></i> View Documents
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- #endregion Quick Actions Card-->
+            <div class="mt-4">
+            <RoutineInspectionCard LastInspection="lastInspection" OnCompleteInspection="CompleteInspection"
+                OnViewInspection="ViewInspection"
+                NextInspectionDate="@property.NextRoutineInspectionDueDate" />
+            </div>
+        </div>
+    </div>
+
+<!-- Modals -->
+<Modal IsVisible="@showLeaseModal" 
+       Title="@($"Lease Details - {selectedLease?.Property?.Address ?? ""}")"
+       Size="ModalSize.Large"
+       OnClose="@CloseLeaseModal">
+    <ChildContent>
+        @if (selectedLease != null)
+        {
+            <div class="container-fluid">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Tenant:</strong> @selectedLease.Tenant?.FullName
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Status:</strong> <span class="badge bg-success">@selectedLease.Status</span>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Start Date:</strong> @selectedLease.StartDate.ToShortDateString()
+                    </div>
+                    <div class="col-md-6">
+                        <strong>End Date:</strong> @selectedLease.EndDate.ToShortDateString()
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Monthly Rent:</strong> @selectedLease.MonthlyRent.ToString("C")
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Security Deposit:</strong> @selectedLease.SecurityDeposit.ToString("C")
+                    </div>
+                </div>
+            </div>
+        }
+    </ChildContent>
+    <FooterContent>
+        <button class="btn btn-outline-secondary" @onclick="@(() => ViewLeaseFullPage(selectedLease!.Id))">
+            <i class="bi bi-arrows-fullscreen"></i> View Full Page
+        </button>
+        <button class="btn btn-secondary" @onclick="@CloseLeaseModal">Close</button>
+    </FooterContent>
+</Modal>
+
+<Modal IsVisible="@showRepairModal" 
+       Title="@($"Repair Details - {selectedRepair?.Property?.Address ?? ""}")"
+       Size="ModalSize.Large"
+       OnClose="@CloseRepairModal">
+    <ChildContent>
+        @if (selectedRepair != null)
+        {
+            <div class="container-fluid">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Repair Type:</strong> @selectedRepair.RepairType
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Contractor:</strong> @selectedRepair.ContractorName
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <strong>Description:</strong>
+                        <p class="mt-2">@selectedRepair.Description</p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Completed On:</strong> @(selectedRepair.CompletedOn?.ToShortDateString() ?? "In Progress")
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Cost:</strong> @selectedRepair.Cost.ToString("C")
+                    </div>
+                </div>
+                @if (selectedRepair.DurationMinutes > 0)
+                {
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>Duration:</strong> @selectedRepair.DurationMinutes minutes
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(selectedRepair.ContractorPhone))
+                {
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>Contact:</strong> @selectedRepair.ContractorPhone
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </ChildContent>
+    <FooterContent>
+        <button class="btn btn-outline-secondary" @onclick="@(() => ViewRepairFullPage(selectedRepair!.Id))">
+            <i class="bi bi-arrows-fullscreen"></i> View Full Page
+        </button>
+        <button class="btn btn-secondary" @onclick="@CloseRepairModal">Close</button>
+    </FooterContent>
+</Modal>
+
+<Modal IsVisible="@showInspectionModal" 
+       Title="@($"Inspection Report - {selectedInspection?.Property?.Address ?? ""}")"
+       Size="ModalSize.ExtraLarge"
+       OnClose="@CloseInspectionModal">
+    <ChildContent>
+        @if (selectedInspection != null)
+        {
+            <InspectionModalView Inspection="@selectedInspection" />
+        }
+    </ChildContent>
+    <FooterContent>
+        <button class="btn btn-outline-secondary" @onclick="@(() => ViewInspectionFullPage(selectedInspection!.Id))">
+            <i class="bi bi-arrows-fullscreen"></i> View Full Page
+        </button>
+        <button class="btn btn-secondary" @onclick="@CloseInspectionModal">Close</button>
+    </FooterContent>
+</Modal>
 
 @code {
     [Parameter]
     public Guid PropertyId { get; set; }
 
     private Property property = new Property();
+    private Inspection lastInspection = new Inspection();
+
+    // Modal state
+    private bool showLeaseModal = false;
+    private bool showRepairModal = false;
+    private bool showInspectionModal = false;
+
+    // Selected entities for modals
+    private Lease? selectedLease;
+    private Repair? selectedRepair;
+    private Inspection? selectedInspection;
 
     protected override async Task OnInitializedAsync()
     {
-        property = await PropertyService.GetByIdAsync(PropertyId) ?? new Property();
+        property = await PropertyService.GetPropertyWithRelationsAsync(PropertyId) ?? new Property();
+        lastInspection = await InspectionService.GetLastRoutineInspectionAsync(PropertyId) ?? new Inspection();
     }
 
     private void EditProperty()
@@ -29,18 +236,108 @@
         Navigation.NavigateTo($"/propertymanagement/properties/{PropertyId}/edit");
     }
 
-    private void CreateRequest()
+    private void CreateRepair()
     {
-        Navigation.NavigateTo($"/propertymanagement/maintenance/create/{PropertyId}");
+        Navigation.NavigateTo($"/propertymanagement/repairs/create/{PropertyId}");
     }
 
-    private void ViewRequest(Guid requestId)
+    private async Task ViewRepair(Guid repairId)
     {
-        Navigation.NavigateTo($"/propertymanagement/maintenance/{requestId}");
+        selectedRepair = await RepairService.GetByIdAsync(repairId);
+        if (selectedRepair != null)
+        {
+            showRepairModal = true;
+        }
     }
 
-    private void ViewAllRequests()
+    private void ViewAllRepairs()
     {
-        Navigation.NavigateTo($"/propertymanagement/maintenance/?PropertyId={PropertyId}");
+        Navigation.NavigateTo($"/propertymanagement/repairs/?PropertyId={PropertyId}");
+    }
+
+    private async Task ViewInspection(Guid inspectionId)
+    {
+        selectedInspection = await InspectionService.GetByIdAsync(inspectionId);
+        if (selectedInspection != null)
+        {
+            showInspectionModal = true;
+        }
+    }
+
+    private void CompleteInspection()
+    {
+        Navigation.NavigateTo($"/propertymanagement/inspections/create/?PropertyId={PropertyId}");
+    }
+
+    private void CreateLease()
+    {
+        Navigation.NavigateTo($"/propertymanagement/leases/create/?PropertyId={PropertyId}");
+    }
+
+    private async Task ViewLease()
+    {
+        var lease = property.Leases.FirstOrDefault(l => l.IsActive);
+        if (lease != null)
+        {
+            selectedLease = await LeaseService.GetLeaseWithRelationsAsync(lease.Id);
+            if (selectedLease != null)
+            {
+                showLeaseModal = true;
+            }
+        }
+    }
+
+    private void ViewDocuments()
+    {
+        Navigation.NavigateTo($"/propertymanagement/documents/?PropertyId={PropertyId}");
+    }
+
+    private async Task ViewDocument(Guid documentId)
+    {
+        var doc = property.Documents.FirstOrDefault(d => d.Id == documentId);
+        if (doc == null) return;
+        var base64Data = Convert.ToBase64String(doc.FileData);
+        await JSRuntime.InvokeVoidAsync("viewFile", base64Data, doc.FileType);
+        @* Navigation.NavigateTo($"/propertymanagement/documents/{documentId}"); *@
+    }
+
+    private void BackToList()
+    {
+        Navigation.NavigateTo("/propertymanagement/properties");
+    }
+
+    // Modal close methods
+    private void CloseLeaseModal()
+    {
+        showLeaseModal = false;
+        selectedLease = null;
+    }
+
+    private void CloseRepairModal()
+    {
+        showRepairModal = false;
+        selectedRepair = null;
+    }
+
+    private void CloseInspectionModal()
+    {
+        showInspectionModal = false;
+        selectedInspection = null;
+    }
+
+    // View Full Page methods
+    private void ViewLeaseFullPage(Guid leaseId)
+    {
+        Navigation.NavigateTo($"/propertymanagement/leases/{leaseId}");
+    }
+
+    private void ViewRepairFullPage(Guid repairId)
+    {
+        Navigation.NavigateTo($"/propertymanagement/repairs/{repairId}");
+    }
+
+    private void ViewInspectionFullPage(Guid inspectionId)
+    {
+        Navigation.NavigateTo($"/propertymanagement/inspections/{inspectionId}");
     }
 }

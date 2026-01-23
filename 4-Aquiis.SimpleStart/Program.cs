@@ -161,7 +161,8 @@ builder.Services.AddScoped<OrganizationService>();
 builder.Services.AddSingleton<ToastService>();
 builder.Services.AddSingleton<ThemeService>();
 builder.Services.AddScoped<LeaseRenewalPdfGenerator>();
-builder.Services.AddScoped<FinancialReportService>();
+builder.Services.AddScoped<FinancialReportService>(); // Professional edition uses MaintenanceRequests
+builder.Services.AddScoped<SimpleStartFinancialReportService>(); // SimpleStart uses Repairs
 builder.Services.AddScoped<FinancialReportPdfGenerator>();
 builder.Services.AddScoped<ChecklistPdfGenerator>();
 builder.Services.AddScoped<DatabaseBackupService>();

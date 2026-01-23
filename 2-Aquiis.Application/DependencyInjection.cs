@@ -1,4 +1,5 @@
 using Aquiis.Application.Services;
+using Aquiis.Application.Services.PdfGenerators;
 using Aquiis.Application.Services.Workflows;
 using Aquiis.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<InvoiceService>();
         services.AddScoped<LeaseNotificationService>();
         services.AddScoped<LeaseOfferService>();
+        services.AddScoped<LeasePdfGenerator>();
         services.AddScoped<LeaseService>();
         services.AddScoped<LeaseWorkflowService>();
         services.AddScoped<MaintenanceNotificationService>();
@@ -49,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<PropertyService>();
         services.AddScoped<ProspectiveTenantService>();
         services.AddScoped<RentalApplicationService>();
+        services.AddScoped<RepairService>();
         services.AddScoped<ScheduledTaskService>();
         services.AddScoped<SchemaValidationService>();
         services.AddScoped<ScreeningService>();

@@ -1,0 +1,51 @@
+<div class="row mb-3 pb-2 border-bottom">
+    <div class="col-md-4 d-flex align-items-center">
+        <label class="form-label mb-0">@Label</label>
+    </div>
+    <div class="col-md-2 d-flex align-items-center">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" 
+                   checked="@IsGood" 
+                   @onchange="OnIsGoodChanged" 
+                   id="@($"check_{Label.Replace(" ", "_")}")" />
+            <label class="form-check-label text-success" for="@($"check_{Label.Replace(" ", "_")}")">
+                @(IsGood ? "Good" : "Issue")
+            </label>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <input type="text" class="form-control form-control-sm" 
+               value="@Notes" 
+               @oninput="OnNotesChanged"
+               placeholder="Notes (if issues found)" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsGood { get; set; } = true;
+
+    [Parameter]
+    public EventCallback<bool> IsGoodChanged { get; set; }
+
+    [Parameter]
+    public string? Notes { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> NotesChanged { get; set; }
+
+    private async Task OnIsGoodChanged(ChangeEventArgs e)
+    {
+        IsGood = e.Value is bool b && b;
+        await IsGoodChanged.InvokeAsync(IsGood);
+    }
+
+    private async Task OnNotesChanged(ChangeEventArgs e)
+    {
+        Notes = e.Value?.ToString();
+        await NotesChanged.InvokeAsync(Notes);
+    }
+}

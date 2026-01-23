@@ -1,0 +1,170 @@
+@using Aquiis.Core.Entities
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-file-earmark-text"></i> Documents
+        </h5>
+        @if (ShowUploadButton && OnUploadDocument.HasDelegate)
+        {
+            <button class="btn btn-sm btn-primary" @onclick="OnUploadDocument">
+                <i class="bi bi-upload"></i> Upload Document
+            </button>
+        }
+    </div>
+    <div class="card-body">
+        @if (Documents == null)
+        {
+            <div class="text-center py-3">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        }
+        else if (!Documents.Any())
+        {
+            <p class="text-muted text-center py-3">No documents uploaded for this property.</p>
+        }
+        else
+        {
+            @if (ShowGroupByType && GroupedDocuments != null && GroupedDocuments.Any())
+            {
+                @foreach (var group in GroupedDocuments)
+                {
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">
+                            <i class="bi bi-folder"></i> @group.Key (@group.Count())
+                        </h6>
+                        <div class="list-group">
+                            @foreach (var document in group.OrderByDescending(d => d.CreatedOn))
+                            {
+                                <div class="list-group-item">
+                                    @RenderDocumentItem(document)
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var document in Documents.OrderByDescending(d => d.CreatedOn))
+                    {
+                        <div class="list-group-item">
+                            @RenderDocumentItem(document)
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public List<Document>? Documents { get; set; }
+
+    [Parameter]
+    public bool ShowUploadButton { get; set; } = true;
+
+    [Parameter]
+    public bool ShowGroupByType { get; set; } = false;
+
+    [Parameter]
+    public EventCallback OnUploadDocument { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnViewDocument { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnDownloadDocument { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnDeleteDocument { get; set; }
+
+    private IEnumerable<IGrouping<string, Document>>? GroupedDocuments => 
+        Documents?.GroupBy(d => d.DocumentType ?? "Other");
+
+    private RenderFragment RenderDocumentItem(Document document) => __builder =>
+    {
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <h6 class="mb-1">
+                    <i class="bi @GetFileIcon(document.FileName)"></i>
+                    @if (OnViewDocument.HasDelegate)
+                    {
+                        <a href="javascript:void(0)" @onclick="() => OnViewDocument.InvokeAsync(document.Id)" class="text-decoration-none">
+                            @document.FileName
+                        </a>
+                    }
+                    else
+                    {
+                        @document.FileName
+                    }
+                </h6>
+                <div>
+                    @if (!ShowGroupByType && !string.IsNullOrEmpty(document.DocumentType))
+                    {
+                        <span class="badge bg-secondary me-2">@document.DocumentType</span>
+                    }
+                    <small class="text-muted">
+                        @FormatFileSize(document.FileSize)
+                        • Uploaded @document.CreatedOn.ToString("MMM dd, yyyy")
+                    </small>
+                </div>
+                @if (!string.IsNullOrEmpty(document.Description))
+                {
+                    <small class="text-muted d-block mt-1">@document.Description</small>
+                }
+            </div>
+            <div class="btn-group ms-3">
+                @if (OnViewDocument.HasDelegate)
+                {
+                    <button class="btn btn-sm btn-outline-primary" @onclick="() => OnViewDocument.InvokeAsync(document.Id)" title="View">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                }
+                @if (OnDownloadDocument.HasDelegate)
+                {
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => OnDownloadDocument.InvokeAsync(document.Id)" title="Download">
+                        <i class="bi bi-download"></i>
+                    </button>
+                }
+                @if (OnDeleteDocument.HasDelegate)
+                {
+                    <button class="btn btn-sm btn-outline-danger" @onclick="() => OnDeleteDocument.InvokeAsync(document.Id)" title="Delete">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                }
+            </div>
+        </div>
+    };
+
+    private string GetFileIcon(string fileName)
+    {
+        var extension = Path.GetExtension(fileName)?.ToLower();
+        return extension switch
+        {
+            ".pdf" => "bi-file-pdf text-danger",
+            ".doc" or ".docx" => "bi-file-word text-primary",
+            ".xls" or ".xlsx" => "bi-file-excel text-success",
+            ".jpg" or ".jpeg" or ".png" or ".gif" => "bi-file-image text-info",
+            ".zip" or ".rar" => "bi-file-zip text-warning",
+            _ => "bi-file-earmark"
+        };
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}
