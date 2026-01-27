@@ -1,6 +1,9 @@
 ﻿@page "/"
 @using Aquiis.Application.Services
+@using Aquiis.UI.Shared.Components.Entities.Invoices
 @using Aquiis.UI.Shared.Components.Entities.Properties
+@using Aquiis.UI.Shared.Components.Entities.Repairs
+@using Aquiis.UI.Shared.Components.Entities.Leases
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.EntityFrameworkCore
@@ -49,210 +52,30 @@
                 }
                 else
                 {
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="card text-white bg-primary">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <h4>@totalProperties</h4>
-                                            <p class="card-text">Total Properties</p>
-                                        </div>
-                                        <div class="align-self-center">
-                                            <i class="bi bi-house-fill" style="font-size: 2rem;"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="row mb-3">
+                        <PropertyMetricsCard ShowTotalProperties="true" ShowAvailableProperties="true"
+                            ShowOccupancyRate="true" ShowTotalMonthlyRent="true"
+                            TotalPropertiesCount="@totalProperties"
+                            AvailableCount="@availableProperties"
+                            OccupancyRate="@occupancyRate"
+                            TotalMonthlyRent="@totalMonthlyIncome" />
+                    </div>
+                    <div class="row g-4">
+                        <div class="col-md-6 mb-4">
+                        <InvoiceList Invoices="outstandingInvoices" Title="Outstanding Invoices" 
+                            OnViewAll="ViewAllInvoices" OnViewItem="ViewInvoice" />
+                        <RepairList Repairs="recentRepairs" Title="Outstanding Repairs" ShowLinks="true"
+                            OnViewAllRepairs="ViewAllRepairs" ShowAddButton="true" OnAddRepair="AddRepair"
+                            OnViewRepair="ViewRepair" ShowTotalCost="true" />
                         </div>
-                        <div class="col-md-3">
-                            <div class="card text-white bg-success">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <h4>@availableProperties</h4>
-                                            <p class="card-text">Available Properties</p>
-                                        </div>
-                                        <div class="align-self-center">
-                                            <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card text-white bg-info">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <h4>@totalTenants</h4>
-                                            <p class="card-text">Total Tenants</p>
-                                        </div>
-                                        <div class="align-self-center">
-                                            <i class="bi bi-people-fill" style="font-size: 2rem;"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card text-white bg-secondary">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <h4>@activeLeases</h4>
-                                            <p class="card-text">Active Leases</p>
-                                        </div>
-                                        <div class="align-self-center">
-                                            <i class="bi bi-file-text" style="font-size: 2rem;"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="col-md-6 mb-4">
+                        <LeaseRenewalList Leases="leases" Title="Pending Lease Renewals" 
+                            OnViewAll="ViewAllLeases"
+                            OnViewLease="ViewLease" />
+                        <PropertyList Properties="availablePropertiesList" Title="Available Properties"
+                            OnViewProperty="ViewProperty" />
                         </div>
                     </div>
-                    <PropertyMetricsCard ShowAvailable="true"
-                        ShowOccupied="true" ShowMonthlyRent="true" />
-
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5>Available Properties</h5>
-                                </div>
-                                <div class="card-body">
-                                    @if (availablePropertiesList.Any())
-                                    {
-                                        <div class="list-group list-group-flush">
-                                            @foreach (var property in availablePropertiesList)
-                                            {
-                                                <div class="list-group-item d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <h6 class="mb-1">
-                                                            <a href="/propertymanagement/properties/@property.Id" class="text-decoration-none">
-                                                                @property.Address
-                                                            </a>
-                                                        </h6>
-                                                        <small class="text-muted">@property.City, @property.State - @property.PropertyType</small>
-                                                    </div>
-                                                    <div class="text-end">
-                                                        <span class="badge @GetStatusBadgeClass(property.Status) mb-1">@FormatPropertyStatus(property.Status)</span>
-                                                        <br>
-                                                        <small class="text-muted">@property.MonthlyRent.ToString("C")</small>
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <p class="text-muted">No available properties found.</p>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h5 class="mb-0">Outstanding Invoices</h5>
-                                    <a href="/propertymanagement/invoices" class="btn btn-sm btn-outline-primary">View All</a>
-                                </div>
-                                <div class="card-body">
-                                    @if (recentInvoices.Any())
-                                    {
-                                        <div class="list-group list-group-flush">
-                                            @foreach (var invoice in recentInvoices)
-                                            {
-                                                <div class="list-group-item">
-                                                    <div class="d-flex w-100 justify-content-between">
-                                                        <h6 class="mb-1">
-                                                            <a href="/propertymanagement/invoices/@invoice.Id" class="text-decoration-none">
-                                                                @invoice.InvoiceNumber
-                                                            </a>
-                                                        </h6>
-                                                        <small>@invoice.InvoicedOn.ToString("MMM dd, yyyy")</small>
-                                                    </div>
-                                                    <p class="mb-1">@invoice.Lease?.Tenant?.FullName</p>
-                                                    <div class="d-flex justify-content-between">
-                                                        <div>
-                                                            <small class="text-muted">Due: @invoice.DueOn.ToString("MMM dd, yyyy")</small>
-                                                            @if (invoice.IsOverdue)
-                                                            {
-                                                                <br>
-                                                                <small class="text-danger">@invoice.DaysOverdue days overdue</small>
-                                                            }
-                                                        </div>
-                                                        <div class="text-end">
-                                                            <span class="badge @GetInvoiceStatusBadgeClass(invoice.Status)">@invoice.Status</span>
-                                                            <br>
-                                                            <small class="text-muted">@invoice.Amount.ToString("C")</small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <p class="text-muted">No outstanding invoices.</p>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h5 class="mb-0">Outstanding Repairs</h5>
-                                    <a href="/propertymanagement/repairs" class="btn btn-sm btn-outline-primary">View All</a>
-                                </div>
-                                <div class="card-body">
-                                    @if (recentRepairs.Any())
-                                    {
-                                        <div class="list-group list-group-flush">
-                                            @foreach (var repair in recentRepairs)
-                                            {
-                                                <div class="list-group-item">
-                                                    <div class="d-flex w-100 justify-content-between align-items-start">
-                                                        <div>
-                                                            <h6 class="mb-1">
-                                                                <a href="/propertymanagement/repairs/view/@repair.Id" class="text-decoration-none">
-                                                                    @repair.Description
-                                                                </a>
-                                                            </h6>
-                                                            <small class="text-muted">
-                                                                @repair.Property?.Address - @repair.RepairType
-                                                            </small>
-                                                        </div>
-                                                        <div class="text-end">
-                                                            <span class="badge bg-warning mb-1">In Progress</span>
-                                                            @if (repair.Cost > 0)
-                                                            {
-                                                                <br>
-                                                                <small class="text-muted">@repair.Cost.ToString("C")</small>
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                    <div class="d-flex justify-content-between mt-2">
-                                                        <small class="text-muted">Started: @repair.CreatedOn.ToString("MMM dd, yyyy")</small>
-                                                        @if (!string.IsNullOrEmpty(repair.ContractorName))
-                                                        {
-                                                            <small class="text-muted">@repair.ContractorName</small>
-                                                        }
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <p class="text-muted">No outstanding repairs.</p>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <LeaseRenewalWidget />
-                        </div>
                 }
         </OrganizationAuthorizeView>
     </Authorized>
@@ -311,8 +134,16 @@
     private int totalTenants = 0;
     private int activeLeases = 0;
 
+    private decimal occupancyRate = 0m;
+
+    private decimal totalMonthlyIncome = 0m;
+
+    private decimal totalRevenueOpportunity = 0m;
+
     private List<Property> availablePropertiesList = new();
     private List<Repair> recentRepairs = new List<Repair>();
+    private List<Invoice> outstandingInvoices = new List<Invoice>();
+    
     private List<Invoice> recentInvoices = new List<Invoice>();
 
     private List<Property> properties = new List<Property>();
@@ -385,6 +216,22 @@
                 .ThenBy(i => i.DueOn)
                 .Take(5)
                 .ToList();
+
+            outstandingInvoices = allInvoices
+                .Where(i => i.Status == ApplicationConstants.InvoiceStatuses.Overdue
+                || i.Status == ApplicationConstants.InvoiceStatuses.PaidPartial
+                || i.Status == ApplicationConstants.InvoiceStatuses.Pending)
+                .OrderBy(i => i.DueOn)
+                .ToList();
+
+            occupancyRate = await PropertyService.CalculatePortfolioOccupancyRateAsync();
+            Console.WriteLine($"Calculated occupancy rate: {occupancyRate}%");
+            totalMonthlyIncome = leases
+                                    .Where(l => !l.IsDeleted && l.Status == ApplicationConstants.LeaseStatuses.Active)
+                                    .Sum(l => l.MonthlyRent);
+            totalRevenueOpportunity = properties
+                                    .Where(p => !p.IsDeleted)
+                                    .Sum(p => p.MonthlyRent);
         }
         catch (InvalidOperationException)
         {
@@ -393,6 +240,56 @@
         }
     }
 
+    private void ViewAllRepairs()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/repairs");
+    }
+
+    private void ViewRepair(Guid repairId)
+    {
+        NavigationManager.NavigateTo($"/propertymanagement/repairs/{repairId}");
+    }
+
+    private void AddRepair()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/repairs/create");
+    }
+
+    private void ViewAllProperties()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/properties");
+    }
+
+    private void ViewProperty(Guid propertyId)
+    {
+        NavigationManager.NavigateTo($"/propertymanagement/properties/{propertyId}");
+    }
+
+    private void ViewAllLeases()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/leases");
+    }
+
+    private void ViewLease(Guid leaseId)
+    {
+        NavigationManager.NavigateTo($"/propertymanagement/leases/{leaseId}");
+    }
+
+    private void ViewAllInvoices()
+    {
+        NavigationManager.NavigateTo("/propertymanagement/invoices");
+    }
+
+    private void ViewInvoice(Guid invoiceId)
+    {
+        NavigationManager.NavigateTo($"/propertymanagement/invoices/{invoiceId}");
+    }
+
+    private void NavigateToCalendar()
+    {
+        NavigationManager.NavigateTo("/calendar");
+    }
+    
     private string GetInvoiceStatusBadgeClass(string status)
     {
         return status switch
@@ -431,8 +328,4 @@
         };
     }
 
-    private void NavigateToCalendar()
-    {
-        NavigationManager.NavigateTo("/calendar");
-    }
 }

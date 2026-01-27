@@ -3,10 +3,13 @@ namespace Aquiis.SimpleStart.Shared.Services;
 public class ThemeService
 {
     private string _currentTheme = "light";
+    private string _currentBrandTheme = "bootstrap";
     
     public event Action? OnThemeChanged;
+    public event Action? OnBrandThemeChanged;
     
     public string CurrentTheme => _currentTheme;
+    public string CurrentBrandTheme => _currentBrandTheme;
     
     public void SetTheme(string theme)
     {
@@ -27,5 +30,24 @@ public class ThemeService
     public string GetNextTheme()
     {
         return _currentTheme == "light" ? "dark" : "light";
+    }
+    
+    // Valid brand themes - add new themes here when implementing them
+    private readonly HashSet<string> _validBrandThemes = new()
+    {
+        "bootstrap",
+        "obsidian",
+        "teal"
+    };
+
+    public void SetBrandTheme(string brandTheme)
+    {
+        if (!_validBrandThemes.Contains(brandTheme))
+        {
+            throw new ArgumentException($"Brand theme must be one of: {string.Join(", ", _validBrandThemes)}", nameof(brandTheme));
+        }
+        
+        _currentBrandTheme = brandTheme;
+        OnBrandThemeChanged?.Invoke();
     }
 }

@@ -131,7 +131,7 @@
         @if (viewMode == "day")
         {
             <div class="card">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header">
                     <h5 class="mb-0">@currentDate.ToString("dddd, MMMM dd, yyyy")</h5>
                 </div>
                 <div class="card-body">
@@ -1144,7 +1144,7 @@
 
                 var cellIndex = 200 + (week * 10) + day;
                 builder.OpenElement(cellIndex, "td");
-                builder.AddAttribute(cellIndex + 1, "class", isCurrentMonth ? "align-top" : "align-top bg-light text-muted");
+                builder.AddAttribute(cellIndex + 1, "class", isCurrentMonth ? "align-top" : "align-top bg-body-tertiary text-muted");
                 builder.AddAttribute(cellIndex + 2, "style", "min-height: 100px; width: 14.28%;");
                 
                 builder.OpenElement(cellIndex + 10, "div");

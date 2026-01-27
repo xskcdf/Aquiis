@@ -1,0 +1,69 @@
+<div class="card mb-3">
+    <div class="card-header @HeaderCssClass">
+        <h5><i class="bi bi-house"></i> @Title</h5>
+    </div>
+    <div class="card-body">
+        @if (Properties.Any())
+        {
+            <div class="list-group list-group-flush">
+                @foreach (var property in Properties)
+                {
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">
+                                <a href="javascript:void(0);" class="text-decoration-none" @onclick="() => OnViewProperty.InvokeAsync(property.Id)">
+                                    @property.Address
+                                </a>
+                            </h6>
+                            <small class="text-muted">@property.City, @property.State - @property.PropertyType</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge @GetStatusBadgeClass(property.Status) mb-1">@FormatPropertyStatus(property.Status)</span>
+                            <br>
+                            <small class="text-muted">@property.MonthlyRent.ToString("C")</small>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">No properties found.</p>
+        }
+    </div>
+</div>
+@code {
+    [Parameter]
+    public List<Property> Properties { get; set; } = new();
+
+    [Parameter]
+    public string Title { get; set; } = "Properties";
+
+    [Parameter]
+    public string HeaderCssClass { get; set; } = "";
+
+    [Parameter]
+    public EventCallback<Guid> OnViewProperty { get; set; }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            ApplicationConstants.PropertyStatuses.Available => "bg-success",
+            ApplicationConstants.PropertyStatuses.Occupied => "bg-primary",
+            //ApplicationConstants.PropertyStatuses.Maintenance => "bg-warning text-dark",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string FormatPropertyStatus(string status)
+    {
+        return status switch
+        {
+            ApplicationConstants.PropertyStatuses.Available => "Available",
+            ApplicationConstants.PropertyStatuses.Occupied => "Occupied",
+            //ApplicationConstants.PropertyStatuses.Maintenance => "Under Maintenance",
+            _ => "Unknown"
+        };
+    }
+}

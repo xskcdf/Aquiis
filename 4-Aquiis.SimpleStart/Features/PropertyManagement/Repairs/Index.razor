@@ -39,7 +39,7 @@
     else
     {
         <div class="card">
-            <div class="card-header bg-light">
+            <div class="card-header">
                 <div class="row g-3 align-items-center">
                     <div class="col-md-4">
                         <input type="text" class="form-control" placeholder="Search repairs..."
@@ -78,7 +78,7 @@
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                        <thead class="table">
                             <tr>
                                 <th>Property</th>
                                 <th>Description</th>
@@ -187,7 +187,7 @@
                 </div>
             </div>
 
-            <div class="card-footer bg-light">
+            <div class="card-footer">
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="text-muted">
                         Showing @FilteredRepairs.Count() of @repairs.Count repairs
@@ -269,8 +269,8 @@
     }
 
     private void NavigateToCreate() => Navigation.NavigateTo("/propertymanagement/repairs/create");
-    private void NavigateToView(Guid id) => Navigation.NavigateTo($"/propertymanagement/repairs/view/{id}");
-    private void NavigateToEdit(Guid id) => Navigation.NavigateTo($"/propertymanagement/repairs/edit/{id}");
+    private void NavigateToView(Guid id) => Navigation.NavigateTo($"/propertymanagement/repairs/{id}");
+    private void NavigateToEdit(Guid id) => Navigation.NavigateTo($"/propertymanagement/repairs/{id}/edit");
 
     private async Task DeleteRepair(Guid id)
     {

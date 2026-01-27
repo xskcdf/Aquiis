@@ -1,13 +1,7 @@
-@using Aquiis.Application.Services
-@using Aquiis.SimpleStart.Features.PropertyManagement
-@using Aquiis.Core.Entities
-@inject LeaseService LeaseService
-@rendermode InteractiveServer
-
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header d-flex justify-content-between align-items-center @HeaderCssClass">
         <h5 class="mb-0">
-            <i class="bi bi-calendar-event"></i> Lease Renewals
+            <i class="bi bi-calendar-event"></i> @Title
         </h5>
         <NavLink href="propertymanagement/leases" class="btn btn-sm btn-outline-primary">
             View All
@@ -39,13 +33,13 @@
                     <input type="radio" class="btn-check" name="renewalFilter" id="filter60" value="60"
                            checked="@(selectedFilter == 60)" @onchange="() => FilterLeases(60)" />
                     <label class="btn btn-outline-primary" for="filter60">
-                        60 Days <span class="badge bg-warning">@(leases60Days.Count() - leases30Days.Count())</span>
+                        60 Days <span class="badge bg-warning">@leases60Days.Count()</span>
                     </label>
 
                     <input type="radio" class="btn-check" name="renewalFilter" id="filter90" value="90"
                            checked="@(selectedFilter == 90)" @onchange="() => FilterLeases(90)" />
                     <label class="btn btn-outline-primary" for="filter90">
-                        90 Days <span class="badge bg-info">@(leases90Days.Count() - leases60Days.Count())</span>
+                        90 Days <span class="badge bg-info">@leases90Days.Count()</span>
                     </label>
                 </div>
             </div>
@@ -90,10 +84,10 @@
                 }
             </div>
 
-            <div class="card-footer bg-light">
+            <div class="card-footer">
                 <small class="text-muted">
                     <i class="bi bi-info-circle"></i>
-                    Showing @GetFilteredLeases().Count() of @expiringLeases.Count() expiring leases
+                    Showing @GetFilteredLeases().Count() of @Leases.Count() leases
                 </small>
             </div>
         }
@@ -101,27 +95,31 @@
 </div>
 
 @code {
+    [Parameter]
+    public string Title { get; set; } = "Leases";
+
+    [Parameter]
+    public string HeaderCssClass { get; set; } = "";
+
+    [Parameter]
+    public List<Lease> Leases { get; set; } = new();
+
     private List<Lease> expiringLeases = new();
     private List<Lease> leases30Days = new();
     private List<Lease> leases60Days = new();
     private List<Lease> leases90Days = new();
     private bool isLoading = true;
-    private int selectedFilter = 60;
+    private int selectedFilter = 30;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadExpiringLeases();
-    }
 
     private async Task LoadExpiringLeases()
     {
         try
         {
             isLoading = true;
-            var allLeases = await LeaseService.GetLeasesWithRelationsAsync();
             var today = DateTime.Today;
 
-            expiringLeases = allLeases
+            expiringLeases = Leases
                 .Where(l => l.Status == "Active" && 
                            l.EndDate >= today && 
                            l.EndDate <= today.AddDays(90))
@@ -152,7 +150,6 @@
     private void FilterLeases(int days)
     {
         selectedFilter = days;
-        StateHasChanged();
     }
 
     private List<Lease> GetFilteredLeases()

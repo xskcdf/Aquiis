@@ -64,7 +64,7 @@
     else if (statement != null)
     {
         <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
                     @if (statement.PropertyId.HasValue)
                     {
@@ -76,7 +76,7 @@
                     }
                     - Income Statement
                 </h5>
-                <button class="btn btn-light btn-sm" @onclick="ExportToPdf">
+                <button class="btn btn btn-sm" @onclick="ExportToPdf">
                     <i class="bi bi-file-pdf"></i> Export PDF
                 </button>
             </div>

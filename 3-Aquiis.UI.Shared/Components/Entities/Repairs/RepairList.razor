@@ -1,16 +1,18 @@
-@using Aquiis.Core.Entities
-
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center @HeaderCssClass">
         <h5 class="mb-0">
-            <i class="bi bi-tools"></i> Repairs
+            <i class="bi bi-tools"></i> @Title
         </h5>
-        @if (ShowAddButton && OnAddRepair.HasDelegate)
-        {
-            <button class="btn btn-sm btn-primary" @onclick="OnAddRepair">
-                <i class="bi bi-plus-circle"></i> Add Repair
-            </button>
-        }
+        <div class="btn-group">
+            <button @onclick="() => OnViewAllRepairs.InvokeAsync()" class="btn btn-sm btn-outline-primary">View All</button>
+
+            @if (ShowAddButton && OnAddRepair.HasDelegate)
+            {
+                <button class="btn btn-sm btn-primary" @onclick="OnAddRepair">
+                    <i class="bi bi-plus-circle"></i> Add Repair
+                </button>
+            }
+        </div>
     </div>
     <div class="card-body">
         @if (Repairs == null)
@@ -128,6 +130,12 @@
 @code {
     [Parameter]
     public List<Repair>? Repairs { get; set; }
+
+    [Parameter]
+    public string Title { get; set; } = "Repairs";
+
+    [Parameter]
+    public string HeaderCssClass { get; set; } = "";
 
     [Parameter]
     public bool ShowAddButton { get; set; } = true;

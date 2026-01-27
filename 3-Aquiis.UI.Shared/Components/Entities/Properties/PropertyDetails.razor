@@ -3,7 +3,7 @@
 @using Aquiis.Core.Constants
 
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header d-flex justify-content-between align-items-center @HeaderCssClass">
         <h5 class="mb-0">Property Information</h5>
         <span class="badge @GetAvailabilityBadgeClass()">
             @(Property.IsAvailable ? "Available" : "Occupied")
@@ -88,6 +88,9 @@
 
     [Parameter]
     public EventCallback OnEdit { get; set; }
+
+    [Parameter]
+    public string HeaderCssClass { get; set; } = "";
     
     /// <summary>
     /// Whether to show created/modified dates

@@ -4,7 +4,7 @@
 @using Microsoft.AspNetCore.Http
 
  <div class="card mt-3">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header d-flex justify-content-between align-items-center @HeaderCssClass">
         <h5 class="mb-0">Maintenance Requests</h5>
         <button class="btn btn-sm btn-primary" @onclick="CreateMaintenanceRequest">
             <i class="bi bi-plus-circle"></i> New Request
@@ -74,6 +74,9 @@
 
     [Parameter, EditorRequired]
     public Guid PropertyId { get; set; }
+
+    [Parameter]
+    public string HeaderCssClass { get; set; } = "";
 
     [Parameter]
     public EventCallback<Guid> OnViewRequest { get; set; }

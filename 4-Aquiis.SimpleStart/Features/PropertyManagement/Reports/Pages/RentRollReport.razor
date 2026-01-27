@@ -48,16 +48,16 @@
     else if (rentRollItems.Any())
     {
         <div class="card">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Rent Roll as of @asOfDate.ToString("MMM dd, yyyy")</h5>
-                <button class="btn btn-light btn-sm" @onclick="ExportToPdf">
+                <button class="btn btn btn-sm" @onclick="ExportToPdf">
                     <i class="bi bi-file-pdf"></i> Export PDF
                 </button>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-striped table-hover mb-0">
-                        <thead class="table-light">
+                        <thead class="table">
                             <tr>
                                 <th>Property</th>
                                 <th>Address</th>
@@ -111,7 +111,7 @@
                                 </tr>
                             }
                         </tbody>
-                        <tfoot class="table-light">
+                        <tfoot class="table">
                             <tr>
                                 <th colspan="5">TOTALS</th>
                                 <th class="text-end">@rentRollItems.Sum(r => r.MonthlyRent).ToString("C")</th>

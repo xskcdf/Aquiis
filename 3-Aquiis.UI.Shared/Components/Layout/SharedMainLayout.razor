@@ -1,14 +1,15 @@
 @inherits LayoutComponentBase
 @namespace Aquiis.UI.Shared.Components.Layout
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
 
-<div class="page" data-theme="@Theme" @key="Theme">
-    <div class="sidebar">
+<div class="page" data-bs-theme="@Theme" @key="Theme">
+    <div class="sidebar" @key="@($"sidebar-{Theme}")">
         @SidebarContent
     </div>
 
-    <main>
-        <div class="top-row px-4">
+    <main @key="@($"main-{Theme}")">
+        <div class="top-row px-4" @key="@($"{Theme}-top-row")">
             <AuthorizeView>
                 <NotAuthorized>
                     @NotAuthorizedContent
@@ -19,7 +20,7 @@
             </AuthorizeView>
         </div>
 
-        <article class="content px-4" @key="@($"{Theme}-content")">
+        <article class="content px-4" @key="@($"article-{Theme}")">
             @ChildContent
         </article>
     </main>

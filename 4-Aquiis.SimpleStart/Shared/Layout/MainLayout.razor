@@ -7,7 +7,7 @@
 
 <SharedMainLayout Theme="@ThemeService.CurrentTheme">
     <SidebarContent>
-        <NavMenu @rendermode="InteractiveServer" />
+        <NavMenu @rendermode="InteractiveServer" @key="@($"navmenu-{ThemeService.CurrentTheme}-{ThemeService.CurrentBrandTheme}")" />
     </SidebarContent>
     
     <NotAuthorizedContent>
@@ -15,7 +15,7 @@
     </NotAuthorizedContent>
     
     <AuthorizedHeaderContent>
-        <AuthorizedHeaderSection />
+        <AuthorizedHeaderSection @key="@($"header-{ThemeService.CurrentTheme}-{ThemeService.CurrentBrandTheme}")" />
     </AuthorizedHeaderContent>
     
     <ChildContent>
@@ -36,10 +36,12 @@
     protected override void OnInitialized()
     {
         ThemeService.OnThemeChanged += StateHasChanged;
+        ThemeService.OnBrandThemeChanged += StateHasChanged;
     }
 
     public void Dispose()
     {
         ThemeService.OnThemeChanged -= StateHasChanged;
+        ThemeService.OnBrandThemeChanged -= StateHasChanged;
     }
 }

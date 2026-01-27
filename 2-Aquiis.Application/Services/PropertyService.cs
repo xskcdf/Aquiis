@@ -238,7 +238,7 @@ namespace Aquiis.Application.Services
                 var organizationId = await _userContext.GetActiveOrganizationIdAsync();
 
                 var totalProperties = await _context.Properties
-                    .CountAsync(p => !p.IsDeleted && p.IsAvailable && p.OrganizationId == organizationId);
+                    .CountAsync(p => !p.IsDeleted && p.OrganizationId == organizationId);
 
                 if (totalProperties == 0)
                 {
@@ -247,7 +247,6 @@ namespace Aquiis.Application.Services
 
                 var occupiedProperties = await _context.Properties
                     .CountAsync(p => !p.IsDeleted && 
-                                    p.IsAvailable && 
                                     p.OrganizationId == organizationId &&
                                     _context.Leases.Any(l =>
                                         l.PropertyId == p.Id &&
@@ -354,7 +353,21 @@ namespace Aquiis.Application.Services
                 }
 
                 // Calculate total occupied days and total available days across all properties
-                var startDate = periodStart ?? new DateTime(DateTime.Today.Year, 4, 1);
+                // Default to current fiscal year (April 1 - March 31)
+                // If today is Jan-Mar, use April 1 of previous year
+                // If today is Apr-Dec, use April 1 of current year
+                DateTime startDate;
+                if (periodStart.HasValue)
+                {
+                    startDate = periodStart.Value;
+                }
+                else
+                {
+                    var today = DateTime.Today;
+                    startDate = today.Month < 4 
+                        ? new DateTime(today.Year - 1, 4, 1) 
+                        : new DateTime(today.Year, 4, 1);
+                }
                 var endDate = startDate.AddYears(1).AddDays(-1);
                 var totalDays = (endDate - startDate).Days + 1;
 

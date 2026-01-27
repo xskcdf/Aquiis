@@ -1,4 +1,4 @@
-@page "/propertymanagement/repairs/edit/{id:guid}"
+@page "/propertymanagement/repairs/{id:guid}/edit"
 @using Aquiis.Core.Entities
 @attribute [OrganizationAuthorize("Owner", "Administrator", "PropertyManager")]
 @inject RepairService RepairService
@@ -40,7 +40,7 @@
         <div class="row">
             <div class="col-lg-8">
                 <div class="card">
-                    <div class="card-header bg-light">
+                    <div class="card-header">
                         <h5 class="card-title mb-0">Repair Information</h5>
                     </div>
                     <div class="card-body">
@@ -193,7 +193,7 @@
 
             <div class="col-lg-4">
                 <div class="card">
-                    <div class="card-header bg-light">
+                    <div class="card-header">
                         <h6 class="card-title mb-0">Audit Information</h6>
                     </div>
                     <div class="card-body">

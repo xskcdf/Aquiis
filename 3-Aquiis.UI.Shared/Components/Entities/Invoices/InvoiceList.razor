@@ -1,0 +1,74 @@
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center @HeaderCssClass">
+        <h5 class="mb-0"><i class="bi bi-receipt"></i> @Title</h5>
+        <button class="btn btn-sm btn-outline-primary" @onclick="() => OnViewAll.InvokeAsync()">View All</button>
+    </div>
+    <div class="card-body">
+        @if (Invoices.Any())
+        {
+            <div class="list-group list-group-flush">
+                @foreach (var invoice in Invoices)
+                {
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">
+                                <a href="#" class="text-decoration-none" @onclick="() => OnViewItem.InvokeAsync(invoice.Id)">
+                                    @invoice.InvoiceNumber
+                                </a>
+                            </h6>
+                            <small>@invoice.InvoicedOn.ToString("MMM dd, yyyy")</small>
+                        </div>
+                        <p class="mb-1">@invoice.Lease?.Tenant?.FullName</p>
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <small class="text-muted">Due: @invoice.DueOn.ToString("MMM dd, yyyy")</small>
+                                @if (invoice.IsOverdue)
+                                {
+                                    <br>
+                                    <small class="text-danger">@invoice.DaysOverdue days overdue</small>
+                                }
+                            </div>
+                            <div class="text-end">
+                                <span class="badge @GetInvoiceStatusBadgeClass(invoice.Status)">@invoice.Status</span>
+                                <br>
+                                <small class="text-muted">@invoice.Amount.ToString("C")</small>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">No outstanding invoices.</p>
+        }
+    </div>
+</div>
+@code {
+    [Parameter, EditorRequired]
+    
+    public List<Invoice> Invoices { get; set; } = new();
+
+    [Parameter]
+    public string Title { get; set; } = "Invoices";
+
+    [Parameter]
+    public string HeaderCssClass { get; set; } = "";
+
+    [Parameter]
+    public EventCallback OnViewAll { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnViewItem { get; set; }
+
+    private string GetInvoiceStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            ApplicationConstants.InvoiceStatuses.Paid => "bg-success",
+            ApplicationConstants.InvoiceStatuses.PaidPartial => "bg-warning text-dark",
+            ApplicationConstants.InvoiceStatuses.Overdue => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}

@@ -1,7 +1,7 @@
 @using Aquiis.Core.Entities
 
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header d-flex justify-content-between align-items-center @HeaderCssClass">
         <h5 class="mb-0">
             <i class="bi bi-file-earmark-text"></i> Documents
         </h5>
@@ -67,6 +67,9 @@
 
     [Parameter]
     public bool ShowUploadButton { get; set; } = true;
+
+    [Parameter]
+    public string HeaderCssClass { get; set; } = "";
 
     [Parameter]
     public bool ShowGroupByType { get; set; } = false;

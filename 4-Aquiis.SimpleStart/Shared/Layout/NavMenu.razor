@@ -9,9 +9,11 @@
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid d-flex justify-content-between align-items-center">
         <a class="navbar-brand" href="">Aquiis.SimpleStart</a>
-        <button class="btn btn-link text-white p-0" @onclick="ToggleTheme" title="Toggle theme">
-            <i class="bi @GetThemeIcon()" style="font-size: 1.4rem;"></i>
-        </button>
+        <div class="d-flex gap-2">
+            <button class="btn btn-link p-0" @onclick="ToggleTheme" title="Toggle theme">
+                <i class="bi @GetThemeIcon()" style="font-size: 1.4rem;"></i>
+            </button>
+        </div>
     </div>
 </div>
 
@@ -97,6 +99,31 @@
                         </button>
                     </form>
                 </div>
+                <div class="nav-item px-3">
+                    <div class="dropdown">
+                        <button class="nav-link dropdown-toggle" type="button" id="brandThemeDropdown" 
+                                @onclick="ToggleBrandThemeDropdown" 
+                                @onclick:stopPropagation="true">
+                            <span class="bi bi-palette-fill-nav-menu" aria-hidden="true"></span> Theme: @FormatBrandThemeName(ThemeService.CurrentBrandTheme)
+                        </button>
+                        @if (showBrandThemeDropdown)
+                        {
+                            <ul class="dropdown-menu show" style="position: relative;">
+                                @foreach (var theme in AvailableBrandThemes)
+                                {
+                                    <li>
+                                        <button class="dropdown-item @(ThemeService.CurrentBrandTheme == theme ? "active" : "")" 
+                                                type="button"
+                                                @onclick="() => SelectBrandTheme(theme)"
+                                                @onclick:stopPropagation="true">
+                                            @FormatBrandThemeName(theme)
+                                        </button>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
             </Authorized>
             <NotAuthorized>
                 <div class="nav-item px-3">
@@ -114,6 +141,31 @@
                         <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
                     </NavLink>
                 </div>
+                <div class="nav-item px-3">
+                    <div class="dropdown">
+                        <button class="nav-link dropdown-toggle" type="button" 
+                                @onclick="ToggleBrandThemeDropdown"
+                                @onclick:stopPropagation="true">
+                            <span class="bi bi-palette-fill-nav-menu" aria-hidden="true"></span> Theme: @FormatBrandThemeName(ThemeService.CurrentBrandTheme)
+                        </button>
+                        @if (showBrandThemeDropdown)
+                        {
+                            <ul class="dropdown-menu show" style="position: relative;">
+                                @foreach (var theme in AvailableBrandThemes)
+                                {
+                                    <li>
+                                        <button class="dropdown-item @(ThemeService.CurrentBrandTheme == theme ? "active" : "")" 
+                                                type="button"
+                                                @onclick="() => SelectBrandTheme(theme)"
+                                                @onclick:stopPropagation="true">
+                                            @FormatBrandThemeName(theme)
+                                        </button>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
             </NotAuthorized>
         </AuthorizeView>
     </nav>
@@ -122,14 +174,24 @@
 @code {
     private string? currentUrl;
     private string currentTheme = "light";
+    private bool showBrandThemeDropdown = false;
 
     private string OrganizationId = string.Empty;
+
+    // Available brand themes - add new themes here
+    private readonly List<string> AvailableBrandThemes = new()
+    {
+        "bootstrap",
+        "obsidian",
+        "teal"
+    };
 
     protected override async Task OnInitializedAsync()
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
         ThemeService.OnThemeChanged += OnThemeChanged;
+        ThemeService.OnBrandThemeChanged += OnBrandThemeChanged;
         currentTheme = ThemeService.CurrentTheme;
         
         var orgId = await UserContext.GetActiveOrganizationIdAsync();
@@ -143,24 +205,45 @@
         {
             try
             {
-                // Load saved theme from localStorage and sync with service
-                var savedTheme = await JSRuntime.InvokeAsync<string>("eval", "localStorage.getItem('theme') || 'light'");
+                // Read current DOM attributes that were set by theme.js initialization
+                var domTheme = await JSRuntime.InvokeAsync<string>("eval", 
+                    "document.documentElement.getAttribute('data-bs-theme') || localStorage.getItem('theme') || 'light'");
+                var domBrandTheme = await JSRuntime.InvokeAsync<string>("eval", 
+                    "document.documentElement.getAttribute('data-brand-theme') || localStorage.getItem('brandTheme') || 'bootstrap'");
                 
-                // Only update if different from current
-                if (ThemeService.CurrentTheme != savedTheme)
+                Console.WriteLine($"NavMenu OnAfterRenderAsync - DOM theme: {domTheme}, brand: {domBrandTheme}");
+                Console.WriteLine($"NavMenu OnAfterRenderAsync - Service BEFORE sync: {ThemeService.CurrentTheme}, brand: {ThemeService.CurrentBrandTheme}");
+                
+                // Sync the service with the DOM state (which was set by theme.js)
+                if (ThemeService.CurrentTheme != domTheme)
                 {
-                    ThemeService.SetTheme(savedTheme);
+                    Console.WriteLine($"Syncing theme service: {ThemeService.CurrentTheme} -> {domTheme}");
+                    ThemeService.SetTheme(domTheme);
                 }
                 
-                // Always ensure the DOM has the correct theme attribute
-                await JSRuntime.InvokeVoidAsync("themeManager.setTheme", savedTheme);
+                if (ThemeService.CurrentBrandTheme != domBrandTheme)
+                {
+                    Console.WriteLine($"Syncing brand theme service: {ThemeService.CurrentBrandTheme} -> {domBrandTheme}");
+                    ThemeService.SetBrandTheme(domBrandTheme);
+                }
+                
+                Console.WriteLine($"NavMenu OnAfterRenderAsync - Service AFTER sync: {ThemeService.CurrentTheme}, brand: {ThemeService.CurrentBrandTheme}");
+                
+                // Force UI refresh to reflect synced theme
                 StateHasChanged();
+                
+                // Also ensure DOM attributes are still set (in case Blazor cleared them)
+                await JSRuntime.InvokeVoidAsync("themeManager.setTheme", ThemeService.CurrentTheme);
+                await JSRuntime.InvokeVoidAsync("themeManager.setBrandTheme", ThemeService.CurrentBrandTheme);
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"Error loading themes: {ex.Message}");
                 // Fallback if localStorage not available
                 ThemeService.SetTheme("light");
+                ThemeService.SetBrandTheme("bootstrap");
                 await JSRuntime.InvokeVoidAsync("themeManager.setTheme", "light");
+                await JSRuntime.InvokeVoidAsync("themeManager.setBrandTheme", "bootstrap");
             }
         }
     }
@@ -173,13 +256,61 @@
             currentTheme = ThemeService.CurrentTheme;
             // Save to localStorage and update DOM immediately
             await JSRuntime.InvokeVoidAsync("themeManager.setTheme", ThemeService.CurrentTheme);
-            StateHasChanged();
+            
+            // Force a complete page refresh to apply theme changes immediately
+            NavigationManager.Refresh(forceReload: false);
+            
             Console.WriteLine($"Theme toggled to: {ThemeService.CurrentTheme}");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error toggling theme: {ex.Message}");
         }
+    }
+
+    private async Task SelectBrandTheme(string brandTheme)
+    {
+        try
+        {
+            Console.WriteLine($"SelectBrandTheme called with: {brandTheme}");
+            
+            // Close dropdown first
+            showBrandThemeDropdown = false;
+            StateHasChanged();
+            
+            // Update service and JavaScript
+            ThemeService.SetBrandTheme(brandTheme);
+            await JSRuntime.InvokeVoidAsync("themeManager.setBrandTheme", brandTheme);
+            
+            Console.WriteLine($"Brand theme changed to: {ThemeService.CurrentBrandTheme}");
+            
+            // Force UI refresh
+            NavigationManager.Refresh(forceReload: false);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error changing brand theme: {ex.Message}");
+            showBrandThemeDropdown = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleBrandThemeDropdown()
+    {
+        showBrandThemeDropdown = !showBrandThemeDropdown;
+        Console.WriteLine($"Dropdown toggled: {showBrandThemeDropdown}");
+        StateHasChanged();
+    }
+
+    private string FormatBrandThemeName(string theme)
+    {
+        return theme switch
+        {
+            "bootstrap" => "Bootstrap",
+            "obsidian" => "Obsidian",
+            "teal" => "Teal",
+            _ => theme.Substring(0, 1).ToUpper() + theme.Substring(1)
+        };
     }
 
     private string GetThemeIcon()
@@ -202,14 +333,29 @@
         });
     }
 
+    private void OnBrandThemeChanged()
+    {
+        InvokeAsync(async () =>
+        {
+            try
+            {
+                // Re-apply brand theme when service notifies of change
+                await JSRuntime.InvokeVoidAsync("themeManager.setBrandTheme", ThemeService.CurrentBrandTheme);
+            }
+            catch { }
+            StateHasChanged();
+        });
+    }
+
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
         
-        // Re-apply current theme after navigation
+        // Re-apply current theme and brand theme after navigation
         try
         {
             await JSRuntime.InvokeVoidAsync("themeManager.setTheme", ThemeService.CurrentTheme);
+            await JSRuntime.InvokeVoidAsync("themeManager.setBrandTheme", ThemeService.CurrentBrandTheme);
         }
         catch { }
         
@@ -220,6 +366,7 @@
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
         ThemeService.OnThemeChanged -= OnThemeChanged;
+        ThemeService.OnBrandThemeChanged -= OnBrandThemeChanged;
     }
 }
 

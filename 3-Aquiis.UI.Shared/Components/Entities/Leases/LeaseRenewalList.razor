@@ -1,17 +1,12 @@
-@using Aquiis.Application.Services
-@using Aquiis.SimpleStart.Features.PropertyManagement
-@using Aquiis.Core.Entities
-@inject LeaseService LeaseService
-@rendermode InteractiveServer
-
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
+@namespace Aquiis.UI.Shared.Components.Entities.Leases
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center @HeaderCssClass">
         <h5 class="mb-0">
-            <i class="bi bi-calendar-event"></i> Lease Renewals
+            <i class="bi bi-calendar-event"></i> @Title
         </h5>
-        <NavLink href="propertymanagement/leases" class="btn btn-sm btn-outline-primary">
+        <button class="btn btn-sm btn-outline-primary" @onclick="() => OnViewAll.InvokeAsync()">
             View All
-        </NavLink>
+        </button>
     </div>
     <div class="card-body">
         @if (isLoading)
@@ -22,7 +17,7 @@
                 </div>
             </div>
         }
-        else if (expiringLeases == null || !expiringLeases.Any())
+        else if (Leases == null || !Leases.Any())
         {
             <p class="text-muted mb-0">No leases expiring in the next 90 days.</p>
         }
@@ -62,7 +57,7 @@
                             <div class="flex-grow-1">
                                 <h6 class="mb-1">
                                     <i class="bi @urgencyIcon text-@urgencyClass"></i>
-                                    @lease.Property?.Address
+                                    <a href="#" @onclick="() => OnViewLease.InvokeAsync(lease.Id)">@lease.Property?.Address</a>
                                 </h6>
                                 <p class="mb-1 small">
                                     <strong>Tenant:</strong> @lease.Tenant?.FullName<br/>
@@ -90,10 +85,10 @@
                 }
             </div>
 
-            <div class="card-footer bg-light">
+            <div class="card-footer">
                 <small class="text-muted">
                     <i class="bi bi-info-circle"></i>
-                    Showing @GetFilteredLeases().Count() of @expiringLeases.Count() expiring leases
+                    Showing @GetFilteredLeases().Count() of @Leases.Count() expiring leases
                 </small>
             </div>
         }
@@ -101,42 +96,54 @@
 </div>
 
 @code {
-    private List<Lease> expiringLeases = new();
+
+    [Parameter]
+    public string Title { get; set; } = "Upcoming Lease Renewals";
+
+    [Parameter]
+    public string HeaderCssClass { get; set; } = "";
+
+    [Parameter]
+    public List<Lease> Leases { get; set; } = new();
+
     private List<Lease> leases30Days = new();
     private List<Lease> leases60Days = new();
     private List<Lease> leases90Days = new();
-    private bool isLoading = true;
+    private bool isLoading = true; 
     private int selectedFilter = 60;
+
+    [Parameter]
+    public EventCallback OnViewAll { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnViewLease { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnFilterChanged { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadExpiringLeases();
+        await LoadLeases();
     }
 
-    private async Task LoadExpiringLeases()
+    private async Task LoadLeases()
     {
         try
         {
             isLoading = true;
-            var allLeases = await LeaseService.GetLeasesWithRelationsAsync();
             var today = DateTime.Today;
 
-            expiringLeases = allLeases
-                .Where(l => l.Status == "Active" && 
-                           l.EndDate >= today && 
-                           l.EndDate <= today.AddDays(90))
-                .OrderBy(l => l.EndDate)
-                .ToList();
-
-            leases30Days = expiringLeases
+            leases30Days = Leases
                 .Where(l => l.EndDate <= today.AddDays(30))
                 .ToList();
 
-            leases60Days = expiringLeases
+            leases60Days = Leases
                 .Where(l => l.EndDate <= today.AddDays(60))
                 .ToList();
 
-            leases90Days = expiringLeases;
+            leases90Days = Leases
+                .Where(l => l.EndDate <= today.AddDays(90))
+                .ToList();
         }
         catch (Exception ex)
         {
@@ -149,9 +156,10 @@
         }
     }
 
-    private void FilterLeases(int days)
+    private async Task FilterLeases(int days)
     {
         selectedFilter = days;
+        await OnFilterChanged.InvokeAsync(days);
         StateHasChanged();
     }
 
@@ -162,7 +170,7 @@
             30 => leases30Days,
             60 => leases60Days,
             90 => leases90Days,
-            _ => expiringLeases
+            _ => Leases
         };
     }
 

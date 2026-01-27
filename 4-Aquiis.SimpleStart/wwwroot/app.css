@@ -1,3 +1,277 @@
+/* ========================================
+   BRAND THEME SYSTEM
+   For documentation on adding new themes, see:
+   Theming-Support-Implementation.md
+   ======================================== */
+
+/* ========================================
+   BRAND THEME: OBSIDIAN
+   Override Bootstrap CSS variables with Obsidian colors
+   Same colors apply to both light and dark modes
+   (Bootstrap controls background/text via data-bs-theme)
+   ======================================== */
+
+/* Obsidian Light Mode */
+:root[data-bs-theme="light"][data-brand-theme="obsidian"],
+[data-bs-theme="light"][data-brand-theme="obsidian"] .page {
+  --bs-primary: #25344d !important;
+  --bs-primary-rgb: 37, 52, 77 !important;
+  --bs-secondary: #d17315 !important;
+  --bs-secondary-rgb: 209, 115, 21 !important;
+  --bs-success: #1a531d !important;
+  --bs-success-rgb: 26, 83, 29 !important;
+  --bs-info: #1b60b4 !important;
+  --bs-info-rgb: 27, 96, 180 !important;
+  --bs-warning: #d29e00 !important;
+  --bs-warning-rgb: 210, 158, 0 !important;
+  --bs-danger: #712028 !important;
+  --bs-danger-rgb: 113, 32, 40 !important;
+
+  /* Additional Bootstrap variables to ensure consistent theming */
+  --bs-link-color: #25344d !important;
+  --bs-link-hover-color: #1a2435 !important;
+  --bs-btn-color: #25344d !important;
+  --bs-emphasis-color: #25344d !important;
+}
+
+/* Obsidian Dark Mode - Identical colors */
+:root[data-bs-theme="dark"][data-brand-theme="obsidian"],
+[data-bs-theme="dark"][data-brand-theme="obsidian"] .page {
+  --bs-primary: #25344d !important;
+  --bs-primary-rgb: 37, 52, 77 !important;
+  --bs-secondary: #d17315 !important;
+  --bs-secondary-rgb: 209, 115, 21 !important;
+  --bs-success: #1a531d !important;
+  --bs-success-rgb: 26, 83, 29 !important;
+  --bs-info: #1b60b4 !important;
+  --bs-info-rgb: 27, 96, 180 !important;
+  --bs-warning: #d29e00 !important;
+  --bs-warning-rgb: 210, 158, 0 !important;
+  --bs-danger: #712028 !important;
+  --bs-danger-rgb: 113, 32, 40 !important;
+
+  /* Additional Bootstrap variables to ensure consistent theming */
+  --bs-link-color: #25344d !important;
+  --bs-link-hover-color: #1a2435 !important;
+  --bs-btn-color: #25344d !important;
+  --bs-emphasis-color: #25344d !important;
+}
+
+/* ========================================
+   BRAND THEME: TEAL
+   Override Bootstrap CSS variables with Teal colors
+   Same colors apply to both light and dark modes
+   (Bootstrap controls background/text via data-bs-theme)
+   ======================================== */
+
+/* Teal Light Mode */
+:root[data-bs-theme="light"][data-brand-theme="teal"],
+[data-bs-theme="light"][data-brand-theme="teal"] .page {
+  --bs-primary: #0d9488 !important;
+  --bs-primary-rgb: 13, 148, 136 !important;
+  --bs-secondary: #ff6b6b !important;
+  --bs-secondary-rgb: 255, 107, 107 !important;
+  --bs-success: #388e3c !important;
+  --bs-success-rgb: 56, 142, 60 !important;
+  --bs-info: #14b8a6 !important;
+  --bs-info-rgb: 20, 184, 166 !important;
+  --bs-warning: #ffc107 !important;
+  --bs-warning-rgb: 255, 193, 7 !important;
+  --bs-danger: #dc3545 !important;
+  --bs-danger-rgb: 220, 53, 69 !important;
+
+  /* Additional Bootstrap variables to ensure consistent theming */
+  --bs-link-color: #0d9488 !important;
+  --bs-link-hover-color: #0a7169 !important;
+  --bs-btn-color: #0d9488 !important;
+  --bs-emphasis-color: #0d9488 !important;
+}
+
+/* Teal Dark Mode - Identical colors */
+:root[data-bs-theme="dark"][data-brand-theme="teal"],
+[data-bs-theme="dark"][data-brand-theme="teal"] .page {
+  --bs-primary: #0d9488 !important;
+  --bs-primary-rgb: 13, 148, 136 !important;
+  --bs-secondary: #ff6b6b !important;
+  --bs-secondary-rgb: 255, 107, 107 !important;
+  --bs-success: #388e3c !important;
+  --bs-success-rgb: 56, 142, 60 !important;
+  --bs-info: #14b8a6 !important;
+  --bs-info-rgb: 20, 184, 166 !important;
+  --bs-warning: #ffc107 !important;
+  --bs-warning-rgb: 255, 193, 7 !important;
+  --bs-danger: #dc3545 !important;
+  --bs-danger-rgb: 220, 53, 69 !important;
+
+  /* Additional Bootstrap variables to ensure consistent theming */
+  --bs-link-color: #0d9488 !important;
+  --bs-link-hover-color: #0a7169 !important;
+  --bs-btn-color: #0d9488 !important;
+  --bs-emphasis-color: #0d9488 !important;
+}
+
+/* Layout Overrides for Obsidian Theme */
+
+[data-bs-theme="light"] main .top-row,
+[data-bs-theme="light"] .page main .top-row,
+[data-bs-theme="dark"] main .top-row,
+[data-bs-theme="dark"] .page main .top-row {
+  border-bottom: 1px solid var(--bs-border-color) !important;
+}
+
+/* Sidebar background and text styling for Obsidian brand (both modes) */
+/* Higher specificity selector to prevent Bootstrap dark from flashing through */
+[data-bs-theme][data-brand-theme="obsidian"] .sidebar,
+[data-brand-theme="obsidian"] .sidebar {
+  background-color: #1a1a1a !important;
+  color: whitesmoke !important;
+}
+
+[data-bs-theme][data-brand-theme="obsidian"] .sidebar .navbar-brand,
+[data-brand-theme="obsidian"] .sidebar .navbar-brand {
+  color: whitesmoke !important;
+}
+
+[data-bs-theme][data-brand-theme="obsidian"] .sidebar .top-row .btn-link,
+[data-brand-theme="obsidian"] .sidebar .top-row .btn-link {
+  color: whitesmoke !important;
+}
+
+[data-bs-theme][data-brand-theme="obsidian"] .sidebar .nav-separator,
+[data-brand-theme="obsidian"] .sidebar .nav-separator {
+  border-top-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Override all text colors in sidebar for Obsidian brand */
+[data-bs-theme][data-brand-theme="obsidian"] .sidebar .nav-link,
+[data-bs-theme][data-brand-theme="obsidian"] .sidebar a,
+[data-bs-theme][data-brand-theme="obsidian"] .sidebar button,
+[data-bs-theme][data-brand-theme="obsidian"] .sidebar div,
+[data-brand-theme="obsidian"] .sidebar .nav-link,
+[data-brand-theme="obsidian"] .sidebar a,
+[data-brand-theme="obsidian"] .sidebar button,
+[data-brand-theme="obsidian"] .sidebar div {
+  color: rgba(255, 255, 255, 100) !important;
+}
+
+/* Keep navigation icons white in dark sidebar for Obsidian brand */
+[data-bs-theme][data-brand-theme="obsidian"]
+  .sidebar
+  .bi-house-door-fill-nav-menu,
+[data-bs-theme][data-brand-theme="obsidian"]
+  .sidebar
+  .bi-plus-square-fill-nav-menu,
+[data-bs-theme][data-brand-theme="obsidian"] .sidebar .bi-list-nested-nav-menu,
+[data-bs-theme][data-brand-theme="obsidian"] .sidebar .bi-lock-nav-menu,
+[data-bs-theme][data-brand-theme="obsidian"] .sidebar .bi-person-nav-menu,
+[data-bs-theme][data-brand-theme="obsidian"] .sidebar .bi-person-badge-nav-menu,
+[data-bs-theme][data-brand-theme="obsidian"] .sidebar .bi-person-fill-nav-menu,
+[data-bs-theme][data-brand-theme="obsidian"]
+  .sidebar
+  .bi-arrow-bar-left-nav-menu,
+[data-bs-theme][data-brand-theme="obsidian"] .sidebar .bi-palette-fill-nav-menu,
+[data-brand-theme="obsidian"] .sidebar .bi-house-door-fill-nav-menu,
+[data-brand-theme="obsidian"] .sidebar .bi-plus-square-fill-nav-menu,
+[data-brand-theme="obsidian"] .sidebar .bi-list-nested-nav-menu,
+[data-brand-theme="obsidian"] .sidebar .bi-lock-nav-menu,
+[data-brand-theme="obsidian"] .sidebar .bi-person-nav-menu,
+[data-brand-theme="obsidian"] .sidebar .bi-person-badge-nav-menu,
+[data-brand-theme="obsidian"] .sidebar .bi-person-fill-nav-menu,
+[data-brand-theme="obsidian"] .sidebar .bi-arrow-bar-left-nav-menu,
+[data-brand-theme="obsidian"] .sidebar .bi-palette-fill-nav-menu {
+  filter: none !important;
+}
+
+/* Background Colors */
+.bg-obsidian-primary {
+  background-color: #25344d !important;
+  color: white !important;
+}
+.bg-obsidian-primary-dark {
+  background-color: #1a1a1a !important;
+  color: white !important;
+}
+.bg-obsidian-secondary {
+  background-color: #d17315 !important;
+  color: white !important;
+}
+.bg-obsidian-success {
+  background-color: #1a531d !important;
+  color: white !important;
+}
+.bg-obsidian-info {
+  background-color: #1b60b4 !important;
+  color: white !important;
+}
+.bg-obsidian-warning {
+  background-color: #d29e00 !important;
+  color: #2a3749 !important;
+}
+.bg-obsidian-danger {
+  background-color: #712028 !important;
+  color: white !important;
+}
+.bg-obsidian-light {
+  background-color: #faf9f6 !important;
+  color: #2a3749 !important;
+}
+.bg-obsidian-dark {
+  background-color: #2a3749 !important;
+  color: white !important;
+}
+
+/* Text Colors */
+.text-obsidian-primary {
+  color: #25344d !important;
+}
+.text-obsidian-primary-dark {
+  color: #1a1a1a !important;
+}
+.text-obsidian-secondary {
+  color: #d17315 !important;
+}
+.text-obsidian-success {
+  color: #1a531d !important;
+}
+.text-obsidian-info {
+  color: #1b60b4 !important;
+}
+.text-obsidian-warning {
+  color: #d29e00 !important;
+}
+.text-obsidian-danger {
+  color: #712028 !important;
+}
+.text-obsidian-light {
+  color: #faf9f6 !important;
+}
+.text-obsidian-dark {
+  color: #2a3749 !important;
+}
+
+/* Border Colors */
+.border-obsidian-primary {
+  border-color: #25344d !important;
+}
+.border-obsidian-primary-dark {
+  border-color: #1a1a1a !important;
+}
+.border-obsidian-secondary {
+  border-color: #d17315 !important;
+}
+.border-obsidian-success {
+  border-color: #1a531d !important;
+}
+.border-obsidian-info {
+  border-color: #1b60b4 !important;
+}
+.border-obsidian-warning {
+  border-color: #d29e00 !important;
+}
+.border-obsidian-danger {
+  border-color: #712028 !important;
+}
+
 html,
 body {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;

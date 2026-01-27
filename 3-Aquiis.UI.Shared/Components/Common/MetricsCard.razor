@@ -1,0 +1,32 @@
+<div class="col">
+    <div class="card text-white @ColorClass">
+        <div class="card-body">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <h4>@Count</h4>
+                    <p class="card-text">@Title</p>
+                </div>
+                <div class="align-self-center">
+                    <i class="@IconCssClass" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Count { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? IconCssClass { get; set; }
+
+    [Parameter]
+    public string? ColorClass { get; set; }
+
+}

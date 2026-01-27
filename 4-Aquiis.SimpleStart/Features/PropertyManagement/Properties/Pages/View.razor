@@ -36,7 +36,7 @@
 
             <PropertyDetails Property="@property" />
             <div class="mt-4">
-                <RepairsListView
+                <RepairList
                     Repairs="@property.Repairs.ToList()"
                     OnViewRepair="ViewRepair"
                     OnAddRepair="CreateRepair"
@@ -44,7 +44,7 @@
             </div>
             <div class="mt-4">
                 <DocumentListView 
-                    Documents="@property.Documents.ToList()" OnViewDocument="ViewDocument"  />
+                    Documents="@property.Documents.ToList()" OnViewDocument="ViewDocument" />
             </div>
 
         </div>
