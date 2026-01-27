@@ -57,6 +57,25 @@
   --bs-emphasis-color: #25344d !important;
 }
 
+/* Table text color for Obsidian dark theme */
+[data-bs-theme="dark"][data-brand-theme="obsidian"] table,
+[data-bs-theme="dark"][data-brand-theme="obsidian"] .table,
+[data-bs-theme="dark"][data-brand-theme="obsidian"] table thead,
+[data-bs-theme="dark"][data-brand-theme="obsidian"] table tbody,
+[data-bs-theme="dark"][data-brand-theme="obsidian"] table th,
+[data-bs-theme="dark"][data-brand-theme="obsidian"] table td {
+  color: whitesmoke !important;
+}
+
+/* Override Bootstrap's table text color more specifically */
+[data-bs-theme="dark"][data-brand-theme="obsidian"]
+  .table
+  > :not(caption)
+  > *
+  > * {
+  color: whitesmoke !important;
+}
+
 /* ========================================
    BRAND THEME: TEAL
    Override Bootstrap CSS variables with Teal colors
