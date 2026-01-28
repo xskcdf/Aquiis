@@ -1,513 +1,349 @@
-# Aquiis - Property Management System
+# Aquiis SimpleStart
 
-![.NET 9.0](https://img.shields.io/badge/.NET-9.0-blue)
-![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-9.0-blueviolet)
-![Blazor Server](https://img.shields.io/badge/Blazor-Server-orange)
-![Entity Framework](https://img.shields.io/badge/Entity%20Framework-9.0-green)
-![SQLite](https://img.shields.io/badge/Database-SQLite-lightblue)
+**Modern Property Management for Landlords**
 
-A comprehensive web-based property management system built with ASP.NET Core 9.0 and Blazor Server. Aquiis streamlines rental property management for property owners, managers, and tenants with an intuitive interface and robust feature set.
-
-## 🏢 Overview
-
-Aquiis is designed to simplify property management operations through a centralized platform that handles everything from property listings and tenant management to lease tracking and document storage. Built with modern web technologies, it provides a responsive, secure, and scalable solution for property management professionals.
-
-## ✨ Key Features
-
-### 🏠 Property Management
-
-- **Property Portfolio** - Comprehensive property listings with detailed information
-- **Property Details** - Address, type, rent, bedrooms, bathrooms, square footage
-- **Availability Tracking** - Real-time property availability status
-- **Property Photos** - Image management and gallery support
-- **Search & Filter** - Advanced property search and filtering capabilities
-- **Property Analytics** - Dashboard with property performance metrics
-
-### 👥 Tenant Management
-
-- **Tenant Profiles** - Complete tenant information management
-- **Contact Management** - Phone, email, emergency contacts
-- **Tenant History** - Track tenant interactions and lease history
-- **Tenant Portal** - Dedicated tenant dashboard and self-service features
-- **Communication Tools** - Built-in messaging and notification system
-- **Tenant Screening** - Application and background check workflow
-
-### 📄 Lease Management
-
-- **Lease Creation** - Digital lease agreement generation
-- **Lease Tracking** - Active, pending, expired, and terminated lease monitoring
-- **Rent Tracking** - Monthly rent amounts and payment schedules
-- **Security Deposits** - Deposit tracking and management
-- **Lease Renewals** - Automated renewal notifications and processing
-- **Terms Management** - Flexible lease terms and conditions
-
-### 💰 Financial Management
-
-- **Payment Tracking** - Rent payment monitoring and history
-- **Invoice Generation** - Automated invoice creation and delivery
-- **Payment Methods** - Multiple payment option support
-- **Financial Reporting** - Revenue and expense reporting
-- **Late Fee Management** - Automatic late fee calculation and tracking
-- **Security Deposit Tracking** - Deposit handling and return processing
-
-### 📁 Document Management
-
-- **File Storage** - Secure document upload and storage
-- **Document Categories** - Organized by type (leases, receipts, photos, etc.)
-- **Version Control** - Document revision tracking
-- **Digital Signatures** - Electronic signature support
-- **Document Sharing** - Secure document sharing with tenants
-- **Bulk Operations** - Mass document upload and organization
-
-### 🔐 User Management & Security
-
-- **Role-Based Access** - Administrator, Property Manager, and Tenant roles
-- **Authentication** - Secure login with ASP.NET Core Identity
-- **User Profiles** - Comprehensive user account management
-- **Permission Management** - Granular access control
-- **Activity Tracking** - User login and activity monitoring
-- **Data Security** - Encrypted data storage and transmission
-
-### 🎛️ Administration Features
-
-- **User Administration** - Complete user account management
-- **System Configuration** - Application settings and preferences
-- **Application Monitoring** - System health and performance tracking
-- **Backup Management** - Data backup and recovery tools
-- **Audit Logging** - Comprehensive activity and change tracking
-
-## 🛠️ Technology Stack
-
-### Backend
-
-- **Backend**: ASP.NET Core 9.0
-- **UI Framework**: Blazor Server
-- **Database**: SQLite with Entity Framework Core 9.0
-- **Authentication**: ASP.NET Core Identity
-- **Architecture**: Clean Architecture with vertical slice organization
-
-### Frontend
-
-- **UI Components**: Blazor Server Components
-- **Styling**: Bootstrap 5 with custom CSS
-- **Icons**: Bootstrap Icons
-- **Responsive Design**: Mobile-first responsive layout
-- **Real-time Updates**: Blazor Server SignalR integration
-
-### Development Tools
-
-- **IDE**: Visual Studio Code with C# extension
-- **Database Tools**: Entity Framework Core Tools
-- **Version Control**: Git with GitHub integration
-- **Package Management**: NuGet
-- **Build System**: .NET SDK build system
-
-## 📋 Prerequisites
-
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-- [Git](https://git-scm.com/)
-- [Visual Studio Code](https://code.visualstudio.com/) (recommended) or Visual Studio 2022
-- [C# Dev Kit Extension](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit) for VS Code
-
-## 🚀 Quick Start
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/xnodeoncode/Aquiis.git
-cd Aquiis
-```
-
-### 2. Build the Application
-
-```bash
-dotnet build
-```
-
-### 3. Run Database Migrations
-
-```bash
-cd Aquiis.SimpleStart
-dotnet ef database update
-```
-
-### 4. Start the Development Server
-
-```bash
-dotnet run
-```
-
-### 5. Access the Application
-
-Open your browser and navigate to:
-
-- **HTTPS**: https://localhost:7244
-- **HTTP**: http://localhost:5244
-
-## 🔧 Development Setup
-
-### Visual Studio Code Setup
-
-The project includes pre-configured VS Code settings:
-
-1. Open the workspace file: `Aquiis.code-workspace`
-2. Install recommended extensions when prompted
-3. Use **F5** to start debugging
-4. Use **Ctrl+Shift+P** → "Tasks: Run Task" for build operations
-
-### Available Tasks
-
-- **build** - Debug build (default)
-- **build-release** - Release build
-- **watch** - Hot reload development
-- **publish** - Production publish
-- **clean** - Clean build artifacts
-
-### Database Management
-
-#### Manual Database Scripts
-
-SQL scripts for manual database operations are located in:
-
-```bash
-cd Infrastructure/Data/Scripts
-# Available scripts:
-# 00_InitialSchema.sql - Initial database schema
-# updateTenant.sql - Tenant table updates
-```
-
-#### Entity Framework Commands
-
-```bash
-# Create new migration
-dotnet ef migrations add [MigrationName]
-
-# Update database
-dotnet ef database update
-
-# Remove last migration
-dotnet ef migrations remove
-```
-
-## 📁 Project Structure
-
-The application follows Clean Architecture principles with clear separation of concerns:
-
-```
-Aquiis.SimpleStart/
-├── Core/                                # Domain Layer (no dependencies)
-│   ├── Entities/                        # Domain models & business entities
-│   │   ├── BaseModel.cs                # Base entity with common properties
-│   │   ├── Property.cs                 # Property entity
-│   │   ├── Tenant.cs                   # Tenant entity
-│   │   ├── Lease.cs                    # Lease entity
-│   │   ├── SecurityDeposit.cs          # Security deposit entity
-│   │   └── ...                         # Other domain entities
-│   └── Constants/                       # Application constants
-│       ├── ApplicationConstants.cs
-│       └── ApplicationSettings.cs
-│
-├── Infrastructure/                      # Infrastructure Layer
-│   ├── Data/                           # Database & persistence
-│   │   ├── ApplicationDbContext.cs    # EF Core DbContext
-│   │   ├── Migrations/                # EF Core migrations (44 files)
-│   │   ├── Scripts/                   # SQL scripts for manual operations
-│   │   └── Backups/                   # Database backups
-│   └── Services/                       # External service implementations
-│
-├── Application/                         # Application Layer (business logic)
-│   └── Services/                       # Domain services
-│       ├── PropertyManagementService.cs
-│       ├── SecurityDepositService.cs
-│       ├── TenantConversionService.cs
-│       ├── FinancialReportService.cs
-│       ├── ChecklistService.cs
-│       ├── CalendarEventService.cs
-│       ├── NoteService.cs
-│       └── PdfGenerators/             # PDF generation services
-│           ├── LeasePdfGenerator.cs
-│           ├── InvoicePdfGenerator.cs
-│           ├── PaymentPdfGenerator.cs
-│           └── ...
-│
-├── Features/                            # Presentation Layer (Vertical Slices)
-│   ├── PropertyManagement/             # Property management features
-│   │   ├── Properties/                 # Property CRUD & management
-│   │   ├── Tenants/                   # Tenant management
-│   │   ├── Leases/                    # Lease management
-│   │   ├── SecurityDeposits/          # Security deposit tracking
-│   │   ├── Payments/                  # Payment processing
-│   │   ├── Invoices/                  # Invoice management
-│   │   ├── Documents/                 # Document management
-│   │   ├── Inspections/               # Property inspections
-│   │   ├── MaintenanceRequests/       # Maintenance tracking
-│   │   ├── Applications/              # Rental applications
-│   │   ├── Checklists/                # Checklists & templates
-│   │   ├── Reports/                   # Financial & operational reports
-│   │   └── Calendar.razor             # Calendar view
-│   └── Administration/                 # Admin features
-│       ├── Application/               # Application screening
-│       ├── PropertyManagement/        # Property admin
-│       ├── Settings/                  # System settings
-│       ├── Users/                     # User management
-│       └── Dashboard.razor
-│
-├── Shared/                              # Shared UI Layer
-│   ├── Layout/                         # Layout components
-│   │   ├── MainLayout.razor
-│   │   └── NavMenu.razor
-│   ├── Components/                     # Reusable UI components
-│   │   ├── Account/                   # Authentication components
-│   │   ├── Pages/                     # Shared pages (Home, About, Error)
-│   │   ├── NotesTimeline.razor
-│   │   ├── SessionTimeoutModal.razor
-│   │   └── ToastContainer.razor
-│   └── Services/                       # UI-specific services
-│       ├── ToastService.cs
-│       ├── ThemeService.cs
-│       ├── SessionTimeoutService.cs
-│       ├── UserContextService.cs
-│       └── DocumentService.cs
-│
-├── Components/                          # Root Blazor components
-│   ├── App.razor                       # App root component
-│   ├── Routes.razor                    # Routing configuration
-│   └── _Imports.razor                  # Global using directives
-│
-├── Utilities/                           # Helper utilities
-│   ├── CalendarEventRouter.cs
-│   └── SchedulableEntityRegistry.cs
-│
-├── wwwroot/                             # Static files
-│   ├── assets/                         # Images & static assets
-│   ├── js/                             # JavaScript files
-│   └── lib/                            # Client libraries
-│
-├── Program.cs                           # Application entry point
-├── appsettings.json                    # Configuration
-└── appsettings.Development.json        # Development config
-```
-
-### Architecture Principles
-
-**Clean Architecture Layers:**
-
-```
-Features → Application → Core
-    ↓
-Infrastructure → Core
-    ↓
-Shared → Core
-```
-
-**Dependency Rules:**
-
-- ✅ **Core** has NO dependencies (pure domain logic)
-- ✅ **Infrastructure** depends only on Core (data access)
-- ✅ **Application** depends only on Core (business logic)
-- ✅ **Features** depends on Application + Core (UI features)
-- ✅ **Shared** depends on Core (cross-cutting UI)
-
-**Benefits:**
-
-- **Separation of Concerns**: Domain, business logic, data access, and UI clearly separated
-- **Testability**: Each layer can be tested independently
-- **Maintainability**: Easy to locate and modify specific functionality
-- **Scalability**: Simple to add new features as vertical slices
-- **Reusability**: Domain and application layers can be shared across projects
-
-## 🔑 Default User Roles
-
-The system includes three primary user roles:
-
-### Administrator
-
-- Full system access
-- User management capabilities
-- System configuration
-- All property management features
-
-### Property Manager
-
-- Property portfolio management
-- Tenant management
-- Lease administration
-- Financial tracking
-- Document management
-
-### Tenant
-
-- Personal dashboard
-- Lease information access
-- Payment history
-- Maintenance requests
-- Document viewing
-
-## 🎯 Key Components
-
-### Property Management Service
-
-Core business logic service in the Application layer:
-
-- Property CRUD operations
-- Tenant management workflows
-- Lease tracking and renewals
-- Document handling and storage
-- Financial calculations
-- Entity relationship management
-
-### Authentication & Authorization
-
-- ASP.NET Core Identity integration
-- Role-based access control
-- Secure session management
-- Password policies
-- Account lockout protection
-
-### Database Architecture
-
-- Entity Framework Core with SQLite
-- Code-first approach with migrations
-- Optimized indexing for performance
-- Foreign key constraints
-- Soft delete patterns
-
-## 📊 Dashboard Features
-
-### Property Manager Dashboard
-
-- Total properties count
-- Available properties metrics
-- Active lease tracking
-- Tenant statistics
-- Recent activity feed
-- Quick action buttons
-
-### Administrator Dashboard
-
-- User account metrics
-- System health monitoring
-- Application statistics
-- Administrative quick actions
-- Recent system activity
-
-### Tenant Dashboard
-
-- Personal lease information
-- Payment history
-- Maintenance requests
-- Document access
-- Communication center
-
-## 🔧 Configuration
-
-### Application Settings
-
-Configuration is managed through:
-
-- `appsettings.json` - Base configuration
-- `appsettings.Development.json` - Development overrides
-- Environment variables
-- User secrets (for sensitive data)
-
-### Key Configuration Areas
-
-- Database connection strings
-- Authentication settings
-- File storage configuration
-- Email service settings
-- Application-specific settings
-
-## 🚀 Deployment
-
-### Prerequisites for Production
-
-- Windows/Linux server with .NET 9.0 runtime
-- IIS or reverse proxy (nginx/Apache)
-- SSL certificate for HTTPS
-- Database server (or SQLite for smaller deployments)
-
-### Build for Production
-
-```bash
-dotnet publish -c Release -o ./publish
-```
-
-### Environment Variables
-
-Set the following for production:
-
-```bash
-ASPNETCORE_ENVIRONMENT=Production
-ASPNETCORE_URLS=https://+:443;http://+:80
-ConnectionStrings__DefaultConnection=[your-connection-string]
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow C# coding conventions
-- Use meaningful commit messages
-- Update documentation for new features
-- Add unit tests for new functionality
-- Ensure responsive design compatibility
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-### Documentation
-
-- Check the `REVISIONS.md` file for recent changes
-- Review component-specific README files in subdirectories
-- Refer to ASP.NET Core and Blazor documentation
-
-### Common Issues
-
-1. **Database Connection Issues**: Verify SQLite file permissions and path
-2. **Build Errors**: Ensure .NET 9.0 SDK is installed
-3. **Authentication Problems**: Check Identity configuration and user roles
-4. **Performance Issues**: Review database indexing and query optimization
-
-### Getting Help
-
-- Create an issue on GitHub for bugs
-- Check existing issues for known problems
-- Review the project documentation
-- Contact the development team
-
-## 🏗️ Roadmap
-
-### Upcoming Features
-
-- Mobile application support
-- Advanced reporting and analytics
-- Integration with accounting software
-- Automated rent collection
-- Multi-language support
-- Advanced tenant screening
-- IoT device integration
-- API for third-party integrations
-
-### Performance Improvements
-
-- Database optimization
-- Caching implementation
-- Background job processing
-- File storage optimization
-- Search performance enhancements
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/xnodeoncode/Aquiis/releases)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey.svg)](#installation)
 
 ---
 
-**Aquiis** - Streamlining Property Management for the Modern World
+**Aquiis SimpleStart** is a standalone desktop application designed for landlords managing 1-9 residential rental properties. Built with ASP.NET Core 10 and Blazor Server, wrapped in Electron for native desktop experience, it provides professional-grade property management features without the complexity or subscription costs of enterprise solutions.
 
-Built with ❤️ using ASP.NET Core 9.0 and Blazor Server
+**Perfect for:**
+
+- Independent landlords with a few properties
+- Property owners who self-manage their rentals
+- New landlords starting their portfolio
+- Anyone seeking affordable, easy-to-use property management software
+
+## ✨ Key Features
+
+### Property Management
+
+- 📋 Manage up to 9 residential properties
+- 🏡 Property profiles with photos and documents
+- 🔍 Track property status (Available, Occupied, Under Renovation)
+- 📊 Property portfolio overview and analytics
+
+### Tenant Management
+
+- 👥 Complete prospect-to-tenant journey
+- 📝 Digital rental applications with screening
+- ✅ Application approval workflow
+- 🤝 Tenant profiles with contact information
+
+### Lease Management
+
+- 📄 Digital lease creation and management
+- ✍️ Lease offers with acceptance tracking
+- 🔄 Multi-lease support (tenants can have multiple active leases)
+- 💰 Security deposit investment tracking with annual dividends
+
+### Financial Management
+
+- 🧾 Automated rent invoice generation
+- 💳 Payment tracking by multiple methods
+- ⏰ Automatic late fee application after grace period
+- 📈 Financial reports and payment history
+
+### Maintenance & Inspections
+
+- 🔧 Maintenance request tracking with vendor assignment
+- ✅ Comprehensive 26-item inspection checklist
+- 📅 Scheduled routine inspections
+- 📄 PDF inspection reports with QuestPDF
+
+### Notifications & Automation
+
+- 🔔 In-app, email, and SMS notifications
+- ⏰ Automatic late fees and lease expiration warnings
+- 📅 Background tasks for scheduling and cleanup
+- 🎯 Configurable notification preferences
+
+### Database Management
+
+- 💾 SQLite file-based database (no server required)
+- 🔄 Automatic schema migrations
+- 📦 Manual and scheduled backups
+- ♻️ Staged restore with preview
+
+---
+
+## 🚀 Quick Start
+
+### Installation
+
+**Linux (Ubuntu/Debian):**
+
+```bash
+# Option 1: AppImage (recommended)
+chmod +x Aquiis-SimpleStart-1.0.0.AppImage
+./Aquiis-SimpleStart-1.0.0.AppImage
+
+# Option 2: Debian package
+sudo dpkg -i Aquiis-SimpleStart-1.0.0-amd64.deb
+aquiis-simplestart
+```
+
+**Windows:**
+
+1. Download `Aquiis-SimpleStart-Setup-1.0.0.exe`
+2. Run installer and follow wizard
+3. Launch from Start Menu
+
+### First Run
+
+1. **New Setup Wizard** guides you through initial configuration
+2. Create your **organization** (business name and contact info)
+3. Register your **first user account**
+4. Start managing properties!
+
+### 15-Minute Tutorial
+
+Follow our [Quick Start Guide](Documentation/v1.0.0/v1.0.0-Quick-Start-Guide.md) to:
+
+- Add your first property
+- Add a tenant
+- Create a lease
+- Generate an invoice
+- Record a payment
+- Schedule an inspection
+
+---
+
+## 📋 System Requirements
+
+### Minimum Requirements
+
+- **OS:** Linux (Ubuntu 20.04+, Debian 11+) or Windows 10/11 (64-bit)
+- **CPU:** 2-core, 1.5 GHz
+- **RAM:** 2 GB
+- **Disk:** 500 MB
+
+### Recommended
+
+- **CPU:** 4-core, 2.5 GHz
+- **RAM:** 4 GB
+- **Disk:** 1 GB
+- **Display:** 1920x1080
+
+### Software
+
+- All dependencies bundled (no installation required)
+- Optional: SendGrid (email) and Twilio (SMS) for notifications
+
+---
+
+## 📚 Documentation
+
+### User Documentation
+
+- 📖 **[Release Notes](Documentation/v1.0.0/v1.0.0-Release-Notes.md)** - What's new in v1.0.0
+- 🚀 **[Quick Start Guide](Documentation/v1.0.0/v1.0.0-Quick-Start-Guide.md)** - Get started in 15 minutes
+- 💾 **[Database Management Guide](Documentation/v1.0.0/v1.0.0-Database-Management-Guide.md)** - Backup, restore, troubleshooting
+
+### Developer Documentation
+
+- 📝 **[Copilot Instructions](.github/copilot-instructions.md)** - Architecture and development guidelines
+- 🏛️ **[Roadmap](Documentation/Roadmap/)** - Feature planning and implementation status
+- 🔄 **[CHANGELOG](CHANGELOG.md)** - Version history
+
+---
+
+## ⚠️ Known Limitations
+
+**SimpleStart is with intentional constraints:**
+
+| Limitation        | Value                          | Reason                    |
+| ----------------- | ------------------------------ | ------------------------- |
+| **Properties**    | Maximum 9                      | Simplified workflows      |
+| **Users**         | Maximum 3 (1 system + 2 login) | Simplified access control |
+| **Organizations** | 1 only                         | Desktop application scope |
+| **File uploads**  | 10MB per file                  | Performance management    |
+
+**Need more capacity?** Watch for **Aquiis Professional** (coming 2026) with unlimited properties and multi-organization support.
+
+---
+
+## 🛠️ Technology Stack
+
+- **Framework:** ASP.NET Core 10.0 + Blazor Server
+- **Desktop:** ElectronNET 23.6.2
+- **Database:** SQLite (Microsoft.EntityFrameworkCore.Sqlite 10.0.1)
+- **PDF Generation:** QuestPDF 2025.12.1
+- **Email:** SendGrid 9.29.3
+- **SMS:** Twilio 7.14.0
+- **UI:** Bootstrap 5.3, Material Design Icons
+- **Architecture:** Clean Architecture with service layer pattern
+
+---
+
+## 🏗️ Project Structure
+
+```
+Aquiis/
+├── 0-Aquiis.Core/              # Domain entities and interfaces
+├── 1-Aquiis.Infrastructure/    # Data access and external services
+├── 2-Aquiis.Application/       # Business logic and services
+├── 3-Aquiis.UI.Shared/         # Shared UI components (SimpleStart + Professional)
+├── 4-Aquiis.SimpleStart/       # SimpleStart desktop application
+├── 5-Aquiis.Professional/      # Professional web application (future)
+└── 6-Tests/                    # Unit and integration tests
+```
+
+---
+
+## 🧪 Testing
+
+**Test Suite:**
+
+- ✅ **303 unit tests** passing
+- ✅ **Application layer:** 243 tests (services, workflows, business logic)
+- ✅ **UI.Shared components:** 47 tests (layout, notifications, common components)
+- ✅ **Core validation:** 13 tests (utilities, attributes)
+
+**Integration tests** require running applications and are validated during UAT.
+
+**Run tests:**
+
+```bash
+dotnet test Aquiis.sln
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how to get started:
+
+1. **Fork the repository**
+2. **Create a feature branch:** `git checkout -b feature/your-feature-name`
+3. **Read [copilot-instructions.md](.github/copilot-instructions.md)** for architecture guidelines
+4. **Make your changes** following the coding standards
+5. **Write tests** for new features
+6. **Submit a pull request**
+
+### Development Workflow
+
+**Branch Strategy:**
+
+```
+main (protected, production-ready)
+  ↑ Pull Request
+development (integration testing)
+  ↑ Direct merge
+feature/your-feature-name
+```
+
+**Build and run:**
+
+```bash
+# Build
+dotnet build Aquiis.sln
+
+# Run SimpleStart
+cd 4-Aquiis.SimpleStart
+dotnet run
+
+# Or use hot reload
+dotnet watch
+```
+
+---
+
+## 📊 Versioning
+
+We use [Semantic Versioning](https://semver.org/):
+
+- **MAJOR** version (X.0.0): Breaking changes, database schema updates
+- **MINOR** version (0.X.0): New features, UI changes (backward compatible)
+- **PATCH** version (0.0.X): Bug fixes, minor updates
+
+**Current version:** 1.0.0 (Initial production release)
+
+---
+
+## 🗺️ Roadmap
+
+### v1.1.0 (Q2 2026)
+
+- 🎯 Tenant portal for online payment and maintenance requests
+- 🎯 Calendar refactoring (remove legacy service dependencies)
+- 🎯 Enhanced reporting and customization
+- 🎯 Mobile companion app (view-only)
+
+### v1.2.0 (Q3 2026)
+
+- 💳 Online rent payment processing (Stripe integration)
+- 📊 Advanced analytics and forecasting
+
+### v2.0.0 (2027) - Aquiis Professional
+
+- 🏢 Unlimited properties
+- 👥 Multi-organization support
+- 🌐 Web-based deployment
+- 📱 Full mobile app
+
+---
+
+## 📜 License
+
+Copyright © 2026 CIS Guru. All rights reserved.
+
+Licensed under the **MIT License** - see [LICENSE](LICENSE) file for details.
+
+---
+
+## 📞 Support
+
+### Getting Help
+
+- 📧 **Email:** cisguru@outlook.com
+- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/xnodeoncode/Aquiis/issues)
+- 💡 **Feature Requests:** [GitHub Discussions](https://github.com/xnodeoncode/Aquiis/discussions)
+- 📖 **Documentation:** [/Documentation/v1.0.0/](Documentation/v1.0.0/)
+
+### Community
+
+- ⭐ Star this repository
+- 🍴 Fork and contribute
+- 💬 Join discussions
+- 📢 Share feedback
+
+---
+
+## 🙏 Acknowledgments
+
+**Built with:**
+
+- ASP.NET Core team for the amazing framework
+- Electron.NET team for desktop integration
+- QuestPDF team for PDF generation
+- SendGrid and Twilio for notification services
+- GitHub Copilot for AI-assisted development
+
+**Special thanks:**
+
+- All beta testers and early adopters
+- Open source community contributors
+- Everyone who provided feedback and suggestions
+
+---
+
+## 🎊 Status
+
+**v1.0.0 - General Availability** 🎉
+
+- ✅ **95.75% Production Ready**
+- ✅ **303 tests passing**
+- ✅ **CI/CD pipeline complete**
+- ✅ **Documentation complete**
+- 🚀 **Ready for production use!**
+
+---
+
+**Made with ❤️ for independent landlords everywhere**
+
+**Happy property managing!** 🏠

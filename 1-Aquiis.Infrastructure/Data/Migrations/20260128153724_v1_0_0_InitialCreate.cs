@@ -5,10 +5,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
 
-namespace Aquiis.Infrastructure.Data.Migrations
+namespace Aquiis.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class v1_0_0_InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -180,6 +180,29 @@ namespace Aquiis.Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_SecurityDepositInvestmentPools", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserProfiles",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<string>(type: "TEXT", nullable: false),
+                    Email = table.Column<string>(type: "TEXT", nullable: false),
+                    FirstName = table.Column<string>(type: "TEXT", nullable: false),
+                    LastName = table.Column<string>(type: "TEXT", nullable: false),
+                    PhoneNumber = table.Column<string>(type: "TEXT", nullable: true),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    ActiveOrganizationId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    LastModifiedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    IsDeleted = table.Column<bool>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserProfiles", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -410,6 +433,35 @@ namespace Aquiis.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "OrganizationUsers",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<string>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Role = table.Column<string>(type: "TEXT", nullable: false),
+                    GrantedBy = table.Column<string>(type: "TEXT", nullable: false),
+                    GrantedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    RevokedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true),
+                    LastModifiedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OrganizationUsers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OrganizationUsers_Organizations_OrganizationId",
+                        column: x => x.OrganizationId,
+                        principalTable: "Organizations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Properties",
                 columns: table => new
                 {
@@ -478,35 +530,6 @@ namespace Aquiis.Infrastructure.Data.Migrations
                         column: x => x.OrganizationId,
                         principalTable: "Organizations",
                         principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "OrganizationUsers",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    UserId = table.Column<string>(type: "TEXT", nullable: false),
-                    OrganizationId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Role = table.Column<string>(type: "TEXT", nullable: false),
-                    GrantedBy = table.Column<string>(type: "TEXT", nullable: false),
-                    GrantedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    RevokedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
-                    CreatedBy = table.Column<string>(type: "TEXT", nullable: false),
-                    CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "TEXT", nullable: true),
-                    LastModifiedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "INTEGER", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_OrganizationUsers", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_OrganizationUsers_Organizations_OrganizationId",
-                        column: x => x.OrganizationId,
-                        principalTable: "Organizations",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -1200,6 +1223,7 @@ namespace Aquiis.Infrastructure.Data.Migrations
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     OrganizationId = table.Column<Guid>(type: "TEXT", maxLength: 100, nullable: false),
+                    PaymentNumber = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     InvoiceId = table.Column<Guid>(type: "TEXT", nullable: false),
                     PaidOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Amount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
@@ -1233,6 +1257,58 @@ namespace Aquiis.Infrastructure.Data.Migrations
                         principalTable: "Organizations",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Repairs",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PropertyId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    MaintenanceRequestId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    LeaseId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    RepairType = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    CompletedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    Cost = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    DurationMinutes = table.Column<int>(type: "INTEGER", nullable: false),
+                    ContractorName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    ContactPerson = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    ContractorPhone = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
+                    ContractorId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    ContactId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Notes = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: false),
+                    PartsReplaced = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
+                    WarrantyApplies = table.Column<bool>(type: "INTEGER", nullable: false),
+                    WarrantyExpiresOn = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    LastModifiedOn = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    LastModifiedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    IsDeleted = table.Column<bool>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Repairs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Repairs_Leases_LeaseId",
+                        column: x => x.LeaseId,
+                        principalTable: "Leases",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_Repairs_MaintenanceRequests_MaintenanceRequestId",
+                        column: x => x.MaintenanceRequestId,
+                        principalTable: "MaintenanceRequests",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_Repairs_Properties_PropertyId",
+                        column: x => x.PropertyId,
+                        principalTable: "Properties",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1655,6 +1731,27 @@ namespace Aquiis.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_OrganizationUsers_IsActive",
+                table: "OrganizationUsers",
+                column: "IsActive");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrganizationUsers_OrganizationId",
+                table: "OrganizationUsers",
+                column: "OrganizationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrganizationUsers_Role",
+                table: "OrganizationUsers",
+                column: "Role");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrganizationUsers_UserId_OrganizationId",
+                table: "OrganizationUsers",
+                columns: new[] { "UserId", "OrganizationId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Payments_DocumentId",
                 table: "Payments",
                 column: "DocumentId");
@@ -1723,6 +1820,36 @@ namespace Aquiis.Infrastructure.Data.Migrations
                 name: "IX_RentalApplications_Status",
                 table: "RentalApplications",
                 column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Repairs_CompletedOn",
+                table: "Repairs",
+                column: "CompletedOn");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Repairs_LeaseId",
+                table: "Repairs",
+                column: "LeaseId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Repairs_MaintenanceRequestId",
+                table: "Repairs",
+                column: "MaintenanceRequestId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Repairs_OrganizationId",
+                table: "Repairs",
+                column: "OrganizationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Repairs_PropertyId",
+                table: "Repairs",
+                column: "PropertyId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Repairs_RepairType",
+                table: "Repairs",
+                column: "RepairType");
 
             migrationBuilder.CreateIndex(
                 name: "IX_SecurityDepositDividends_InvestmentPoolId",
@@ -1839,24 +1966,29 @@ namespace Aquiis.Infrastructure.Data.Migrations
                 column: "Status");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrganizationUsers_IsActive",
-                table: "OrganizationUsers",
-                column: "IsActive");
+                name: "IX_UserProfiles_ActiveOrganizationId",
+                table: "UserProfiles",
+                column: "ActiveOrganizationId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrganizationUsers_OrganizationId",
-                table: "OrganizationUsers",
+                name: "IX_UserProfiles_Email",
+                table: "UserProfiles",
+                column: "Email");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserProfiles_IsDeleted",
+                table: "UserProfiles",
+                column: "IsDeleted");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserProfiles_OrganizationId",
+                table: "UserProfiles",
                 column: "OrganizationId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrganizationUsers_Role",
-                table: "OrganizationUsers",
-                column: "Role");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_OrganizationUsers_UserId_OrganizationId",
-                table: "OrganizationUsers",
-                columns: new[] { "UserId", "OrganizationId" },
+                name: "IX_UserProfiles_UserId",
+                table: "UserProfiles",
+                column: "UserId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -1988,9 +2120,6 @@ namespace Aquiis.Infrastructure.Data.Migrations
                 name: "LeaseOffers");
 
             migrationBuilder.DropTable(
-                name: "MaintenanceRequests");
-
-            migrationBuilder.DropTable(
                 name: "Notes");
 
             migrationBuilder.DropTable(
@@ -2009,6 +2138,12 @@ namespace Aquiis.Infrastructure.Data.Migrations
                 name: "OrganizationSMSSettings");
 
             migrationBuilder.DropTable(
+                name: "OrganizationUsers");
+
+            migrationBuilder.DropTable(
+                name: "Repairs");
+
+            migrationBuilder.DropTable(
                 name: "SchemaVersions");
 
             migrationBuilder.DropTable(
@@ -2018,13 +2153,16 @@ namespace Aquiis.Infrastructure.Data.Migrations
                 name: "Tours");
 
             migrationBuilder.DropTable(
-                name: "OrganizationUsers");
+                name: "UserProfiles");
 
             migrationBuilder.DropTable(
                 name: "WorkflowAuditLogs");
 
             migrationBuilder.DropTable(
                 name: "RentalApplications");
+
+            migrationBuilder.DropTable(
+                name: "MaintenanceRequests");
 
             migrationBuilder.DropTable(
                 name: "SecurityDepositInvestmentPools");

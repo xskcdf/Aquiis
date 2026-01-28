@@ -8,11 +8,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Aquiis.Infrastructure.Data.Migrations
+namespace Aquiis.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260122142531_AddRepairEntity")]
-    partial class AddRepairEntity
+    [Migration("20260128153724_v1_0_0_InitialCreate")]
+    partial class v1_0_0_InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -2847,15 +2847,18 @@ namespace Aquiis.Infrastructure.Data.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("CompletedBy")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
                     b.Property<DateTime?>("CompletedOn")
                         .HasColumnType("TEXT");
 
                     b.Property<Guid?>("ContactId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContactPerson")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("ContractorId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ContractorName")
@@ -3919,7 +3922,7 @@ namespace Aquiis.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Aquiis.Core.Entities.Property", "Property")
-                        .WithMany()
+                        .WithMany("MaintenanceRequests")
                         .HasForeignKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -4048,7 +4051,7 @@ namespace Aquiis.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Aquiis.Core.Entities.Property", "Property")
-                        .WithMany()
+                        .WithMany("Repairs")
                         .HasForeignKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -4204,6 +4207,10 @@ namespace Aquiis.Infrastructure.Data.Migrations
                     b.Navigation("Documents");
 
                     b.Navigation("Leases");
+
+                    b.Navigation("MaintenanceRequests");
+
+                    b.Navigation("Repairs");
                 });
 
             modelBuilder.Entity("Aquiis.Core.Entities.ProspectiveTenant", b =>

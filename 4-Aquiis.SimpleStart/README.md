@@ -230,9 +230,9 @@ Aquiis.SimpleStart/
 │           ├── PaymentPdfGenerator.cs
 │           └── ...
 │
-├── Features/                            # Presentation Layer (Vertical Slices)
-│   ├── PropertyManagement/             # Property management features
-│   │   ├── Properties/                 # Property CRUD & management
+├── Features/                          # Presentation Layer (Vertical Slices)
+│   ├── PropertyManagement/            # Property management features
+│   │   ├── Properties/                # Property CRUD & management
 │   │   ├── Tenants/                   # Tenant management
 │   │   ├── Leases/                    # Lease management
 │   │   ├── SecurityDeposits/          # Security deposit tracking
@@ -245,47 +245,47 @@ Aquiis.SimpleStart/
 │   │   ├── Checklists/                # Checklists & templates
 │   │   ├── Reports/                   # Financial & operational reports
 │   │   └── Calendar.razor             # Calendar view
-│   └── Administration/                 # Admin features
+│   └── Administration/                # Admin features
 │       ├── Application/               # Application screening
 │       ├── PropertyManagement/        # Property admin
 │       ├── Settings/                  # System settings
 │       ├── Users/                     # User management
 │       └── Dashboard.razor
 │
-├── Shared/                              # Shared UI Layer
-│   ├── Layout/                         # Layout components
+├── Shared/                            # Shared UI Layer
+│   ├── Layout/                        # Layout components
 │   │   ├── MainLayout.razor
 │   │   └── NavMenu.razor
-│   ├── Components/                     # Reusable UI components
+│   ├── Components/                    # Reusable UI components
 │   │   ├── Account/                   # Authentication components
 │   │   ├── Pages/                     # Shared pages (Home, About, Error)
 │   │   ├── NotesTimeline.razor
 │   │   ├── SessionTimeoutModal.razor
 │   │   └── ToastContainer.razor
-│   └── Services/                       # UI-specific services
+│   └── Services/                      # UI-specific services
 │       ├── ToastService.cs
 │       ├── ThemeService.cs
 │       ├── SessionTimeoutService.cs
 │       ├── UserContextService.cs
 │       └── DocumentService.cs
 │
-├── Components/                          # Root Blazor components
-│   ├── App.razor                       # App root component
-│   ├── Routes.razor                    # Routing configuration
-│   └── _Imports.razor                  # Global using directives
+├── Components/                        # Root Blazor components
+│   ├── App.razor                      # App root component
+│   ├── Routes.razor                   # Routing configuration
+│   └── _Imports.razor                 # Global using directives
 │
-├── Utilities/                           # Helper utilities
+├── Utilities/                         # Helper utilities
 │   ├── CalendarEventRouter.cs
 │   └── SchedulableEntityRegistry.cs
 │
-├── wwwroot/                             # Static files
-│   ├── assets/                         # Images & static assets
-│   ├── js/                             # JavaScript files
-│   └── lib/                            # Client libraries
+├── wwwroot/                           # Static files
+│   ├── assets/                        # Images & static assets
+│   ├── js/                            # JavaScript files
+│   └── lib/                           # Client libraries
 │
-├── Program.cs                           # Application entry point
-├── appsettings.json                    # Configuration
-└── appsettings.Development.json        # Development config
+├── Program.cs                         # Application entry point
+├── appsettings.json                   # Configuration
+└── appsettings.Development.json       # Development config
 ```
 
 ### Architecture Principles

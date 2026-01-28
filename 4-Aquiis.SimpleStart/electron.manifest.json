@@ -3,7 +3,14 @@
   "splashscreen": {
     "imageFile": "wwwroot/assets/splash.png"
   },
+  "electronCLIFlags": [
+    "--no-sandbox",
+    "--disable-gpu-sandbox",
+    "--enable-features=VaapiVideoDecoder",
+    "--disable-dev-shm-usage"
+  ],
   "name": "aquiis-property-management",
+  "description": "Desktop property management application for landlords managing up to 9 residential properties",
   "author": "Aquiis",
   "singleInstance": false,
   "environment": "Production",
@@ -11,9 +18,9 @@
   "build": {
     "appId": "com.aquiis.propertymanagement",
     "productName": "AquiisPropertyManagement",
-    "copyright": "Copyright © 2025",
+    "copyright": "Copyright © 2026",
     "buildVersion": "1.0.0",
-    "compression": "maximum",
+    "compression": "normal",
     "directories": {
       "output": "../../../bin/Desktop"
     },
@@ -34,16 +41,17 @@
     ],
     "mac": {
       "target": "dmg",
-      "icon": "Assets/icon.icns",
+      "icon": "bin/Assets/icon.icns",
       "category": "public.app-category.business"
     },
     "win": {
-      "target": "nsis",
-      "icon": "Assets/icon.ico"
+      "target": "portable",
+      "icon": "bin/Assets/icon.ico",
+      "signAndEditExecutable": false
     },
     "linux": {
       "target": "AppImage",
-      "icon": "Assets/icon.png",
+      "icon": "bin/Assets/icon.png",
       "category": "Office"
     }
   }
