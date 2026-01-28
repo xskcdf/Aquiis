@@ -132,7 +132,7 @@ public class SharedMainLayoutTests : TestContext
         );
 
         // Assert
-        cut.Markup.Should().Contain("data-theme=\"dark\"");
+        cut.Markup.Should().Contain("data-bs-theme=\"dark\"");
     }
 
     [Fact]

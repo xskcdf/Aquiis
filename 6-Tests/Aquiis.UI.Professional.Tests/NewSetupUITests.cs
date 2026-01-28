@@ -31,7 +31,7 @@ public class NewSetupUITests : PageTest
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Organization Name" }).ClickAsync();
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Organization Name" }).FillAsync("Aquiis");
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Organization Name" }).PressAsync("Tab");
-        await Page.Locator("select[id='Input.State']").SelectOptionAsync(new[] { "LA" });
+        await Page.Locator("select[id='Input.State']").SelectOptionAsync(new[] { "TX" });
         await Page.Locator("select[id='Input.State']").PressAsync("Tab");
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).FillAsync("owner1@aquiis.com");
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).PressAsync("Tab");
@@ -44,25 +44,25 @@ public class NewSetupUITests : PageTest
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Confirm Password" }).FillAsync("Today123");
         await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
 
-        await Page.WaitForSelectorAsync("h1:has-text('Register confirmation')");
+        // await Page.WaitForSelectorAsync("h1:has-text('Register confirmation')");
 
-        // await Page.GetByRole(AriaRole.Heading, new() { Name = "Register confirmation" }).ClickAsync();
-        await Page.GetByRole(AriaRole.Link, new() { Name = "Click here to confirm your account" }).ClickAsync();
+        // // await Page.GetByRole(AriaRole.Heading, new() { Name = "Register confirmation" }).ClickAsync();
+        // await Page.GetByRole(AriaRole.Link, new() { Name = "Click here to confirm your account" }).ClickAsync();
 
-        await Page.WaitForSelectorAsync("h1:has-text('Confirm email')");
+        // await Page.WaitForSelectorAsync("h1:has-text('Confirm email')");
 
-        // await Page.GetByText("Thank you for confirming your").ClickAsync();
-        await Page.GetByRole(AriaRole.Link, new() { Name = "Home" }).ClickAsync();
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Sign In" }).ClickAsync();
+        // // await Page.GetByText("Thank you for confirming your").ClickAsync();
+        // await Page.GetByRole(AriaRole.Link, new() { Name = "Home" }).ClickAsync();
+        // await Page.GetByRole(AriaRole.Button, new() { Name = "Sign In" }).ClickAsync();
 
-        await Page.WaitForSelectorAsync("h1:has-text('Log in')");
+        // await Page.WaitForSelectorAsync("h1:has-text('Log in')");
 
-        // await Page.GetByRole(AriaRole.Heading, new() { Name = "Log in", Exact = true }).ClickAsync();
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).ClickAsync();
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).FillAsync("owner1@aquiis.com");
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).PressAsync("Tab");
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Password" }).FillAsync("Today123");
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in" }).ClickAsync();
+        // // await Page.GetByRole(AriaRole.Heading, new() { Name = "Log in", Exact = true }).ClickAsync();
+        // await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).ClickAsync();
+        // await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).FillAsync("owner1@aquiis.com");
+        // await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).PressAsync("Tab");
+        // await Page.GetByRole(AriaRole.Textbox, new() { Name = "Password" }).FillAsync("Today123");
+        // await Page.GetByRole(AriaRole.Button, new() { Name = "Log in" }).ClickAsync();
 
         await Page.WaitForSelectorAsync("text=Dashboard");
 

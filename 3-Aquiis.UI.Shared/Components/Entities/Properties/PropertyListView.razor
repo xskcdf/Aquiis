@@ -29,10 +29,11 @@
 @if (ShowMetrics)
 {
     <PropertyMetricsCard 
-        ShowAvailable="true" 
-        ShowPending="false" 
-        ShowOccupied="true" 
-        ShowMonthlyRent="true"
+        ShowAvailableProperties="true" 
+        ShowLeasePendingProperties="false" 
+        ShowOccupiedProperties="true" 
+        ShowTotalMonthlyRent="true"
+        TotalPropertiesCount="@TotalCount"
         AvailableCount="@AvailableCount"
         PendingCount="@PendingCount"
         OccupiedCount="@OccupiedCount"
@@ -219,6 +220,12 @@ else
     /// </summary>
     [Parameter]
     public bool SortAscending { get; set; } = true;
+
+     /// <summary>
+    /// Total properties count (for metrics)
+    /// </summary>
+    [Parameter]
+    public int TotalCount { get; set; }
     
     /// <summary>
     /// Available properties count (for metrics)

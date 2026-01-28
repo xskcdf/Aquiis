@@ -59,6 +59,7 @@ else
         StatusFilter="@selectedPropertyStatus"
         SortColumn="@sortColumn"
         SortAscending="@sortAscending"
+        TotalCount="@totalCount"
         AvailableCount="@availableCount"
         PendingCount="@pendingCount"
         OccupiedCount="@occupiedCount"
@@ -131,6 +132,8 @@ else
     private List<Property> pagedProperties = new();
     private string searchTerm = string.Empty;
     private string selectedPropertyStatus = string.Empty;
+
+    private int totalCount = 0;
     private int availableCount = 0;
     private int pendingCount = 0;
     private int occupiedCount = 0;
@@ -214,6 +217,7 @@ else
     private void CalculateMetrics(){
         if (filteredProperties != null)
         {
+            totalCount = filteredProperties.Count;
             availableCount = filteredProperties.Count(p => p.Status == ApplicationConstants.PropertyStatuses.Available);
             pendingCount = filteredProperties.Count(p => p.Status == ApplicationConstants.PropertyStatuses.ApplicationPending || p.Status == ApplicationConstants.PropertyStatuses.LeasePending);
             occupiedCount = filteredProperties.Count(p => p.Status == ApplicationConstants.PropertyStatuses.Occupied);

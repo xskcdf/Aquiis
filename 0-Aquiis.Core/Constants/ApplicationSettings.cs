@@ -9,6 +9,7 @@ namespace Aquiis.Core.Constants
         public string Repository { get; set; } = string.Empty;
         public bool SoftDeleteEnabled { get; set; }
         public string SchemaVersion { get; set; } = "1.0.0";
+        public int MaxOrganizationUsers { get; set; } = 0; // 0 = unlimited (Professional), 3 = SimpleStart limit
     }
 
     // Property & Tenant Lifecycle Enums

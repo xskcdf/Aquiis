@@ -1,10 +1,7 @@
 ﻿@page "/Account/Register"
 
 @using System.ComponentModel.DataAnnotations
-@using System.Text
-@using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
-@using Microsoft.AspNetCore.WebUtilities
 @using Aquiis.Infrastructure.Data
 @using Aquiis.Application.Services
 @using Aquiis.Core.Entities
@@ -324,21 +321,21 @@ else
             }
         }
 
+        // Auto-confirm email (no email integration yet)
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
-        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-        var callbackUrl = NavigationManager.GetUriWithQueryParameters(
-            NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
-            new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
-
-        await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
-
-        if (UserManager.Options.SignIn.RequireConfirmedAccount)
+        var confirmResult = await UserManager.ConfirmEmailAsync(user, code);
+        
+        if (!confirmResult.Succeeded)
         {
-            RedirectManager.RedirectTo(
-                "Account/RegisterConfirmation",
-                new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
+            Logger.LogWarning("Failed to auto-confirm email for user {UserId}: {Errors}", 
+                userId, string.Join(", ", confirmResult.Errors.Select(e => e.Description)));
+        }
+        else
+        {
+            Logger.LogInformation("Email auto-confirmed for user {UserId}", userId);
         }
         
+        // Sign in the user directly
         await SignInManager.SignInAsync(user, isPersistent: false);
         RedirectManager.RedirectTo(ReturnUrl);
     }

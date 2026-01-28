@@ -58,10 +58,19 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Users with Access</h5>
-                        <button class="btn btn-sm btn-primary" @onclick="ShowAddUserModal">
+                        <button class="btn btn-sm btn-primary" @onclick="ShowAddUserModal" disabled="@(!CanAddMoreUsers)">
                             <i class="bi bi-person-plus"></i> Add User
                         </button>
                     </div>
+                    @if (!CanAddMoreUsers)
+                    {
+                        <div class="alert alert-warning m-3 mb-0">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>User Limit Reached</strong><br />
+                            SimpleStart allows 3 user accounts (1 system + 2 login users).<br />
+                            <small>Upgrade to <strong>Aquiis Professional</strong> for unlimited users and advanced features.</small>
+                        </div>
+                    }
                     <div class="card-body p-0">
                         @if (!organizationUsers.Any())
                         {
@@ -228,6 +237,10 @@
     private string selectedUserId = string.Empty;
     private string selectedRole = ApplicationConstants.OrganizationRoles.User;
     private string addUserError = string.Empty;
+
+    // SimpleStart: 3-user limit (excluding system account)
+    private bool CanAddMoreUsers => organizationUsers
+        .Count(ou => ou.UserId != ApplicationConstants.SystemUser.Id) < 3;
 
     protected override async Task OnInitializedAsync()
     {

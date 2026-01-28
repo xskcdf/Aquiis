@@ -2,6 +2,7 @@ using Aquiis.Core.Entities;
 using Aquiis.Core.Constants;
 using Aquiis.Core.Interfaces.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Aquiis.Application.Services
 {
@@ -9,11 +10,16 @@ namespace Aquiis.Application.Services
     {
         private readonly ApplicationDbContext _dbContext;
         private readonly IUserContextService _userContext;
+        private readonly ApplicationSettings _settings;
 
-        public OrganizationService(ApplicationDbContext dbContext, IUserContextService userContextService)
+        public OrganizationService(
+            ApplicationDbContext dbContext, 
+            IUserContextService userContextService,
+            IOptions<ApplicationSettings> settings)
         {
             _dbContext = dbContext;
             _userContext = userContextService;
+            _settings = settings.Value;
         }
 
         #region CRUD Operations
@@ -288,6 +294,24 @@ namespace Aquiis.Application.Services
             var organization = await _dbContext.Organizations.FindAsync(organizationId);
             if (organization == null || organization.IsDeleted)
                 return false;
+
+            // Check user limit for SimpleStart (MaxOrganizationUsers > 0)
+            if (_settings.MaxOrganizationUsers > 0)
+            {
+                var currentUserCount = await _dbContext.OrganizationUsers
+                    .Where(ou => ou.OrganizationId == organizationId
+                              && ou.UserId != ApplicationConstants.SystemUser.Id
+                              && ou.IsActive
+                              && !ou.IsDeleted)
+                    .CountAsync();
+
+                if (currentUserCount >= _settings.MaxOrganizationUsers)
+                {
+                    throw new InvalidOperationException(
+                        $"User limit reached. SimpleStart allows maximum {_settings.MaxOrganizationUsers} user accounts (including system account). " +
+                        "Upgrade to Aquiis Professional for unlimited users.");
+                }
+            }
 
             // Check if user already has access
             var existing = await _dbContext.OrganizationUsers
