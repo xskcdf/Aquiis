@@ -71,27 +71,61 @@
 
 ---
 
+## � Download
+
+**Latest Release: v1.0.0**
+
+[![Download for Linux](https://img.shields.io/badge/Download-Linux%20AppImage-blue.svg?style=for-the-badge&logo=linux)](https://github.com/xnodeoncode/Aquiis/releases/download/v1.0.0/AquiisPropertyManagement-1.0.0.AppImage)
+[![Download for Windows](https://img.shields.io/badge/Download-Windows%20Portable-blue.svg?style=for-the-badge&logo=windows)](https://github.com/xnodeoncode/Aquiis/releases/download/v1.0.0/AquiisPropertyManagement%201.0.0.exe)
+
+**All Downloads:** [View v1.0.0 Release](https://github.com/xnodeoncode/Aquiis/releases/tag/v1.0.0)
+
+---
+
 ## 🚀 Quick Start
 
 ### Installation
 
-**Linux (Ubuntu/Debian):**
+#### Linux (AppImage)
 
 ```bash
-# Option 1: AppImage (recommended)
-chmod +x Aquiis-SimpleStart-1.0.0.AppImage
-./Aquiis-SimpleStart-1.0.0.AppImage
+# Download from releases page or use wget
+wget https://github.com/xnodeoncode/Aquiis/releases/download/v1.0.0/AquiisPropertyManagement-1.0.0.AppImage
 
-# Option 2: Debian package
-sudo dpkg -i Aquiis-SimpleStart-1.0.0-amd64.deb
-aquiis-simplestart
+# Make executable
+chmod +x AquiisPropertyManagement-1.0.0.AppImage
+
+# Option 1: Desktop integration (recommended)
+wget https://github.com/xnodeoncode/Aquiis/releases/download/v1.0.0/install-desktop-integration.sh
+chmod +x install-desktop-integration.sh
+./install-desktop-integration.sh AquiisPropertyManagement-1.0.0.AppImage
+
+# Option 2: Run directly
+./AquiisPropertyManagement-1.0.0.AppImage
 ```
 
-**Windows:**
+#### Windows (Portable Executable)
 
-1. Download `Aquiis-SimpleStart-Setup-1.0.0.exe`
-2. Run installer and follow wizard
-3. Launch from Start Menu
+1. **Download** `AquiisPropertyManagement 1.0.0.exe` from [releases page](https://github.com/xnodeoncode/Aquiis/releases/tag/v1.0.0)
+2. **Move to permanent location** (e.g., `C:\Program Files\Aquiis\`)
+   - ⚠️ Database and settings are stored relative to the .exe location
+3. **Double-click** to run
+4. **First launch**: Windows SmartScreen warning is expected (app is unsigned)
+   - Click **"More info"** → **"Run anyway"**
+   - Code signing planned for v1.1.0
+
+#### Verify Download (Optional)
+
+```bash
+# Download checksums
+wget https://github.com/xnodeoncode/Aquiis/releases/download/v1.0.0/checksums.txt
+
+# Linux
+sha256sum -c checksums.txt
+
+# Windows PowerShell
+Get-FileHash "AquiisPropertyManagement 1.0.0.exe" -Algorithm SHA256
+```
 
 ### First Run
 
