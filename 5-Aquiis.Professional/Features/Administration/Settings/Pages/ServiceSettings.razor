@@ -43,43 +43,21 @@
                     <div class="list-group-item">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="mb-1">Apply Late Fees</h6>
-                                <small class="text-muted">Process overdue invoices and apply late fees based on organization settings</small>
+                                <h6 class="mb-1">Process Overdue Invoices</h6>
+                                <small class="text-muted">Update invoice status to Overdue and apply late fees in one atomic operation</small>
                             </div>
-                            <button class="btn btn-primary" @onclick="() => RunTask(TaskType.ApplyLateFees)" disabled="@isRunning">
-                                @if (runningTask == TaskType.ApplyLateFees)
+                            <button class="btn btn-primary" @onclick="() => RunTask(TaskType.ProcessOverdueInvoices)" disabled="@isRunning">
+                                @if (runningTask == TaskType.ProcessOverdueInvoices)
                                 {
                                     <span class="spinner-border spinner-border-sm me-2"></span>
                                 }
                                 <i class="bi bi-play-fill"></i> Run Now
                             </button>
                         </div>
-                        @if (taskResults.ContainsKey(TaskType.ApplyLateFees))
+                        @if (taskResults.ContainsKey(TaskType.ProcessOverdueInvoices))
                         {
                             <div class="alert alert-success mt-2 mb-0">
-                                <small>@taskResults[TaskType.ApplyLateFees]</small>
-                            </div>
-                        }
-                    </div>
-
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="mb-1">Update Invoice Statuses</h6>
-                                <small class="text-muted">Mark pending invoices as overdue based on due dates</small>
-                            </div>
-                            <button class="btn btn-primary" @onclick="() => RunTask(TaskType.UpdateInvoiceStatuses)" disabled="@isRunning">
-                                @if (runningTask == TaskType.UpdateInvoiceStatuses)
-                                {
-                                    <span class="spinner-border spinner-border-sm me-2"></span>
-                                }
-                                <i class="bi bi-play-fill"></i> Run Now
-                            </button>
-                        </div>
-                        @if (taskResults.ContainsKey(TaskType.UpdateInvoiceStatuses))
-                        {
-                            <div class="alert alert-success mt-2 mb-0">
-                                <small>@taskResults[TaskType.UpdateInvoiceStatuses]</small>
+                                <small>@taskResults[TaskType.ProcessOverdueInvoices]</small>
                             </div>
                         }
                     </div>
@@ -167,8 +145,7 @@
             </div>
             <div class="card-body">
                 <small class="text-muted">
-                    <p><strong>Apply Late Fees:</strong> Applies late fees to invoices that are past the grace period based on organization-specific settings.</p>
-                    <p><strong>Update Invoice Statuses:</strong> Changes invoice status from "Pending" to "Overdue" for invoices past their due date.</p>
+                    <p><strong>Process Overdue Invoices:</strong> Updates invoice status to "Overdue" and applies late fees (if enabled) for all invoices past their due date. This atomic operation prevents the race condition where status updates without late fees.</p>
                     <p><strong>Send Payment Reminders:</strong> Marks invoices for payment reminders when they're approaching their due date.</p>
                     <p><strong>Check Lease Renewals:</strong> Processes lease expiration notifications at 90, 60, and 30 days, and marks expired leases.</p>
                 </small>
@@ -185,8 +162,7 @@
 
     private enum TaskType
     {
-        ApplyLateFees,
-        UpdateInvoiceStatuses,
+        ProcessOverdueInvoices,
         SendPaymentReminders,
         CheckLeaseRenewals,
         All
@@ -214,11 +190,8 @@
 
             switch (taskType)
             {
-                case TaskType.ApplyLateFees:
-                    await ApplyLateFees(organizationId.Value);
-                    break;
-                case TaskType.UpdateInvoiceStatuses:
-                    await UpdateInvoiceStatuses(organizationId.Value);
+                case TaskType.ProcessOverdueInvoices:
+                    await ProcessOverdueInvoices(organizationId.Value);
                     break;
                 case TaskType.SendPaymentReminders:
                     await SendPaymentReminders(organizationId.Value);
@@ -258,8 +231,7 @@
                 return;
             }
 
-            await ApplyLateFees(organizationId.Value);
-            await UpdateInvoiceStatuses(organizationId.Value);
+            await ProcessOverdueInvoices(organizationId.Value);
             await SendPaymentReminders(organizationId.Value);
             await CheckLeaseRenewals(organizationId.Value);
 
@@ -284,42 +256,64 @@
         return await UserContext.GetActiveOrganizationIdAsync();
     }
 
-    private async Task ApplyLateFees(Guid organizationId)
+    /// <summary>
+    /// Process overdue invoices: Update status to Overdue and apply late fees in one atomic operation.
+    /// This prevents the race condition where status is updated but late fees are not applied.
+    /// </summary>
+    private async Task ProcessOverdueInvoices(Guid organizationId)
     {
         var settings = await PropertyService.GetOrganizationSettingsByOrgIdAsync(organizationId);
         
-        if (settings == null || !settings.LateFeeEnabled || !settings.LateFeeAutoApply)
+        if (settings == null)
         {
-            var reason = settings == null ? "Settings not found" 
-                : !settings.LateFeeEnabled ? "Late fees disabled" 
-                : "Auto-apply disabled";
-            taskResults[TaskType.ApplyLateFees] = $"No late fees applied: {reason} (OrgId: {organizationId})";
+            taskResults[TaskType.ProcessOverdueInvoices] = "Settings not found";
             return;
         }
 
         var today = DateTime.Today;
+        var gracePeriodCutoff = today.AddDays(-settings.LateFeeGracePeriodDays);
+
+        // Find ALL pending invoices that are past due
         var overdueInvoices = await DbContext.Invoices
             .Include(i => i.Lease)
             .Where(i => !i.IsDeleted &&
                        i.OrganizationId == organizationId &&
                        i.Status == "Pending" &&
-                       i.DueOn < today.AddDays(-settings.LateFeeGracePeriodDays) &&
-                       (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
+                       i.DueOn < today)
             .ToListAsync();
+
+        var statusUpdatedCount = 0;
+        var lateFeesAppliedCount = 0;
 
         foreach (var invoice in overdueInvoices)
         {
-            var lateFee = Math.Min(invoice.Amount * settings.LateFeePercentage, settings.MaxLateFeeAmount);
-            invoice.LateFeeAmount = lateFee;
-            invoice.LateFeeApplied = true;
-            invoice.LateFeeAppliedOn = DateTime.UtcNow;
-            invoice.Amount += lateFee;
+            // Always update status to Overdue
             invoice.Status = "Overdue";
             invoice.LastModifiedOn = DateTime.UtcNow;
             invoice.LastModifiedBy = ApplicationConstants.SystemUser.Id;
-            invoice.Notes = string.IsNullOrEmpty(invoice.Notes)
-                ? $"Late fee of {lateFee:C} applied on {DateTime.Now:MMM dd, yyyy}"
-                : $"{invoice.Notes}\nLate fee of {lateFee:C} applied on {DateTime.Now:MMM dd, yyyy}";
+            statusUpdatedCount++;
+
+            // Apply late fee if:
+            // 1. Late fees are enabled and auto-apply is on
+            // 2. Grace period has elapsed
+            // 3. Late fee hasn't been applied yet
+            if (settings.LateFeeEnabled && 
+                settings.LateFeeAutoApply &&
+                invoice.DueOn < gracePeriodCutoff &&
+                (invoice.LateFeeApplied == null || !invoice.LateFeeApplied.Value))
+            {
+                var lateFee = Math.Min(invoice.Amount * settings.LateFeePercentage, settings.MaxLateFeeAmount);
+                
+                invoice.LateFeeAmount = lateFee;
+                invoice.LateFeeApplied = true;
+                invoice.LateFeeAppliedOn = DateTime.UtcNow;
+                invoice.Amount += lateFee;
+                invoice.Notes = string.IsNullOrEmpty(invoice.Notes)
+                    ? $"Late fee of {lateFee:C} applied on {DateTime.Now:MMM dd, yyyy}"
+                    : $"{invoice.Notes}\nLate fee of {lateFee:C} applied on {DateTime.Now:MMM dd, yyyy}";
+
+                lateFeesAppliedCount++;
+            }
         }
 
         if (overdueInvoices.Any())
@@ -327,33 +321,7 @@
             await DbContext.SaveChangesAsync();
         }
 
-        taskResults[TaskType.ApplyLateFees] = $"Applied late fees to {overdueInvoices.Count} invoice(s)";
-    }
-
-    private async Task UpdateInvoiceStatuses(Guid organizationId)
-    {
-        var today = DateTime.Today;
-        var newlyOverdueInvoices = await DbContext.Invoices
-            .Where(i => !i.IsDeleted &&
-                       i.OrganizationId == organizationId &&
-                       i.Status == "Pending" &&
-                       i.DueOn < today &&
-                       (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
-            .ToListAsync();
-
-        foreach (var invoice in newlyOverdueInvoices)
-        {
-            invoice.Status = "Overdue";
-            invoice.LastModifiedOn = DateTime.UtcNow;
-            invoice.LastModifiedBy = ApplicationConstants.SystemUser.Id;
-        }
-
-        if (newlyOverdueInvoices.Any())
-        {
-            await DbContext.SaveChangesAsync();
-        }
-
-        taskResults[TaskType.UpdateInvoiceStatuses] = $"Updated {newlyOverdueInvoices.Count} invoice(s) to Overdue status";
+        taskResults[TaskType.ProcessOverdueInvoices] = $"Processed {overdueInvoices.Count} overdue invoice(s): {statusUpdatedCount} status updated, {lateFeesAppliedCount} late fees applied";
     }
 
     private async Task SendPaymentReminders(Guid organizationId)

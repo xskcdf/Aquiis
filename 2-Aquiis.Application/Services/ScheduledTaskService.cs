@@ -117,25 +117,19 @@ namespace Aquiis.Application.Services
                             continue;
                         }
 
-                        // Task 1: Apply late fees to overdue invoices (if enabled)
-                        if (settings.LateFeeEnabled && settings.LateFeeAutoApply)
-                        {
-                            await ApplyLateFees(dbContext, organizationId, settings, stoppingToken);
-                        }
+                        // Task 1: Process overdue invoices (status update + late fees)
+                        await ProcessOverdueInvoices(dbContext, organizationId, settings, stoppingToken);
 
-                        // Task 2: Update invoice statuses
-                        await UpdateInvoiceStatuses(dbContext, organizationId, stoppingToken);
-
-                        // Task 3: Send payment reminders (if enabled)
+                        // Task 2: Send payment reminders (if enabled)
                         if (settings.PaymentReminderEnabled)
                         {
                             await SendPaymentReminders(dbContext, organizationId, settings, stoppingToken);
                         }
 
-                        // Task 4: Check for expiring leases and send renewal notifications
+                        // Task 3: Check for expiring leases and send renewal notifications
                         await leaseNotificationService.SendLeaseRenewalRemindersAsync(organizationId, stoppingToken);
 
-                        // Task 5: Expire overdue leases using workflow service (with audit logging)
+                        // Task 4: Expire overdue leases using workflow service (with audit logging)
                         var expiredLeaseCount = await ExpireOverdueLeases(scope, organizationId);
                         if (expiredLeaseCount > 0)
                         {
@@ -152,7 +146,11 @@ namespace Aquiis.Application.Services
             }
         }
 
-        private async Task ApplyLateFees(
+        /// <summary>
+        /// Process overdue invoices: Update status to Overdue and apply late fees in one atomic operation.
+        /// This prevents the race condition where status is updated but late fees are not applied.
+        /// </summary>
+        private async Task ProcessOverdueInvoices(
             ApplicationDbContext dbContext, 
             Guid organizationId,
             OrganizationSettings settings,
@@ -161,82 +159,66 @@ namespace Aquiis.Application.Services
             try
             {
                 var today = DateTime.Today;
+                var gracePeriodCutoff = today.AddDays(-settings.LateFeeGracePeriodDays);
 
-                // Find overdue invoices that haven't been charged a late fee yet
+                // Find ALL pending invoices that are past due
                 var overdueInvoices = await dbContext.Invoices
                     .Include(i => i.Lease)
                     .Where(i => !i.IsDeleted &&
                                i.OrganizationId == organizationId &&
                                i.Status == "Pending" &&
-                               i.DueOn < today.AddDays(-settings.LateFeeGracePeriodDays) &&
-                               (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
+                               i.DueOn < today)
                     .ToListAsync(stoppingToken);
+
+                var statusUpdatedCount = 0;
+                var lateFeesAppliedCount = 0;
 
                 foreach (var invoice in overdueInvoices)
                 {
-                    var lateFee = Math.Min(invoice.Amount * settings.LateFeePercentage, settings.MaxLateFeeAmount);
-                    
-                    invoice.LateFeeAmount = lateFee;
-                    invoice.LateFeeApplied = true;
-                    invoice.LateFeeAppliedOn = DateTime.UtcNow;
-                    invoice.Amount += lateFee;
+                    // Always update status to Overdue
                     invoice.Status = "Overdue";
                     invoice.LastModifiedOn = DateTime.UtcNow;
-                    invoice.LastModifiedBy = ApplicationConstants.SystemUser.Id; // Automated task
-                    invoice.Notes = string.IsNullOrEmpty(invoice.Notes)
-                        ? $"Late fee of {lateFee:C} applied on {DateTime.Now:MMM dd, yyyy}"
-                        : $"{invoice.Notes}\nLate fee of {lateFee:C} applied on {DateTime.Now:MMM dd, yyyy}";
+                    invoice.LastModifiedBy = ApplicationConstants.SystemUser.Id;
+                    statusUpdatedCount++;
 
-                    _logger.LogInformation(
-                        "Applied late fee of {LateFee:C} to invoice {InvoiceNumber} (ID: {InvoiceId}) for organization {OrganizationId}",
-                        lateFee, invoice.InvoiceNumber, invoice.Id, organizationId);
+                    // Apply late fee if:
+                    // 1. Late fees are enabled and auto-apply is on
+                    // 2. Grace period has elapsed
+                    // 3. Late fee hasn't been applied yet
+                    if (settings.LateFeeEnabled && 
+                        settings.LateFeeAutoApply &&
+                        invoice.DueOn < gracePeriodCutoff &&
+                        (invoice.LateFeeApplied == null || !invoice.LateFeeApplied.Value))
+                    {
+                        var lateFee = Math.Min(invoice.Amount * settings.LateFeePercentage, settings.MaxLateFeeAmount);
+                        
+                        invoice.LateFeeAmount = lateFee;
+                        invoice.LateFeeApplied = true;
+                        invoice.LateFeeAppliedOn = DateTime.UtcNow;
+                        invoice.Amount += lateFee;
+                        invoice.Notes = string.IsNullOrEmpty(invoice.Notes)
+                            ? $"Late fee of {lateFee:C} applied on {DateTime.Now:MMM dd, yyyy}"
+                            : $"{invoice.Notes}\nLate fee of {lateFee:C} applied on {DateTime.Now:MMM dd, yyyy}";
+
+                        lateFeesAppliedCount++;
+
+                        _logger.LogInformation(
+                            "Applied late fee of {LateFee:C} to invoice {InvoiceNumber} (ID: {InvoiceId}) for organization {OrganizationId}",
+                            lateFee, invoice.InvoiceNumber, invoice.Id, organizationId);
+                    }
                 }
 
                 if (overdueInvoices.Any())
                 {
                     await dbContext.SaveChangesAsync(stoppingToken);
-                    _logger.LogInformation("Applied late fees to {Count} invoices for organization {OrganizationId}", 
-                        overdueInvoices.Count, organizationId);
+                    _logger.LogInformation(
+                        "Processed {TotalCount} overdue invoice(s) for organization {OrganizationId}: {StatusUpdated} status updated, {LateFeesApplied} late fees applied",
+                        overdueInvoices.Count, organizationId, statusUpdatedCount, lateFeesAppliedCount);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error applying late fees for organization {OrganizationId}", organizationId);
-            }
-        }
-
-        private async Task UpdateInvoiceStatuses(ApplicationDbContext dbContext, Guid organizationId, CancellationToken stoppingToken)
-        {
-            try
-            {
-                var today = DateTime.Today;
-
-                // Update pending invoices that are now overdue (and haven't had late fees applied)
-                var newlyOverdueInvoices = await dbContext.Invoices
-                    .Where(i => !i.IsDeleted &&
-                               i.OrganizationId == organizationId &&
-                               i.Status == "Pending" &&
-                               i.DueOn < today &&
-                               (i.LateFeeApplied == null || !i.LateFeeApplied.Value))
-                    .ToListAsync(stoppingToken);
-
-                foreach (var invoice in newlyOverdueInvoices)
-                {
-                    invoice.Status = "Overdue";
-                    invoice.LastModifiedOn = DateTime.UtcNow;
-                    invoice.LastModifiedBy = ApplicationConstants.SystemUser.Id; // Automated task
-                }
-
-                if (newlyOverdueInvoices.Any())
-                {
-                    await dbContext.SaveChangesAsync(stoppingToken);
-                    _logger.LogInformation("Updated {Count} invoices to Overdue status for organization {OrganizationId}", 
-                        newlyOverdueInvoices.Count, organizationId);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating invoice statuses for organization {OrganizationId}", organizationId);
+                _logger.LogError(ex, "Error processing overdue invoices for organization {OrganizationId}", organizationId);
             }
         }
 

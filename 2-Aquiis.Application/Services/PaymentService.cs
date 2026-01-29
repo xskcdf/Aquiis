@@ -402,6 +402,7 @@ namespace Aquiis.Application.Services
 
         /// <summary>
         /// Updates the invoice status and paid amount after a payment change.
+        /// Also applies late fees if invoice becomes overdue and fees haven't been applied yet.
         /// </summary>
         private async Task UpdateInvoiceAfterPaymentChangeAsync(Guid invoiceId)
         {
@@ -420,8 +421,11 @@ namespace Aquiis.Application.Services
 
                     invoice.AmountPaid = totalPaid;
 
-                    // Total due is the invoice amount (which includes late fees already added by ScheduledTaskService)
+                    // Total due is the invoice amount (which includes late fees if already applied)
                     var totalDue = invoice.Amount;
+
+                    var previousStatus = invoice.Status;
+                    var statusChangedToOverdue = false;
 
                     // Update invoice status based on payment
                     // Don't change status if invoice is Cancelled or Voided
@@ -442,6 +446,7 @@ namespace Aquiis.Application.Services
                             if (invoice.DueOn < DateTime.Today)
                             {
                                 invoice.Status = ApplicationConstants.InvoiceStatuses.Overdue;
+                                statusChangedToOverdue = (previousStatus != ApplicationConstants.InvoiceStatuses.Overdue);
                             }
                             else
                             {
@@ -454,12 +459,20 @@ namespace Aquiis.Application.Services
                             if (invoice.DueOn < DateTime.Today)
                             {
                                 invoice.Status = ApplicationConstants.InvoiceStatuses.Overdue;
+                                statusChangedToOverdue = (previousStatus != ApplicationConstants.InvoiceStatuses.Overdue);
                             }
                             else
                             {
                                 invoice.Status = ApplicationConstants.InvoiceStatuses.Pending;
                             }
                         }
+                    }
+
+                    // If invoice just became overdue, check if late fee should be applied
+                    if (statusChangedToOverdue && 
+                        (invoice.LateFeeApplied == null || !invoice.LateFeeApplied.Value))
+                    {
+                        await ApplyLateFeeIfEligibleAsync(invoice, organizationId);
                     }
 
                     var userId = await _userContext.GetUserIdAsync();
@@ -473,6 +486,56 @@ namespace Aquiis.Application.Services
             {
                 await HandleExceptionAsync(ex, "UpdateInvoiceAfterPaymentChange");
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Applies late fee to an invoice if eligible based on organization settings.
+        /// Uses the same logic as the scheduled task to ensure consistency.
+        /// </summary>
+        private async Task ApplyLateFeeIfEligibleAsync(Invoice invoice, Guid? organizationId)
+        {
+            try
+            {
+                // Get organization settings
+                var settings = await _context.OrganizationSettings
+                    .FirstOrDefaultAsync(s => s.OrganizationId == organizationId);
+
+                if (settings == null || !settings.LateFeeEnabled || !settings.LateFeeAutoApply)
+                {
+                    // Late fees not enabled or not set to auto-apply
+                    return;
+                }
+
+                var today = DateTime.Today;
+                var gracePeriodCutoff = today.AddDays(-settings.LateFeeGracePeriodDays);
+
+                // Check if invoice is past grace period
+                if (invoice.DueOn >= gracePeriodCutoff)
+                {
+                    // Still within grace period
+                    return;
+                }
+
+                // Calculate and apply late fee
+                var lateFee = Math.Min(invoice.Amount * settings.LateFeePercentage, settings.MaxLateFeeAmount);
+                
+                invoice.LateFeeAmount = lateFee;
+                invoice.LateFeeApplied = true;
+                invoice.LateFeeAppliedOn = DateTime.UtcNow;
+                invoice.Amount += lateFee;
+                invoice.Notes = string.IsNullOrEmpty(invoice.Notes)
+                    ? $"Late fee of {lateFee:C} applied on {DateTime.Now:MMM dd, yyyy}"
+                    : $"{invoice.Notes}\nLate fee of {lateFee:C} applied on {DateTime.Now:MMM dd, yyyy}";
+
+                _logger.LogInformation(
+                    "Late fee of {LateFee:C} auto-applied to invoice {InvoiceNumber} (ID: {InvoiceId}) during payment processing",
+                    lateFee, invoice.InvoiceNumber, invoice.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error applying late fee to invoice {InvoiceId}", invoice.Id);
+                // Don't throw - we don't want to fail the payment processing if late fee fails
             }
         }
     }

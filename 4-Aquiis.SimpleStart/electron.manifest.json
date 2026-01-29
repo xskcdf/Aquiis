@@ -17,9 +17,9 @@
   "aspCoreBackendPort": 8888,
   "build": {
     "appId": "com.aquiis.propertymanagement",
-    "productName": "AquiisPropertyManagement",
+    "productName": "Aquiis",
     "copyright": "Copyright © 2026",
-    "buildVersion": "1.0.0",
+    "buildVersion": "1.0.1",
     "compression": "normal",
     "directories": {
       "output": "../../../bin/Desktop"
@@ -47,12 +47,14 @@
     "win": {
       "target": "portable",
       "icon": "bin/Assets/icon.ico",
-      "signAndEditExecutable": false
+      "signAndEditExecutable": false,
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "linux": {
       "target": "AppImage",
       "icon": "bin/Assets/icon.png",
-      "category": "Office"
+      "category": "Office",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     }
   }
 }

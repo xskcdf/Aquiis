@@ -56,223 +56,92 @@
             </div>
 
             <!-- Email Notifications -->
-            <div class="card mb-4">
-                <div class="card-header bg-success text-white">
+            <div class="card mb-4 opacity-75">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="bi bi-envelope-fill me-2"></i>Email Notifications
                     </h5>
+                    <span class="badge bg-warning text-dark">
+                        <i class="bi bi-clock-history me-1"></i>Coming Soon
+                    </span>
                 </div>
                 <div class="card-body">
+                    <div class="alert alert-warning mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Email notifications are coming soon!</strong> This feature requires email service integration and will be enabled in a future release.
+                    </div>
                     <div class="form-check form-switch mb-3">
-                        <InputCheckbox class="form-check-input" id="enableEmail" @bind-Value="preferences.EnableEmailNotifications" />
-                        <label class="form-check-label" for="enableEmail">
+                        <input class="form-check-input" type="checkbox" id="enableEmail" disabled />
+                        <label class="form-check-label text-muted" for="enableEmail">
                             <strong>Enable email notifications</strong>
-                            <small class="d-block text-muted">Receive notifications via email</small>
+                            <small class="d-block">Receive notifications via email (Coming Soon)</small>
                         </label>
                     </div>
-
-                    @if (preferences.EnableEmailNotifications)
-                    {
-                        <div class="mb-4">
-                            <label for="emailAddress" class="form-label">Email Address</label>
-                            <InputText id="emailAddress" class="form-control" @bind-Value="preferences.EmailAddress" placeholder="your-email@example.com" />
-                            <ValidationMessage For="@(() => preferences.EmailAddress)" />
-                            <small class="text-muted">Notifications will be sent to this email address</small>
-                        </div>
-
-                        <hr class="my-4" />
-
-                        <h6 class="mb-3">Email Categories</h6>
-                        <p class="text-muted small mb-3">Choose which types of notifications you want to receive via email</p>
-
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <InputCheckbox class="form-check-input" id="emailLease" @bind-Value="preferences.EmailLeaseExpiring" />
-                                    <label class="form-check-label" for="emailLease">
-                                        <i class="bi bi-file-text text-primary me-2"></i>Lease Expiring
-                                        <small class="d-block text-muted">Notifications about lease renewals and expirations</small>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <InputCheckbox class="form-check-input" id="emailPaymentDue" @bind-Value="preferences.EmailPaymentDue" />
-                                    <label class="form-check-label" for="emailPaymentDue">
-                                        <i class="bi bi-cash text-success me-2"></i>Payment Due
-                                        <small class="d-block text-muted">Reminders about upcoming payments</small>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <InputCheckbox class="form-check-input" id="emailPaymentReceived" @bind-Value="preferences.EmailPaymentReceived" />
-                                    <label class="form-check-label" for="emailPaymentReceived">
-                                        <i class="bi bi-check-circle text-success me-2"></i>Payment Received
-                                        <small class="d-block text-muted">Confirmation when payments are received</small>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <InputCheckbox class="form-check-input" id="emailApplication" @bind-Value="preferences.EmailApplicationStatusChange" />
-                                    <label class="form-check-label" for="emailApplication">
-                                        <i class="bi bi-person-check text-info me-2"></i>Application Status
-                                        <small class="d-block text-muted">Updates on rental applications</small>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <InputCheckbox class="form-check-input" id="emailMaintenance" @bind-Value="preferences.EmailMaintenanceUpdate" />
-                                    <label class="form-check-label" for="emailMaintenance">
-                                        <i class="bi bi-wrench text-warning me-2"></i>Maintenance Updates
-                                        <small class="d-block text-muted">Status updates on maintenance requests</small>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <InputCheckbox class="form-check-input" id="emailInspection" @bind-Value="preferences.EmailInspectionScheduled" />
-                                    <label class="form-check-label" for="emailInspection">
-                                        <i class="bi bi-clipboard-check text-info me-2"></i>Inspection Scheduled
-                                        <small class="d-block text-muted">Notifications about property inspections</small>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    }
                 </div>
             </div>
 
             <!-- SMS Notifications -->
-            <div class="card mb-4">
-                <div class="card-header bg-info text-white">
+            <div class="card mb-4 opacity-75">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="bi bi-phone-fill me-2"></i>SMS Notifications
                     </h5>
+                    <span class="badge bg-warning text-dark">
+                        <i class="bi bi-clock-history me-1"></i>Coming Soon
+                    </span>
                 </div>
                 <div class="card-body">
+                    <div class="alert alert-warning mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>SMS notifications are coming soon!</strong> This feature requires SMS service integration and will be enabled in a future release.
+                    </div>
                     <div class="form-check form-switch mb-3">
-                        <InputCheckbox class="form-check-input" id="enableSMS" @bind-Value="preferences.EnableSMSNotifications" />
-                        <label class="form-check-label" for="enableSMS">
+                        <input class="form-check-input" type="checkbox" id="enableSMS" disabled />
+                        <label class="form-check-label text-muted" for="enableSMS">
                             <strong>Enable SMS notifications</strong>
-                            <small class="d-block text-muted">Receive urgent notifications via text message</small>
+                            <small class="d-block">Receive urgent notifications via text message (Coming Soon)</small>
                         </label>
                     </div>
-
-                    @if (preferences.EnableSMSNotifications)
-                    {
-                        <div class="mb-4">
-                            <label for="phoneNumber" class="form-label">Phone Number</label>
-                            <InputText id="phoneNumber" class="form-control" @bind-Value="preferences.PhoneNumber" placeholder="+1-234-567-8900" />
-                            <ValidationMessage For="@(() => preferences.PhoneNumber)" />
-                            <small class="text-muted">Include country code (e.g., +1 for US)</small>
-                        </div>
-
-                        <div class="alert alert-warning mb-4">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
-                            <strong>Note:</strong> SMS notifications are for urgent matters only to minimize costs and avoid message fatigue.
-                        </div>
-
-                        <hr class="my-4" />
-
-                        <h6 class="mb-3">SMS Categories</h6>
-                        <p class="text-muted small mb-3">Choose which urgent notifications you want to receive via SMS</p>
-
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <InputCheckbox class="form-check-input" id="smsPayment" @bind-Value="preferences.SMSPaymentDue" />
-                                    <label class="form-check-label" for="smsPayment">
-                                        <i class="bi bi-cash text-danger me-2"></i>Payment Due
-                                        <small class="d-block text-muted">Urgent payment reminders</small>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <InputCheckbox class="form-check-input" id="smsMaintenance" @bind-Value="preferences.SMSMaintenanceEmergency" />
-                                    <label class="form-check-label" for="smsMaintenance">
-                                        <i class="bi bi-exclamation-triangle text-danger me-2"></i>Emergency Maintenance
-                                        <small class="d-block text-muted">Critical maintenance issues</small>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <InputCheckbox class="form-check-input" id="smsLease" @bind-Value="preferences.SMSLeaseExpiringUrgent" />
-                                    <label class="form-check-label" for="smsLease">
-                                        <i class="bi bi-hourglass-split text-warning me-2"></i>Urgent Lease Expiring
-                                        <small class="d-block text-muted">Lease expiring within 30 days</small>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    }
                 </div>
             </div>
 
             <!-- Digest Preferences -->
-            <div class="card mb-4">
-                <div class="card-header bg-secondary text-white">
+            <div class="card mb-4 opacity-75">
+                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="bi bi-newspaper me-2"></i>Digest Preferences
                     </h5>
+                    <span class="badge bg-warning text-dark">
+                        <i class="bi bi-clock-history me-1"></i>Coming Soon
+                    </span>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted mb-4">
+                    <div class="alert alert-warning">
                         <i class="bi bi-info-circle me-2"></i>
-                        Digests consolidate multiple notifications into a single summary email, helping reduce email volume.
-                    </p>
+                        <strong>Digest notifications are coming soon!</strong> This feature requires email service integration and will be enabled in a future release.
+                    </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-4">
                             <h6 class="mb-3">Daily Digest</h6>
                             <div class="form-check form-switch mb-3">
-                                <InputCheckbox class="form-check-input" id="enableDaily" @bind-Value="preferences.EnableDailyDigest" />
+                                <input type="checkbox" class="form-check-input" id="enableDaily" disabled />
                                 <label class="form-check-label" for="enableDaily">
                                     <strong>Enable daily digest</strong>
-                                    <small class="d-block text-muted">Receive a summary of notifications once per day</small>
+                                    <small class="d-block text-muted">Receive a summary of notifications once per day (Coming Soon)</small>
                                 </label>
                             </div>
-
-                            @if (preferences.EnableDailyDigest)
-                            {
-                                <div>
-                                    <label for="dailyTime" class="form-label">Delivery Time</label>
-                                    <InputDate Type="InputDateType.Time" id="dailyTime" class="form-control" @bind-Value="@DailyDigestTimeValue" />
-                                    <small class="text-muted">Time of day to receive the digest</small>
-                                </div>
-                            }
                         </div>
 
                         <div class="col-md-6 mb-4">
                             <h6 class="mb-3">Weekly Digest</h6>
                             <div class="form-check form-switch mb-3">
-                                <InputCheckbox class="form-check-input" id="enableWeekly" @bind-Value="preferences.EnableWeeklyDigest" />
+                                <input type="checkbox" class="form-check-input" id="enableWeekly" disabled />
                                 <label class="form-check-label" for="enableWeekly">
                                     <strong>Enable weekly digest</strong>
-                                    <small class="d-block text-muted">Receive a summary of notifications once per week</small>
+                                    <small class="d-block text-muted">Receive a summary of notifications once per week (Coming Soon)</small>
                                 </label>
                             </div>
-
-                            @if (preferences.EnableWeeklyDigest)
-                            {
-                                <div>
-                                    <label for="weeklyDay" class="form-label">Delivery Day</label>
-                                    <InputSelect id="weeklyDay" class="form-select" @bind-Value="preferences.WeeklyDigestDay">
-                                        <option value="@DayOfWeek.Monday">Monday</option>
-                                        <option value="@DayOfWeek.Tuesday">Tuesday</option>
-                                        <option value="@DayOfWeek.Wednesday">Wednesday</option>
-                                        <option value="@DayOfWeek.Thursday">Thursday</option>
-                                        <option value="@DayOfWeek.Friday">Friday</option>
-                                        <option value="@DayOfWeek.Saturday">Saturday</option>
-                                        <option value="@DayOfWeek.Sunday">Sunday</option>
-                                    </InputSelect>
-                                    <small class="text-muted">Day of the week to receive the digest</small>
-                                </div>
-                            }
                         </div>
                     </div>
                 </div>
