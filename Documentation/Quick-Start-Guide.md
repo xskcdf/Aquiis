@@ -35,6 +35,14 @@ Before you begin, ensure you have:
   - 500 MB disk space
 - **Downloaded:** Aquiis SimpleStart v1.0.0 installer for your platform
 
+### Universal Linux Support:
+
+Aquiis is distributed as an AppImage, which runs on all major Linux distributions—including Ubuntu, Debian, Fedora, RedHat, Arch, openSUSE, and more. No installation required: just download, make executable, and run.
+
+### Windows Portable Version:
+
+Aquiis is available as a portable Windows executable (.exe). No installation required—just download, extract, and run. All application data is stored locally in the same folder, making it easy to use Aquiis from a USB drive or move between systems.
+
 ---
 
 ## 🚀 Step 1: Installation (5 minutes)
