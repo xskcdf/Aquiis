@@ -30,7 +30,7 @@ namespace Aquiis.Core.Entities
         [Required]
         [Range(0, 30)]
         [Display(Name = "Grace Period (Days)")]
-        public int LateFeeGracePeriodDays { get; set; } = 3;
+        public int LateFeeGracePeriodDays { get; set; } = 5;
 
         [Required]
         [Range(0, 1)]
