@@ -555,6 +555,22 @@ await app.StartAsync();
 // Open Electron window
 if (HybridSupport.IsElectronActive)
 {
+    // Verify backend is responding before showing window
+    var backendUrl = "http://localhost:8888";
+    var isBackendReady = false;
+    
+    try
+    {
+        using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+        var response = await httpClient.GetAsync(backendUrl);
+        isBackendReady = response.IsSuccessStatusCode;
+        app.Logger.LogInformation("Backend health check: {Status}", isBackendReady ? "OK" : "Failed");
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Backend health check failed, will show offline page");
+    }
+    
     var window = await Electron.WindowManager.CreateWindowAsync(new ElectronNET.API.Entities.BrowserWindowOptions
     {
         Width = 1400,
@@ -566,6 +582,13 @@ if (HybridSupport.IsElectronActive)
 
     window.OnReadyToShow += () => window.Show();
     window.SetTitle("Aquiis Property Management");
+    
+    // Load appropriate page based on backend availability
+    if (!isBackendReady)
+    {
+        app.Logger.LogWarning("Loading offline page due to backend unavailability");
+        window.LoadURL($"{backendUrl}/offline.html");
+    }
     
     // Open DevTools in development mode for debugging
     if (app.Environment.IsDevelopment())
