@@ -31,8 +31,8 @@ public static class ElectronServiceExtensions
         // Register path service
         services.AddScoped<IPathService, ElectronPathService>();
 
-        // Get connection string using the path service
-        var connectionString = GetElectronConnectionString(configuration).GetAwaiter().GetResult();
+        // Get connection string using the path service (synchronous to avoid startup deadlock)
+        var connectionString = GetElectronConnectionString(configuration);
 
         // ✅ Register Application layer (includes Infrastructure internally)
         services.AddApplication(connectionString);
@@ -54,11 +54,14 @@ public static class ElectronServiceExtensions
         services.AddIdentity<ApplicationUser, IdentityRole>(options => {
             // For desktop app, simplify registration (email confirmation can be enabled later via settings)
             options.SignIn.RequireConfirmedAccount = false; // Electron mode
+            
+            // ✅ SECURITY: Strong password policy (12+ chars, special characters required)
             options.Password.RequireDigit = true;
-            options.Password.RequiredLength = 6;
-            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequiredLength = 12;
+            options.Password.RequireNonAlphanumeric = true;
             options.Password.RequireUppercase = true;
             options.Password.RequireLowercase = true;
+            options.Password.RequiredUniqueChars = 4; // Prevent patterns like "aaa111!!!"
         })
         .AddEntityFrameworkStores<SimpleStartDbContext>()
         .AddDefaultTokenProviders();
@@ -73,17 +76,27 @@ public static class ElectronServiceExtensions
             // For Electron desktop app, use longer cookie lifetime
             options.ExpireTimeSpan = TimeSpan.FromDays(30);
             options.SlidingExpiration = true;
+            
+            // Ensure cookie is persisted (not session-only)
+            options.Cookie.MaxAge = TimeSpan.FromDays(30);
+            options.Cookie.IsEssential = true;
+            
+            // For localhost Electron app, allow non-HTTPS cookies
+            options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest;
+            options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
         });
 
         return services;
     }
 
     /// <summary>
-    /// Gets the connection string for Electron mode using the path service.
+    /// Gets the connection string for Electron mode using the path service synchronously.
+    /// This avoids deadlocks during service registration before Electron is fully initialized.
     /// </summary>
-    private static async Task<string> GetElectronConnectionString(IConfiguration configuration)
+    private static string GetElectronConnectionString(IConfiguration configuration)
     {
         var pathService = new ElectronPathService(configuration);
-        return await pathService.GetConnectionStringAsync(configuration);
+        var dbPath = pathService.GetDatabasePathSync();
+        return $"DataSource={dbPath};Cache=Shared";
     }
 }

@@ -214,6 +214,55 @@ using (var scope = app.Services.CreateScope())
         {
             var pathService = scope.ServiceProvider.GetRequiredService<IPathService>();
             var dbPath = await pathService.GetDatabasePathAsync();
+            
+            // ✅ v1.1.0: Automatic migration from old Electron folder to new Aquiis folder
+            var basePath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+            {
+                basePath = Environment.GetEnvironmentVariable("HOME")!;
+                basePath = OperatingSystem.IsLinux() 
+                    ? Path.Combine(basePath, ".config") 
+                    : Path.Combine(basePath, "Library/Application Support");
+            }
+            
+            var dbFileName = Path.GetFileName(dbPath);
+            var oldDbPath = Path.Combine(basePath, "Electron", dbFileName);
+            var oldBackupPath = Path.Combine(basePath, "Electron", "Backups");
+            var newBackupPath = Path.Combine(Path.GetDirectoryName(dbPath)!, "Backups");
+            
+            // One-time migration: copy database and backups if old location exists and new doesn't
+            if (File.Exists(oldDbPath) && !File.Exists(dbPath))
+            {
+                app.Logger.LogInformation("Migrating database from Electron folder to Aquiis folder");
+                app.Logger.LogInformation("Old path: {OldPath}", oldDbPath);
+                app.Logger.LogInformation("New path: {NewPath}", dbPath);
+                
+                // Ensure destination directory exists
+                Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
+                
+                // Copy database file
+                File.Copy(oldDbPath, dbPath);
+                app.Logger.LogInformation("Database file migrated successfully");
+                
+                // Copy backups folder if it exists
+                if (Directory.Exists(oldBackupPath))
+                {
+                    app.Logger.LogInformation("Migrating backups folder");
+                    Directory.CreateDirectory(newBackupPath);
+                    
+                    var backupFiles = Directory.GetFiles(oldBackupPath);
+                    foreach (var backupFile in backupFiles)
+                    {
+                        var destFile = Path.Combine(newBackupPath, Path.GetFileName(backupFile));
+                        File.Copy(backupFile, destFile);
+                    }
+                    
+                    app.Logger.LogInformation("Migrated {Count} backup files", backupFiles.Length);
+                }
+                
+                app.Logger.LogInformation("Database migration from Electron to Aquiis folder completed successfully");
+            }
+            
             var stagedRestorePath = $"{dbPath}.restore_pending";
             
             // Check if there's a staged restore waiting
@@ -486,10 +535,38 @@ else
 
 app.UseSession();
 
-// Only use HTTPS redirection in web mode, not in Electron
+// ✅ SECURITY: HTTPS enforcement for production web mode
 if (!HybridSupport.IsElectronActive)
 {
-    app.UseHttpsRedirection();
+    if (!app.Environment.IsDevelopment())
+    {
+        // Production: MUST use HTTPS
+        app.UseHttpsRedirection();
+        app.UseHsts();
+
+        // Validate HTTPS is actually configured
+        var httpsUrl = builder.Configuration["Kestrel:Endpoints:Https:Url"];
+        if (string.IsNullOrEmpty(httpsUrl))
+        {
+            app.Logger.LogWarning(
+                "HTTPS not configured in production. " +
+                "Configure Kestrel:Endpoints:Https in appsettings.Production.json or set ASPNETCORE_URLS environment variable.");
+        }
+    }
+    else
+    {
+        // Development: Optional HTTPS (for testing)
+        var useHttps = builder.Configuration.GetValue<bool>("Development:UseHttps", false);
+        if (useHttps)
+        {
+            app.UseHttpsRedirection();
+            app.Logger.LogInformation("HTTPS enabled for development");
+        }
+        else
+        {
+            app.Logger.LogInformation("Running in development without HTTPS");
+        }
+    }
 }
 
 app.UseAuthentication();
@@ -550,7 +627,23 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Start the app for Electron
-await app.StartAsync();
+try
+{
+    app.Logger.LogInformation("Starting ASP.NET Core server...");
+    await app.StartAsync();
+    app.Logger.LogInformation("ASP.NET Core server started successfully");
+}
+catch (Exception ex)
+{
+    app.Logger.LogCritical(ex, "FATAL: Failed to start ASP.NET Core server");
+    Console.WriteLine($"FATAL ERROR: {ex.Message}");
+    Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+    if (ex.InnerException != null)
+    {
+        Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+    }
+    Environment.Exit(1);
+}
 
 // Open Electron window
 if (HybridSupport.IsElectronActive)

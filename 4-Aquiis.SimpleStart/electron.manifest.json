@@ -4,8 +4,6 @@
     "imageFile": "wwwroot/assets/splash.png"
   },
   "electronCLIFlags": [
-    "--no-sandbox",
-    "--disable-gpu-sandbox",
     "--enable-features=VaapiVideoDecoder",
     "--disable-dev-shm-usage"
   ],

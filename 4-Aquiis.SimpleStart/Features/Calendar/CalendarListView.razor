@@ -19,6 +19,7 @@
 @inject InspectionService InspectionService
 @inject MaintenanceService MaintenanceService
 @inject LeaseService LeaseService
+@inject IJSRuntime JSRuntime
 
 @rendermode InteractiveServer
 
@@ -457,6 +458,7 @@
     private int currentPage = 1;
     private int pageSize = 20;
     private int totalPages => (int)Math.Ceiling(filteredEvents.Count / (double)pageSize);
+    private bool firstRenderCompleted = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -469,6 +471,29 @@
         }
         
         ApplyFilters();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !firstRenderCompleted)
+        {
+            firstRenderCompleted = true;
+            
+            // Check if user prefers grid view - redirect if so
+            var savedPagePreference = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "calendarViewPage");
+            await JSRuntime.InvokeVoidAsync("console.log", $"Retrieved calendarViewPage: {savedPagePreference ?? "null"}");
+            
+            if (savedPagePreference == "grid")
+            {
+                await JSRuntime.InvokeVoidAsync("console.log", "User prefers grid view, redirecting...");
+                Navigation.NavigateTo("/Calendar");
+                return; // Stop execution, we're navigating away
+            }
+            
+            // User is staying on list view - update preference
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "calendarViewPage", "list");
+            await JSRuntime.InvokeVoidAsync("console.log", "Saved preference: calendarViewPage = list");
+        }
     }
 
     private async Task LoadEvents()
@@ -543,8 +568,19 @@
         showFilters = !showFilters;
     }
 
-    private void NavigateToCalendar()
+    private async void NavigateToCalendar()
     {
+        // Save preference for grid view before navigating back
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "calendarViewPage", "grid");
+            await JSRuntime.InvokeVoidAsync("console.log", "Saved preference: calendarViewPage = grid");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("console.error", $"Failed to save grid view preference: {ex.Message}");
+        }
+        
         Navigation.NavigateTo("/Calendar");
     }
 

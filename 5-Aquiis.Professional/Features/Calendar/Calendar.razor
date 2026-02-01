@@ -21,6 +21,7 @@
 @inject TourService TourService
 @inject InspectionService InspectionService
 @inject MaintenanceService MaintenanceService
+@inject IJSRuntime JSRuntime
 
 @rendermode InteractiveServer
 
@@ -90,6 +91,14 @@
     }
 
     @if (loading)
+    {
+        <div class="text-center p-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (viewMode == null)
     {
         <div class="text-center p-5">
             <div class="spinner-border text-primary" role="status">
@@ -637,7 +646,7 @@
     private Inspection? selectedInspection;
     private MaintenanceRequest? selectedMaintenanceRequest;
     private bool loading = true;
-    private string viewMode = "week"; // day, week, month
+    private string? viewMode = null; // Will be loaded from localStorage, defaults to "week" if not set
     private DateTime currentDate = DateTime.Today;
     private List<string> selectedEventTypes = new();
     private bool showFilters = false;
@@ -647,6 +656,7 @@
     private List<Property> propertySearchResults = new();
     private bool showPropertySearchResults = false;
     private Property? selectedPropertyForEvent = null;
+    private bool viewModeLoaded = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -667,7 +677,49 @@
             selectedEventTypes = CalendarEventTypes.GetAllTypes().ToList();
         }
         
-        await LoadEvents();
+        // Don't load events here - wait until view mode is loaded from localStorage
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !viewModeLoaded)
+        {
+            viewModeLoaded = true;
+            
+            // Check if user prefers list view - redirect if so
+            var savedPagePreference = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "calendarViewPage");
+            await JSRuntime.InvokeVoidAsync("console.log", $"Retrieved calendarViewPage: {savedPagePreference ?? "null"}");
+            
+            if (savedPagePreference == "list")
+            {
+                await JSRuntime.InvokeVoidAsync("console.log", "User prefers list view, redirecting...");
+                Navigation.NavigateTo("/Calendar/ListView");
+                return; // Stop execution, we're navigating away
+            }
+            
+            // User is staying on grid view - update preference
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "calendarViewPage", "grid");
+            
+            // Load saved view mode from localStorage
+            var savedViewMode = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "calendarViewMode");
+            await JSRuntime.InvokeVoidAsync("console.log", $"Retrieved calendarViewMode: {savedViewMode ?? "null"}");
+            
+            if (!string.IsNullOrEmpty(savedViewMode) && (savedViewMode == "day" || savedViewMode == "week" || savedViewMode == "month"))
+            {
+                viewMode = savedViewMode;
+                await JSRuntime.InvokeVoidAsync("console.log", $"Applied saved view mode: {savedViewMode}");
+            }
+            else
+            {
+                // Default to week view if no preference saved (Professional edition default)
+                viewMode = "week";
+                await JSRuntime.InvokeVoidAsync("console.log", "No saved preference, defaulting to week view");
+            }
+            
+            // Now load events with the correct view mode
+            await LoadEvents();
+            StateHasChanged();
+        }
     }
 
     private async Task LoadEvents()
@@ -678,8 +730,9 @@
             var organizationId = await UserContext.GetActiveOrganizationIdAsync();
             if (organizationId.HasValue)
             {
-                // Get date range based on current view
-                var (startDate, endDate) = viewMode switch
+                // Get date range based on current view (default to week if not set - Professional default)
+                var currentView = viewMode ?? "week";
+                var (startDate, endDate) = currentView switch
                 {
                     "day" => (currentDate.Date, currentDate.Date.AddDays(1)),
                     "week" => (GetWeekStart(), GetWeekEnd().AddDays(1)),
@@ -851,12 +904,28 @@
     private async Task ChangeView(string mode)
     {
         viewMode = mode;
+        
+        // Persist view mode preference to localStorage
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "calendarViewMode", mode);
+            // Log to browser console for debugging
+            await JSRuntime.InvokeVoidAsync("console.log", $"Saved view mode to localStorage: {mode}");
+        }
+        catch (Exception ex)
+        {
+            // Show error to user if localStorage save fails
+            ToastService.ShowError($"Failed to save view mode preference: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("console.error", $"localStorage.setItem error: {ex.Message}");
+        }
+        
         await LoadEvents();
     }
 
     private async Task NavigatePrevious()
     {
-        currentDate = viewMode switch
+        var currentView = viewMode ?? "week";
+        currentDate = currentView switch
         {
             "day" => currentDate.AddDays(-1),
             "week" => currentDate.AddDays(-7),
@@ -868,7 +937,8 @@
 
     private async Task NavigateNext()
     {
-        currentDate = viewMode switch
+        var currentView = viewMode ?? "week";
+        currentDate = currentView switch
         {
             "day" => currentDate.AddDays(1),
             "week" => currentDate.AddDays(7),
@@ -886,7 +956,8 @@
 
     private string GetDateRangeTitle()
     {
-        return viewMode switch
+        var currentView = viewMode ?? "week";
+        return currentView switch
         {
             "day" => currentDate.ToString("dddd, MMMM dd, yyyy"),
             "week" => $"{GetWeekStart().ToString("MMM dd")} - {GetWeekEnd().ToString("MMM dd, yyyy")}",
@@ -1567,8 +1638,19 @@
         Navigation.NavigateTo("/PropertyManagement/ProspectiveTenants");
     }
 
-    private void NavigateToListView()
+    private async void NavigateToListView()
     {
+        // Save preference for list view before navigating
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "calendarViewPage", "list");
+            await JSRuntime.InvokeVoidAsync("console.log", "Saved preference: calendarViewPage = list");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("console.error", $"Failed to save list view preference: {ex.Message}");
+        }
+        
         Navigation.NavigateTo("/Calendar/ListView");
     }
 

@@ -3,6 +3,7 @@
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
+@using ElectronNET.API
 
 @inject SignInManager<ApplicationUser> SignInManager
 @inject ILogger<Login> Logger
@@ -77,12 +78,24 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await base.OnInitializedAsync();
+        Input ??= new InputModel();
 
-        Input = Input ?? new InputModel();
+        // For Electron, default Remember Me to true (trusted device)
+        if (HybridSupport.IsElectronActive)
+        {
+            Input.RememberMe = true;
+        }
 
         if (HttpMethods.IsGet(HttpContext.Request.Method))
         {
+            // Check if user is already authenticated via Remember Me cookie
+            if (HttpContext.User.Identity?.IsAuthenticated == true)
+            {
+                // Already logged in, redirect to return URL or home
+                RedirectManager.RedirectTo(ReturnUrl ?? "/");
+                return;
+            }
+
             // Clear the existing external cookie to ensure a clean login process
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         }
