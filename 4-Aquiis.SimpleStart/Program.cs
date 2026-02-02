@@ -3,11 +3,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Aquiis.Core.Constants;
+using Aquiis.Core.Entities;
 using Aquiis.Core.Interfaces;
 using Aquiis.Core.Interfaces.Services;
+using Aquiis.SimpleStart.Extensions;
 using Aquiis.SimpleStart.Shared.Services;
 using Aquiis.SimpleStart.Shared.Authorization;
-using Aquiis.SimpleStart.Extensions;
 using Aquiis.Application.Services;
 using Aquiis.Application.Services.Workflows;
 using Aquiis.SimpleStart.Data;
@@ -16,9 +17,17 @@ using ElectronNET.API;
 using Microsoft.Extensions.Options;
 using Aquiis.Application.Services.PdfGenerators;
 using Aquiis.SimpleStart.Shared.Components.Account;
+using Aquiis.Infrastructure.Services;
 
+// Initialize SQLCipher before any database operations
+SQLitePCL.Batteries_V2.Init();
+SQLitePCL.raw.sqlite3_initialize();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// CRITICAL: Handle .restore_pending BEFORE any DbContext registration
+// This ensures encrypted database detection happens on the correct file
+HandlePendingRestore(builder.Configuration);
 
 // Configure for Electron
 builder.WebHost.UseElectron(args);
@@ -168,6 +177,12 @@ builder.Services.AddScoped<ChecklistPdfGenerator>();
 builder.Services.AddScoped<DatabaseBackupService>();
 builder.Services.AddScoped<SchemaValidationService>();
 builder.Services.AddScoped<LeaseWorkflowService>();
+
+// Database encryption services
+builder.Services.AddScoped<PasswordDerivationService>();
+builder.Services.AddScoped<LinuxKeychainService>();
+builder.Services.AddScoped<DatabaseEncryptionService>();
+builder.Services.AddScoped<DatabasePasswordService>();
 
 // Configure and register session timeout service
 builder.Services.AddScoped<SessionTimeoutService>(sp =>
@@ -393,6 +408,25 @@ using (var scope = app.Services.CreateScope())
                 // Create initial backup after database creation
                 await backupService.CreateBackupAsync("InitialSetup");
             }
+            
+            // Update DatabaseSettings.DatabaseEncryptionEnabled flag to match actual encryption status
+            var encryptionDetection = scope.ServiceProvider.GetRequiredService<EncryptionDetectionResult>();
+            var currentSettings = await dbService.GetDatabaseSettingsAsync();
+            
+            if (currentSettings.DatabaseEncryptionEnabled != encryptionDetection.IsEncrypted)
+            {
+                app.Logger.LogInformation(
+                    "Updating DatabaseSettings.DatabaseEncryptionEnabled from {Old} to {New} (detected actual status)",
+                    currentSettings.DatabaseEncryptionEnabled,
+                    encryptionDetection.IsEncrypted);
+                await dbService.SetDatabaseEncryptionAsync(encryptionDetection.IsEncrypted, "System-AutoDetect");
+            }
+            else
+            {
+                app.Logger.LogInformation(
+                    "DatabaseSettings.DatabaseEncryptionEnabled already matches actual encryption status: {Status}",
+                    encryptionDetection.IsEncrypted);
+            }
         }
         catch (Exception ex)
         {
@@ -408,47 +442,9 @@ using (var scope = app.Services.CreateScope())
             app.Logger.LogInformation("Applying database migrations for web mode");
             
             // Get database path for web mode
-            var webConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-            if (!string.IsNullOrEmpty(webConnectionString))
-            {
-                var dbPath = webConnectionString
-                    .Replace("Data Source=", "")
-                    .Replace("DataSource=", "")
-                    .Split(';')[0]
-                    .Trim();
-                
-                if (!Path.IsPathRooted(dbPath))
-                {
-                    dbPath = Path.Combine(Directory.GetCurrentDirectory(), dbPath);
-                }
-                
-                var stagedRestorePath = $"{dbPath}.restore_pending";
-                
-                // Check if there's a staged restore waiting
-                if (File.Exists(stagedRestorePath))
-                {
-                    app.Logger.LogInformation("Found staged restore file for web mode, applying it now");
-                    
-                    // Clear SQLite connection pool
-                    Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-                    
-                    // Wait for connections to close
-                    await Task.Delay(500);
-                    
-                    // Backup current database if it exists
-                    if (File.Exists(dbPath))
-                    {
-                        var timestamp = DateTime.Now.ToString("yyyyMMddHHmmssfff");
-                        var beforeRestorePath = $"{dbPath}.beforeRestore.{timestamp}";
-                        File.Move(dbPath, beforeRestorePath);
-                        app.Logger.LogInformation("Current database backed up to: {Path}", beforeRestorePath);
-                    }
-                    
-                    // Move staged restore into place
-                    File.Move(stagedRestorePath, dbPath);
-                    app.Logger.LogInformation("Staged restore applied successfully for web mode");
-                }
-            }
+            // REMOVED: .restore_pending handling now happens BEFORE service registration
+            // This ensures encrypted database detection works correctly
+            // See HandlePendingRestore() called before AddWebServices()
             
             // Check if there are pending migrations for both contexts
             var businessPendingCount = await dbService.GetPendingMigrationsCountAsync();
@@ -479,6 +475,25 @@ using (var scope = app.Services.CreateScope())
             }
             
             app.Logger.LogInformation("Database migrations applied successfully");
+            
+            // Update DatabaseSettings.DatabaseEncryptionEnabled flag to match actual encryption status
+            var encryptionDetection = scope.ServiceProvider.GetRequiredService<EncryptionDetectionResult>();
+            var currentSettings = await dbService.GetDatabaseSettingsAsync();
+            
+            if (currentSettings.DatabaseEncryptionEnabled != encryptionDetection.IsEncrypted)
+            {
+                app.Logger.LogInformation(
+                    "Updating DatabaseSettings.DatabaseEncryptionEnabled from {Old} to {New} (detected actual status)",
+                    currentSettings.DatabaseEncryptionEnabled,
+                    encryptionDetection.IsEncrypted);
+                await dbService.SetDatabaseEncryptionAsync(encryptionDetection.IsEncrypted, "System-AutoDetect");
+            }
+            else
+            {
+                app.Logger.LogInformation(
+                    "DatabaseSettings.DatabaseEncryptionEnabled already matches actual encryption status: {Status}",
+                    encryptionDetection.IsEncrypted);
+            }
             
             // Create initial backup after creating a new database
             if (isNewDatabase)
@@ -535,6 +550,9 @@ else
 
 app.UseSession();
 
+// ✅ SECURITY: Content Security Policy and security headers
+app.UseSecurityHeaders();
+
 // ✅ SECURITY: HTTPS enforcement for production web mode
 if (!HybridSupport.IsElectronActive)
 {
@@ -590,6 +608,9 @@ app.MapPost("/api/session/refresh", async (HttpContext context) =>
 }).RequireAuthorization();
 
 // Create system service account for background jobs
+// Clear connection pool to ensure all connections use proper encryption interceptor
+Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+
 using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
@@ -699,3 +720,56 @@ if (HybridSupport.IsElectronActive)
 }
 
 await app.WaitForShutdownAsync();
+
+// Local function to handle .restore_pending before service registration
+static void HandlePendingRestore(IConfiguration configuration)
+{
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        // Can't proceed without connection string
+        return;
+    }
+    
+    // Extract database path
+    var builder = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder(connectionString);
+    var dbPath = builder.DataSource;
+    
+    if (!Path.IsPathRooted(dbPath))
+    {
+        dbPath = Path.Combine(Directory.GetCurrentDirectory(), dbPath);
+    }
+    
+    var stagedRestorePath = $"{dbPath}.restore_pending";
+    
+    // Check if there's a staged restore waiting
+    if (File.Exists(stagedRestorePath))
+    {
+        Console.WriteLine("Found staged restore file, applying it now...");
+        
+        // Clear SQLite connection pool
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+        
+        // Wait for connections to close
+        Thread.Sleep(500);
+        
+        // Backup current database if it exists
+        if (File.Exists(dbPath))
+        {
+            var timestamp = DateTime.Now.ToString("yyyyMMddHHmmssfff");
+            var beforeRestorePath = $"{dbPath}.beforeRestore.{timestamp}";
+            File.Move(dbPath, beforeRestorePath);
+            Console.WriteLine($"Current database backed up to: {beforeRestorePath}");
+        }
+        
+        // Move staged restore into place
+        File.Move(stagedRestorePath, dbPath);
+        Console.WriteLine("Staged restore applied successfully");
+        
+        // Delete orphaned WAL/SHM files if they exist
+        var walPath = $"{dbPath}-wal";
+        var shmPath = $"{dbPath}-shm";
+        if (File.Exists(walPath)) File.Delete(walPath);
+        if (File.Exists(shmPath)) File.Delete(shmPath);
+    }
+}

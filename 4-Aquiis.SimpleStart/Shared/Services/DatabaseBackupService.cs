@@ -390,6 +390,71 @@ namespace Aquiis.SimpleStart.Shared.Services
             });
         }
 
+        /// <summary>
+        /// Prepares the database for file operations by checkpointing WAL, closing connections, and clearing pools.
+        /// Call this before attempting to copy or move the live database file.
+        /// </summary>
+        /// <param name="connectionString">Optional connection string if database is encrypted (include password)</param>
+        public async Task PrepareForFileCopyAsync(string? connectionString = null)
+        {
+            try
+            {
+                // Step 1: Checkpoint WAL to consolidate all data into main database file
+                _logger.LogInformation("Checkpointing WAL before file operation");
+                
+                if (string.IsNullOrEmpty(connectionString))
+                {
+                    // Use DbContext connection for plaintext database
+                    var connection = _dbContext.Database.GetDbConnection();
+                    await connection.OpenAsync();
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = "PRAGMA wal_checkpoint(TRUNCATE);";
+                        await command.ExecuteNonQueryAsync();
+                    }
+                    await connection.CloseAsync();
+                }
+                else
+                {
+                    // Use provided connection string for encrypted database
+                    using (var connection = new Microsoft.Data.Sqlite.SqliteConnection(connectionString))
+                    {
+                        await connection.OpenAsync();
+                        using (var command = connection.CreateCommand())
+                        {
+                            command.CommandText = "PRAGMA wal_checkpoint(TRUNCATE);";
+                            await command.ExecuteNonQueryAsync();
+                        }
+                    }
+                }
+                
+                _logger.LogInformation("WAL checkpoint completed successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "WAL checkpoint failed, continuing anyway");
+            }
+
+            // Step 2: Close DbContext connection
+            try
+            {
+                await _dbContext.Database.CloseConnectionAsync();
+                _logger.LogInformation("Database connection closed");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error closing database connection");
+            }
+
+            // Step 3: Clear all SQLite connection pools to release file locks
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            _logger.LogInformation("Connection pools cleared");
+
+            // Step 4: Wait for file system to release locks (increased from 100ms for encryption reliability)
+            await Task.Delay(500);
+            _logger.LogInformation("Database prepared for file operations");
+        }
+
         private string FormatFileSize(long bytes)
         {
             string[] sizes = { "B", "KB", "MB", "GB" };

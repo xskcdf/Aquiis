@@ -39,9 +39,9 @@ public class NewSetupUITests : PageTest
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "First Name" }).PressAsync("Tab");
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Last Name" }).FillAsync("One");
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Last Name" }).PressAsync("Tab");
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Password", Exact = true }).FillAsync("Today123");
+        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Password", Exact = true }).FillAsync("SamplePassword2025!");
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Password", Exact = true }).PressAsync("Tab");
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Confirm Password" }).FillAsync("Today123");
+        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Confirm Password" }).FillAsync("SamplePassword2025!");
         await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
 
         //await Page.WaitForSelectorAsync("h1:has-text('Register confirmation')");
@@ -79,7 +79,7 @@ public class NewSetupUITests : PageTest
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).ClickAsync();
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).FillAsync("owner1@aquiis.com");
         await Page.GetByRole(AriaRole.Textbox, new() { Name = "Email" }).PressAsync("Tab");
-        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Password" }).FillAsync("Today123");
+        await Page.GetByRole(AriaRole.Textbox, new() { Name = "Password" }).FillAsync("SamplePassword2025!");
         await Page.GetByRole(AriaRole.Button, new() { Name = "Log in" }).ClickAsync();
         
         // Wait for login to complete

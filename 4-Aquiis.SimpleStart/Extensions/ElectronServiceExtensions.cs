@@ -7,9 +7,11 @@ using Aquiis.Core.Interfaces;
 using Aquiis.Core.Interfaces.Services;
 using Aquiis.Application;  // ✅ Application facade
 using Aquiis.Application.Services;
+using Aquiis.Infrastructure.Data;  // For SqlCipherConnectionInterceptor
 using Aquiis.SimpleStart.Data;
 using Aquiis.SimpleStart.Entities;
 using Aquiis.SimpleStart.Services;
+using Microsoft.Data.Sqlite;
 
 namespace Aquiis.SimpleStart.Extensions;
 
@@ -18,6 +20,9 @@ namespace Aquiis.SimpleStart.Extensions;
 /// </summary>
 public static class ElectronServiceExtensions
 {
+    // Toggle for verbose logging (useful for troubleshooting encryption setup)
+    private const bool EnableVerboseLogging = true;
+    
     /// <summary>
     /// Adds all Electron-specific infrastructure services including database, identity, and path services.
     /// </summary>
@@ -34,12 +39,48 @@ public static class ElectronServiceExtensions
         // Get connection string using the path service (synchronous to avoid startup deadlock)
         var connectionString = GetElectronConnectionString(configuration);
 
-        // ✅ Register Application layer (includes Infrastructure internally)
-        services.AddApplication(connectionString);
+        // Check if database is encrypted and retrieve password if needed
+        var encryptionPassword = WebServiceExtensions.GetEncryptionPasswordIfNeeded(connectionString);
 
-        // Register Identity database context (SimpleStart-specific)
-        services.AddDbContext<SimpleStartDbContext>(options =>
-            options.UseSqlite(connectionString));
+        // Register encryption status as singleton for use during startup
+        services.AddSingleton(new EncryptionDetectionResult
+        {
+            IsEncrypted = !string.IsNullOrEmpty(encryptionPassword)
+        });
+
+        // CRITICAL: Create interceptor instance BEFORE any DbContext registration
+        // This single instance will be used by all DbContexts
+        SqlCipherConnectionInterceptor? interceptor = null;
+        if (!string.IsNullOrEmpty(encryptionPassword))
+        {
+            interceptor = new SqlCipherConnectionInterceptor(encryptionPassword);
+            
+            // Clear connection pools to ensure no connections bypass the interceptor
+            SqliteConnection.ClearAllPools();
+            if (EnableVerboseLogging)
+                Console.WriteLine("[ElectronServiceExtensions] Encryption interceptor created and connection pools cleared");
+        }
+
+        // ✅ Register Application layer (includes Infrastructure internally) with encryption interceptor
+        services.AddApplication(connectionString, encryptionPassword, interceptor);
+
+        // Register Identity database context (SimpleStart-specific) with encryption interceptor
+        services.AddDbContext<SimpleStartDbContext>((serviceProvider, options) =>
+        {
+            options.UseSqlite(connectionString);
+            if (interceptor != null)
+            {
+                options.AddInterceptors(interceptor);
+            }
+        });
+        
+        // CRITICAL: Clear connection pools again after DbContext registration
+        if (!string.IsNullOrEmpty(encryptionPassword))
+        {
+            SqliteConnection.ClearAllPools();
+            if (EnableVerboseLogging)
+                Console.WriteLine("[ElectronServiceExtensions] Connection pools cleared after DbContext registration");
+        }
 
         // Register DatabaseService now that both contexts are available
         services.AddScoped<IDatabaseService>(sp => 

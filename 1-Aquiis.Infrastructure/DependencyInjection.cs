@@ -14,17 +14,26 @@ public static class DependencyInjection
     /// </summary>
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        string connectionString)
+        string connectionString,
+        string? encryptionPassword = null,
+        SqlCipherConnectionInterceptor? interceptor = null)
     {
+        // Configure DbContext options - use provided interceptor instance
+        Action<DbContextOptionsBuilder> configureOptions = options =>
+        {
+            options.UseSqlite(connectionString);
+            if (interceptor != null)
+            {
+                options.AddInterceptors(interceptor);
+            }
+        };
+
         // Register ApplicationDbContext (business data)
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlite(connectionString));
+        services.AddDbContext<ApplicationDbContext>(configureOptions);
             
         // Register DbContext factory for services that need it (like FinancialReportService)
         // Use AddDbContextFactory instead of AddPooledDbContextFactory to avoid lifetime issues
-        services.AddDbContextFactory<ApplicationDbContext>(options =>
-            options.UseSqlite(connectionString),
-            ServiceLifetime.Scoped);
+        services.AddDbContextFactory<ApplicationDbContext>(configureOptions, ServiceLifetime.Scoped);
 
         // Register provider interfaces
         services.AddScoped<SendGridEmailService>();

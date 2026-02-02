@@ -1,0 +1,258 @@
+# Aquiis Compatibility Matrix
+
+**Last Updated:** February 1, 2026  
+**Current Release:** v1.0.1 (SimpleStart) | v0.3.0 (Professional)  
+**Next Release:** v1.1.0 (SimpleStart) | v0.3.1 (Professional)
+
+---
+
+## Overview
+
+This matrix tracks version compatibility across Aquiis releases, enabling you to:
+
+- ✅ **Verify upgrade/downgrade compatibility** - Check if app versions work with your database
+- ✅ **Identify component versions** - Know which dependencies are installed
+- ✅ **Plan rollbacks safely** - Understand which versions can coexist
+- ✅ **Troubleshoot version mismatches** - Diagnose compatibility issues
+- ✅ **Track breaking changes** - See when incompatibilities were introduced
+
+**For detailed release information**, see version-specific Release Notes in `Documentation/vX.X.X/`.
+
+---
+
+## SimpleStart Version History
+
+| Release Date | App Version | Database Schema | .NET SDK | ElectronNET | Bootstrap | QuestPDF  | Migration Required | Breaking Changes | Status             | Download                                                             |
+| ------------ | ----------- | --------------- | -------- | ----------- | --------- | --------- | ------------------ | ---------------- | ------------------ | -------------------------------------------------------------------- |
+| TBD          | **1.1.0**   | v1.0.0          | 10.0.1   | 23.6.2      | 5.3.3     | 2025.12.1 | Auto (location)    | Database path    | **In Development** | -                                                                    |
+| 2026-01-29   | 1.0.1       | v1.0.0          | 10.0.1   | 23.6.2      | 5.3.3     | 2025.12.1 | No                 | No               | **Current**        | [Release](https://github.com/xnodeoncode/Aquiis/releases/tag/v1.0.1) |
+| 2026-01-28   | 1.0.0       | v1.0.0          | 10.0.1   | 23.6.2      | 5.3.3     | 2025.12.1 | No                 | No               | Superseded         | [Release](https://github.com/xnodeoncode/Aquiis/releases/tag/v1.0.0) |
+
+## Professional Version History
+
+| Release Date | App Version | Database Schema | .NET SDK | ElectronNET | Bootstrap | QuestPDF  | Migration Required | Breaking Changes | Status             | Download |
+| ------------ | ----------- | --------------- | -------- | ----------- | --------- | --------- | ------------------ | ---------------- | ------------------ | -------- |
+| TBD          | **0.3.1**   | v0.0.0          | 10.0.1   | 23.6.2      | 5.3.3     | 2025.12.1 | Auto (location)    | Database path    | **In Development** | -        |
+| 2026-01-15   | 0.3.0       | v0.0.0          | 10.0.1   | 23.6.2      | 5.3.3     | 2025.12.1 | No                 | No               | **Current**        | -        |
+
+## Pre-Release History (Archived)
+
+| Release Date | App Version | Database Schema | .NET SDK | Status      |
+| ------------ | ----------- | --------------- | -------- | ----------- |
+| 2026-01-05   | 0.2.0       | v0.0.0          | 10.0.0   | Pre-release |
+| 2025-12-20   | 0.1.0       | v0.0.0          | 9.0.0    | Alpha       |
+
+---
+
+## Component Details
+
+### Core Framework
+
+| Component         | Current Version | Purpose          | Upgrade Notes                    |
+| ----------------- | --------------- | ---------------- | -------------------------------- |
+| **.NET SDK**      | 10.0.1          | Runtime platform | Auto-included in Electron builds |
+| **ASP.NET Core**  | 10.0.1          | Web framework    | Included with .NET SDK           |
+| **Blazor Server** | 10.0.1          | UI framework     | Included with ASP.NET Core       |
+
+### Desktop Integration
+
+| Component            | Current Version | Purpose           | Upgrade Notes                                                    |
+| -------------------- | --------------- | ----------------- | ---------------------------------------------------------------- |
+| **ElectronNET.API**  | 23.6.2          | Desktop framework | Major version changes may require electron.manifest.json updates |
+| **electron-builder** | 26.4.0          | Build/packaging   | Controls AppImage/exe generation                                 |
+
+### Database & Storage
+
+| Component           | Current Version      | Purpose         | Upgrade Notes                                  |
+| ------------------- | -------------------- | --------------- | ---------------------------------------------- |
+| **SQLite**          | 3.46.0               | Database engine | Via Microsoft.Data.Sqlite                      |
+| **EF Core**         | 10.0.1               | ORM             | Breaking changes uncommon in minor versions    |
+| **Database Schema** | v1.0.0 (SimpleStart) | Data structure  | Tracks with app version MAJOR.MINOR milestones |
+|                     | v0.0.0 (Professional)| Data structure  | Pre-v1.0.0 rapid iteration phase               |
+
+### UI & Front-end
+
+| Component                 | Current Version | Purpose       | Upgrade Notes                 |
+| ------------------------- | --------------- | ------------- | ----------------------------- |
+| **Bootstrap**             | 5.3.3           | CSS framework | Generally backward compatible |
+| **Bootstrap Icons**       | 1.11.3          | Icon font     | Additive changes only         |
+| **Material Design Icons** | 7.4.47          | Icon font     | Additive changes only         |
+
+### Document Generation
+
+| Component    | Current Version | Purpose        | Upgrade Notes                                      |
+| ------------ | --------------- | -------------- | -------------------------------------------------- |
+| **QuestPDF** | 2025.12.1       | PDF generation | Annual major versions, breaking changes documented |
+
+### External Services (Optional)
+
+| Component    | Current Version | Purpose        | Upgrade Notes                                      |
+| ------------ | --------------- | -------------- | -------------------------------------------------- |
+| **SendGrid** | 9.29.3          | Email delivery | API key required for email notifications           |
+| **Twilio**   | 7.14.0          | SMS delivery   | Account credentials required for SMS notifications |
+
+---
+
+## Database Schema Versioning
+
+**Current Schema:** 
+- **SimpleStart:** v1.0.0 (production)
+- **Professional:** v0.0.0 (pre-release)
+
+### Schema Version Strategy
+
+- **v1.0.0** (SimpleStart): Initial production schema
+  - Entity models stabilized for production
+  - Schema managed via EF Core Migrations
+  - Database filename: `app_v1.0.0.db`
+
+- **v0.0.0** (Professional): Pre-v1.0.0 rapid iteration
+  - Schema changes without version increments
+  - Allows fast development iterations
+  - Database filename: `app_v0.0.0.db`
+
+- **Future versions**:
+  - **MAJOR** (vX.0.0): Breaking schema changes requiring migration
+    - Database filename updates to `app_vX.0.0.db`
+    - Automatic backup created before migration
+  - **MINOR** (v1.X.0): New tables/columns, backward compatible
+    - Database filename may update to `app_v1.X.0.db` if schema changes
+  - **PATCH** (v1.0.X): No schema changes
+    - Database filename remains unchanged
+
+---
+
+## Version Compatibility
+
+### Rollback Safety
+
+| From Version | To Version | Database Compatible | Safe Rollback | Notes                                    |
+| ------------ | ---------- | ------------------- | ------------- | ---------------------------------------- |
+| v1.1.0       | v1.0.1     | ✅ Yes (v1.0.0)     | ⚠️ Manual      | Database location differs, manual copy   |
+| v1.0.1       | v1.0.0     | ✅ Yes (v1.0.0)     | ✅ Yes         | Drop-in replacement                      |
+| v1.1.0       | v1.0.0     | ✅ Yes (v1.0.0)     | ⚠️ Manual      | Database location differs, manual copy   |
+
+### Upgrade Compatibility
+
+| From Version | To Version | Migration Type | Breaking Changes | Notes                                    |
+| ------------ | ---------- | -------------- | ---------------- | ---------------------------------------- |
+| v1.0.0       | v1.0.1     | None           | No               | Drop-in replacement                      |
+| v1.0.1       | v1.1.0     | Automatic      | Database path    | Auto-migrates Electron → Aquiis folder   |
+| v0.3.0       | v0.3.1     | Automatic      | Database path    | Same migration as SimpleStart            |
+| v1.x.x       | v2.0.0     | Automatic      | Schema changes   | Future: Major version, backup enforced   |
+
+---
+
+## Breaking Changes Summary
+
+| Version | Breaking Changes     | Impact                     | Migration Strategy      |
+| ------- | -------------------- | -------------------------- | ----------------------- |
+| v1.1.0  | Database path change | Transparent to users       | Automatic on first run  |
+| v1.0.1  | None                 | Backward compatible        | Drop-in replacement     |
+| v1.0.0  | Org structure        | Pre-release users only     | Manual migration        |
+
+**For detailed migration procedures**, see version-specific Release Notes.
+
+---
+
+## Platform Support
+
+| Platform                | v1.0.0 | v1.0.1 | v1.1.0 | Notes                               |
+| ----------------------- | ------ | ------ | ------ | ----------------------------------- |
+| **Linux (AppImage)**    | ✅     | ✅     | ✅     | Ubuntu 20.04+, Debian 11+ tested    |
+| **Windows 10/11 (x64)** | ✅     | ✅     | ✅     | Portable exe, no installer required |
+| **macOS**               | ❌     | ❌     | ❌     | Planned for v1.2.0+                 |
+
+---
+
+## System Requirements
+
+### Minimum
+
+- **OS:** Linux (Ubuntu 20.04+) or Windows 10 (64-bit)
+- **CPU:** 2-core, 1.5 GHz
+- **RAM:** 2 GB
+- **Disk:** 500 MB (application + data)
+
+### Recommended
+
+- **CPU:** 4-core, 2.5 GHz
+- **RAM:** 4 GB
+- **Disk:** 1 GB
+- **Display:** 1920x1080
+
+---
+
+## Database Schema Compatibility
+
+| App Version | Database Schema | Database File        | Forward Compatible | Backward Compatible | Notes                          |
+| ----------- | --------------- | -------------------- | ------------------ | ------------------- | ------------------------------ |
+| v1.1.0      | v1.0.0          | app_v1.0.0.db        | No (path change)   | Yes (same schema)   | Path: ~/.config/Aquiis/        |
+| v1.0.1      | v1.0.0          | app_v1.0.0.db        | Yes                | Yes                 | Path: ~/.config/Electron/      |
+| v1.0.0      | v1.0.0          | app_v1.0.0.db        | Yes                | Yes                 | Path: ~/.config/Electron/      |
+| v0.3.0      | v0.0.0          | app_v0.0.0.db        | No                 | No                  | Pre-release, rapid iteration   |
+
+**Key:**
+- **Forward Compatible**: Newer app can open older database
+- **Backward Compatible**: Older app can open newer database
+
+---
+
+## Known Limitations
+
+| Limitation             | All Versions           | Reason                       |
+| ---------------------- | ---------------------- | ---------------------------- |
+| **Maximum Properties** | 9 (SimpleStart)        | Simple Start tier constraint |
+| **Maximum Users**      | 3 (1 system + 3 login) | Simplified access control    |
+| **Organizations**      | 1                      | Desktop application scope    |
+| **File Upload Size**   | 10 MB per file         | Performance management       |
+| **SQLite Concurrency** | Single writer          | SQLite WAL mode limitation   |
+
+---
+
+## Third-Party Licenses
+
+| Component    | License Type          | Eligibility Notes                                                  |
+| ------------ | --------------------- | ------------------------------------------------------------------ |
+| **QuestPDF** | Community (Free)      | Free for <$1M revenue, individuals, non-profits, FOSS. Honor-based |
+| **.NET**     | MIT                   | Open source, commercial use allowed                                |
+| **Bootstrap**| MIT                   | Open source, commercial use allowed                                |
+| **Electron** | MIT                   | Open source, commercial use allowed                                |
+| **SendGrid** | Commercial (Optional) | Requires API key and account                                       |
+| **Twilio**   | Commercial (Optional) | Requires credentials and account                                   |
+
+**QuestPDF Community License**: SimpleStart (max 9 properties) qualifies as most users will be under $1M annual revenue. Professional edition users must verify eligibility.
+
+---
+
+## Support & Resources
+
+### Detailed Release Information
+
+- **v1.1.0:** [Release Notes](v1.1.0/v1.1.0-Release-Notes.md) - What's new, migration procedures, testing
+- **v1.0.1:** [Release Notes](v1.0.1/v1.0.1-Release-Notes.md) - Bug fixes and improvements
+- **v1.0.0:** [Release Notes](v1.0.0/v1.0.0-Release-Notes.md) - Initial production release
+
+### Getting Help
+
+- 📧 **Email:** cisguru@outlook.com
+- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/xnodeoncode/Aquiis/issues)
+- 💡 **Feature Requests:** [GitHub Discussions](https://github.com/xnodeoncode/Aquiis/discussions)
+- 📖 **Documentation:** [/Documentation/](https://github.com/xnodeoncode/Aquiis/tree/main/Documentation)
+- 🏛️ **Roadmap:** [/Documentation/Roadmap/](https://github.com/xnodeoncode/Aquiis/tree/main/Documentation/Roadmap)
+
+---
+
+## Change Log
+
+| Date       | Change                              | Updated By   |
+| ---------- | ----------------------------------- | ------------ |
+| 2026-02-01 | Refocused as Compatibility Matrix   | Release Team |
+| 2026-02-01 | Added v1.1.0 compatibility info     | Release Team |
+| 2026-01-29 | Added v1.0.1 entry                  | Release Team |
+| 2026-01-28 | Initial compatibility tracking      | Release Team |
+
+---
+
+**Maintained by:** Aquiis Development Team  
+**Document Version:** 2.0 - Compatibility Matrix

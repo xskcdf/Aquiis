@@ -85,4 +85,58 @@ public class DatabaseService : IDatabaseService
         var pending = await _identityContext.Database.GetPendingMigrationsAsync();
         return pending.Count();
     }
+
+    /// <summary>
+    /// Gets the database settings (creates default if not exists)
+    /// </summary>
+    public async Task<Aquiis.Core.Entities.DatabaseSettings> GetDatabaseSettingsAsync()
+    {
+        var settings = await _businessContext.DatabaseSettings.FirstOrDefaultAsync();
+
+        if (settings == null)
+        {
+            // Create default settings
+            settings = new Aquiis.Core.Entities.DatabaseSettings
+            {
+                DatabaseEncryptionEnabled = false,
+                LastModifiedOn = DateTime.UtcNow,
+                LastModifiedBy = "System"
+            };
+
+            _businessContext.DatabaseSettings.Add(settings);
+            await _businessContext.SaveChangesAsync();
+
+            _logger.LogInformation("Created default database settings");
+        }
+
+        return settings;
+    }
+
+    /// <summary>
+    /// Updates database encryption status
+    /// </summary>
+    public async Task SetDatabaseEncryptionAsync(bool enabled, string modifiedBy = "System")
+    {
+        var settings = await GetDatabaseSettingsAsync();
+        settings.DatabaseEncryptionEnabled = enabled;
+        settings.EncryptionChangedOn = DateTime.UtcNow;
+        settings.LastModifiedOn = DateTime.UtcNow;
+        settings.LastModifiedBy = modifiedBy;
+
+        _businessContext.DatabaseSettings.Update(settings);
+        await _businessContext.SaveChangesAsync();
+
+        _logger.LogInformation("Database encryption {Status} by {ModifiedBy}", 
+            enabled ? "enabled" : "disabled", modifiedBy);
+    }
+
+    /// <summary>
+    /// Gets current database encryption status
+    /// </summary>
+    public async Task<bool> IsDatabaseEncryptionEnabledAsync()
+    {
+        var settings = await GetDatabaseSettingsAsync();
+        return settings.DatabaseEncryptionEnabled;
+    }
 }
+

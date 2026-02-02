@@ -1,0 +1,310 @@
+using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging;
+using System.Text;
+
+namespace Aquiis.Infrastructure.Services;
+
+/// <summary>
+/// Service for encrypting and decrypting SQLite databases using SQLCipher.
+/// Handles the conversion between encrypted and unencrypted database files.
+/// </summary>
+public class DatabaseEncryptionService
+{
+    private readonly PasswordDerivationService _passwordDerivation;
+    private readonly LinuxKeychainService _keychain;
+    private readonly ILogger<DatabaseEncryptionService> _logger;
+    
+    public DatabaseEncryptionService(
+        PasswordDerivationService passwordDerivation,
+        LinuxKeychainService keychain,
+        ILogger<DatabaseEncryptionService> logger)
+    {
+        _passwordDerivation = passwordDerivation;
+        _keychain = keychain;
+        _logger = logger;
+    }
+    
+    /// <summary>
+    /// Encrypt an unencrypted database file
+    /// </summary>
+    /// <param name="sourcePath">Path to unencrypted database</param>
+    /// <param name="password">User's master password (passed directly to SQLCipher)</param>
+    /// <returns>(Success, EncryptedPath, ErrorMessage)</returns>
+    public async Task<(bool Success, string? EncryptedPath, string? ErrorMessage)> 
+        EncryptDatabaseAsync(string sourcePath, string password)
+    {
+        try
+        {
+            _logger.LogInformation("Starting database encryption for {Path}", sourcePath);
+            
+            // Validate password
+            var (isValid, validationError) = _passwordDerivation.ValidatePasswordStrength(password);
+            if (!isValid)
+            {
+                return (false, null, validationError);
+            }
+            
+            // Create temporary encrypted database path
+            var encryptedPath = $"{sourcePath}.encrypted";
+            
+            // Delete if exists from previous attempt
+            if (File.Exists(encryptedPath))
+            {
+                File.Delete(encryptedPath);
+            }
+            
+            // Initialize SQLCipher
+            SQLitePCL.Batteries_V2.Init();
+            SQLitePCL.raw.sqlite3_initialize();
+            
+            // Attach and copy database using SQLCipher
+            using (var sourceConn = new SqliteConnection($"Data Source={sourcePath}"))
+            {
+                await sourceConn.OpenAsync();
+                _logger.LogInformation("Source database opened successfully");
+                
+                // Attach encrypted database with password (SQLCipher handles PBKDF2 internally)
+                using (var cmd = sourceConn.CreateCommand())
+                {
+                    cmd.CommandText = $"ATTACH DATABASE '{encryptedPath}' AS encrypted KEY '{password}';";
+                    await cmd.ExecuteNonQueryAsync();
+                    _logger.LogInformation("Encrypted database attached");
+                }
+                
+                // Set SQLCipher 4 parameters for the attached database
+                using (var cmd = sourceConn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        PRAGMA encrypted.cipher_page_size = 4096;
+                        PRAGMA encrypted.kdf_iter = 256000;
+                        PRAGMA encrypted.cipher_hmac_algorithm = HMAC_SHA512;
+                        PRAGMA encrypted.cipher_kdf_algorithm = PBKDF2_HMAC_SHA512;";
+                    await cmd.ExecuteNonQueryAsync();
+                    _logger.LogInformation("SQLCipher parameters set");
+                }
+                
+                // Export schema and data to encrypted database
+                using (var cmd = sourceConn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT sqlcipher_export('encrypted');";
+                    var result = await cmd.ExecuteScalarAsync();
+                    _logger.LogInformation("SQLCipher export completed: {Result}", result);
+                }
+                
+                // Detach encrypted database
+                using (var cmd = sourceConn.CreateCommand())
+                {
+                    cmd.CommandText = "DETACH DATABASE encrypted;";
+                    await cmd.ExecuteNonQueryAsync();
+                    _logger.LogInformation("Encrypted database detached");
+                }
+            }
+            
+            _logger.LogInformation("Waiting for file system to settle after encryption");
+            await Task.Delay(200);
+            
+            // Verify encrypted database can be opened
+            var verifySuccess = await VerifyEncryptedDatabaseAsync(encryptedPath, password);
+            if (!verifySuccess)
+            {
+                if (File.Exists(encryptedPath))
+                {
+                    File.Delete(encryptedPath);
+                }
+                return (false, null, "Failed to verify encrypted database");
+            }
+            
+            // Store password in keychain (best effort - don't fail if keychain unavailable)
+            if (OperatingSystem.IsLinux())
+            {
+                var stored = _keychain.StoreKey(password, "Aquiis Database Encryption Password");
+                if (!stored)
+                {
+                    _logger.LogWarning("Failed to store password in keychain - you'll need to enter it manually on next startup");
+                }
+                else
+                {
+                    _logger.LogInformation("Password stored in keychain successfully");
+                }
+            }
+            
+            _logger.LogInformation("Database encryption completed successfully");
+            return (true, encryptedPath, null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to encrypt database");
+            return (false, null, $"Encryption failed: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Decrypt an encrypted database file
+    /// </summary>
+    /// <param name="encryptedPath">Path to encrypted database</param>
+    /// <param name="password">User's master password</param>
+    /// <returns>(Success, DecryptedPath, ErrorMessage)</returns>
+    public async Task<(bool Success, string? DecryptedPath, string? ErrorMessage)> 
+        DecryptDatabaseAsync(string encryptedPath, string password)
+    {
+        try
+        {
+            _logger.LogInformation("Starting database decryption for {Path}", encryptedPath);
+            
+            // Create temporary decrypted database path
+            var decryptedPath = $"{encryptedPath}.decrypted";
+            
+            // Delete if exists from previous attempt
+            if (File.Exists(decryptedPath))
+            {
+                File.Delete(decryptedPath);
+            }
+            
+            // Initialize SQLCipher
+            SQLitePCL.Batteries_V2.Init();
+            SQLitePCL.raw.sqlite3_initialize();
+            
+            // Open encrypted database and export to unencrypted
+            using (var encryptedConn = new SqliteConnection($"Data Source={encryptedPath}"))
+            {
+                await encryptedConn.OpenAsync();
+                
+                // Set password using PRAGMA
+                using (var cmd = encryptedConn.CreateCommand())
+                {
+                    cmd.CommandText = $"PRAGMA key = '{password}';";
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                
+                // Attach unencrypted database
+                using (var cmd = encryptedConn.CreateCommand())
+                {
+                    cmd.CommandText = $"ATTACH DATABASE '{decryptedPath}' AS plaintext KEY '';";
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                
+                // Export schema and data to plaintext database
+                using (var cmd = encryptedConn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT sqlcipher_export('plaintext');";
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                
+                // Detach plaintext database
+                using (var cmd = encryptedConn.CreateCommand())
+                {
+                    cmd.CommandText = "DETACH DATABASE plaintext;";
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            
+            // Verify decrypted database can be opened
+            var verifySuccess = await VerifyPlaintextDatabaseAsync(decryptedPath);
+            if (!verifySuccess)
+            {
+                if (File.Exists(decryptedPath))
+                {
+                    File.Delete(decryptedPath);
+                }
+                return (false, null, "Failed to verify decrypted database");
+            }
+            
+            // Remove password from keychain
+            if (OperatingSystem.IsLinux())
+            {
+                _keychain.RemoveKey();
+            }
+            
+            _logger.LogInformation("Database decryption completed successfully");
+            return (true, decryptedPath, null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to decrypt database");
+            return (false, null, $"Decryption failed: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Verify encrypted database can be opened with the provided password
+    /// </summary>
+    private async Task<bool> VerifyEncryptedDatabaseAsync(string dbPath, string password)
+    {
+        try
+        {
+            _logger.LogInformation("Verifying encrypted database at {Path}", dbPath);
+            using (var conn = new SqliteConnection($"Data Source={dbPath}"))
+            {
+                await conn.OpenAsync();
+                
+                // Set the password using PRAGMA
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = $"PRAGMA key = '{password}';";
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                
+                _logger.LogInformation("Encrypted database opened successfully");
+                
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT count(*) FROM sqlite_master;";
+                    var result = await cmd.ExecuteScalarAsync();
+                    _logger.LogInformation("Query executed successfully, result: {Result}", result);
+                    return result != null;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to verify encrypted database");
+            return false;
+        }
+    }
+    
+    /// <summary>
+    /// Verify plaintext database can be opened
+    /// </summary>
+    private async Task<bool> VerifyPlaintextDatabaseAsync(string dbPath)
+    {
+        try
+        {
+            using (var conn = new SqliteConnection($"Data Source={dbPath}"))
+            {
+                await conn.OpenAsync();
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT count(*) FROM sqlite_master;";
+                    var result = await cmd.ExecuteScalarAsync();
+                    return result != null;
+                }
+            }
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
+    /// <summary>
+    /// Try to retrieve encryption key from keychain
+    /// </summary>
+    public string? TryGetKeyFromKeychain()
+    {
+        if (!OperatingSystem.IsLinux())
+            return null;
+        
+        return _keychain.RetrieveKey();
+    }
+    
+    /// <summary>
+    /// Check if keychain service is available
+    /// </summary>
+    public bool IsKeychainAvailable()
+    {
+        if (!OperatingSystem.IsLinux())
+            return false;
+        
+        return _keychain.IsAvailable();
+    }
+}

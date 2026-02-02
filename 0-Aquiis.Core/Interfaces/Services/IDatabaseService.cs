@@ -1,3 +1,5 @@
+using Aquiis.Core.Entities;
+
 namespace Aquiis.Core.Interfaces.Services;
 
 /// <summary>
@@ -25,4 +27,19 @@ public interface IDatabaseService
     /// Get count of pending migrations for identity context
     /// </summary>
     Task<int> GetIdentityPendingMigrationsCountAsync();
+    
+    /// <summary>
+    /// Get database settings (creates default if not exists)
+    /// </summary>
+    Task<DatabaseSettings> GetDatabaseSettingsAsync();
+    
+    /// <summary>
+    /// Set database encryption status
+    /// </summary>
+    Task SetDatabaseEncryptionAsync(bool enabled, string modifiedBy = "System");
+    
+    /// <summary>
+    /// Check if database encryption is currently enabled
+    /// </summary>
+    Task<bool> IsDatabaseEncryptionEnabledAsync();
 }

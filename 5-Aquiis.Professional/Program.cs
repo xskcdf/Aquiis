@@ -534,6 +534,9 @@ else
 
 app.UseSession();
 
+// ✅ SECURITY: Content Security Policy and security headers
+app.UseSecurityHeaders();
+
 // ✅ SECURITY: HTTPS enforcement for production web mode
 if (!HybridSupport.IsElectronActive)
 {

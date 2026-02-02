@@ -2,6 +2,7 @@ using Aquiis.Application.Services;
 using Aquiis.Application.Services.PdfGenerators;
 using Aquiis.Application.Services.Workflows;
 using Aquiis.Infrastructure;
+using Aquiis.Infrastructure.Data;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aquiis.Application;
@@ -16,10 +17,12 @@ public static class DependencyInjection
     /// </summary>
     public static IServiceCollection AddApplication(
         this IServiceCollection services,
-        string connectionString)
+        string connectionString,
+        string? encryptionPassword = null,
+        SqlCipherConnectionInterceptor? interceptor = null)
     {
-        // Call Infrastructure registration internally
-        services.AddInfrastructure(connectionString);
+        // Call Infrastructure registration internally with encryption interceptor
+        services.AddInfrastructure(connectionString, encryptionPassword, interceptor);
         
         // Register all Application services
         services.AddScoped<AccountWorkflowService>();

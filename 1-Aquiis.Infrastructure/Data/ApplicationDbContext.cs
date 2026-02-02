@@ -72,6 +72,7 @@ namespace Aquiis.Infrastructure.Data
         public DbSet<Repair> Repairs { get; set; }
         public DbSet<OrganizationSettings> OrganizationSettings { get; set; }
         public DbSet<SchemaVersion> SchemaVersions { get; set; }
+        public DbSet<DatabaseSettings> DatabaseSettings { get; set; }
         public DbSet<ChecklistTemplate> ChecklistTemplates { get; set; }
         public DbSet<ChecklistTemplateItem> ChecklistTemplateItems { get; set; }
         public DbSet<Checklist> Checklists { get; set; }
