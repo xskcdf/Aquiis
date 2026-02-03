@@ -11,7 +11,18 @@ public class LinuxKeychainService
 {
     private const string Schema = "org.aquiis.database";
     private const string KeyAttribute = "key-type";
-    private const string KeyValue = "database-encryption";
+    private readonly string _keyValue;
+    
+    /// <summary>
+    /// Initialize keychain service with app-specific identifier
+    /// </summary>
+    /// <param name="appName">Application name (e.g., "SimpleStart-Web", "SimpleStart-Electron", "Professional-Web") to prevent keychain conflicts</param>
+    public LinuxKeychainService(string appName = "Aquiis-Electron")
+    {
+        // Make keychain entry unique per application to prevent password conflicts
+        _keyValue = $"database-encryption-{appName}";
+        Console.WriteLine($"[LinuxKeychainService] Initialized with key attribute value: {_keyValue}");
+    }
     
     /// <summary>
     /// Store encryption key in Linux keychain (libsecret)
@@ -33,7 +44,7 @@ public class LinuxKeychainService
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "secret-tool",
-                    Arguments = $"store --label=\"{label}\" {KeyAttribute} {KeyValue}",
+                    Arguments = $"store --label=\"{label}\" {KeyAttribute} {_keyValue}",
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -67,12 +78,13 @@ public class LinuxKeychainService
         
         try
         {
+            Console.WriteLine($"[LinuxKeychainService] Retrieving key with attribute value: {_keyValue}");
             var process = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "secret-tool",
-                    Arguments = $"lookup {KeyAttribute} {KeyValue}",
+                    Arguments = $"lookup {KeyAttribute} {_keyValue}",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -81,8 +93,19 @@ public class LinuxKeychainService
             };
             
             process.Start();
+            
+            // Read both stdout and stderr to prevent deadlocks
             var output = process.StandardOutput.ReadToEnd();
+            var error = process.StandardError.ReadToEnd();
+            
             process.WaitForExit(5000);
+            
+            Console.WriteLine($"[LinuxKeychainService] secret-tool exit code: {process.ExitCode}");
+            Console.WriteLine($"[LinuxKeychainService] secret-tool output: '{output}'");
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                Console.WriteLine($"[LinuxKeychainService] secret-tool error: {error}");
+            }
             
             if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
             {
@@ -114,7 +137,7 @@ public class LinuxKeychainService
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "secret-tool",
-                    Arguments = $"clear {KeyAttribute} {KeyValue}",
+                    Arguments = $"clear {KeyAttribute} {_keyValue}",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,

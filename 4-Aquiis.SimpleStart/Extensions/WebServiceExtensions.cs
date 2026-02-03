@@ -162,7 +162,7 @@ public static class WebServiceExtensions
                 // Database is encrypted - try to get password from keychain
                 if (EnableVerboseLogging)
                     Console.WriteLine("Detected encrypted database, retrieving password from keychain...");
-                var keychain = new LinuxKeychainService();
+                var keychain = new LinuxKeychainService("SimpleStart-Web"); // Pass app name to prevent keychain conflicts
                 var password = keychain.RetrieveKey();
 
                 if (string.IsNullOrEmpty(password))

@@ -180,7 +180,12 @@ builder.Services.AddScoped<LeaseWorkflowService>();
 
 // Database encryption services
 builder.Services.AddScoped<PasswordDerivationService>();
-builder.Services.AddScoped<LinuxKeychainService>();
+builder.Services.AddScoped<LinuxKeychainService>(sp =>
+{
+    // Pass app name to prevent keychain conflicts between different apps and modes
+    var appName = HybridSupport.IsElectronActive ? "SimpleStart-Electron" : "SimpleStart-Web";
+    return new LinuxKeychainService(appName);
+});
 builder.Services.AddScoped<DatabaseEncryptionService>();
 builder.Services.AddScoped<DatabasePasswordService>();
 
@@ -229,6 +234,8 @@ using (var scope = app.Services.CreateScope())
         {
             var pathService = scope.ServiceProvider.GetRequiredService<IPathService>();
             var dbPath = await pathService.GetDatabasePathAsync();
+
+            Console.WriteLine($"[Program] Beginning migrations Electron database path: {dbPath}");
             
             // ✅ v1.1.0: Automatic migration from old Electron folder to new Aquiis folder
             var basePath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -284,6 +291,7 @@ using (var scope = app.Services.CreateScope())
             if (File.Exists(stagedRestorePath))
             {
                 app.Logger.LogInformation("Found staged restore file, applying it now");
+                Console.WriteLine($"[Program] Staged restore found, {stagedRestorePath}");
                 
                 // Backup current database if it exists
                 if (File.Exists(dbPath))
@@ -725,6 +733,7 @@ await app.WaitForShutdownAsync();
 static void HandlePendingRestore(IConfiguration configuration)
 {
     var connectionString = configuration.GetConnectionString("DefaultConnection");
+    Console.WriteLine($"[Program.HandlePendingRestore] Checking for staged restore on database connection string: {connectionString}");
     if (string.IsNullOrEmpty(connectionString))
     {
         // Can't proceed without connection string
@@ -745,7 +754,7 @@ static void HandlePendingRestore(IConfiguration configuration)
     // Check if there's a staged restore waiting
     if (File.Exists(stagedRestorePath))
     {
-        Console.WriteLine("Found staged restore file, applying it now...");
+        Console.WriteLine($"[Program.HandlePendingRestore] Found staged restore file, applying it now: {stagedRestorePath}");
         
         // Clear SQLite connection pool
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();

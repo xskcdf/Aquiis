@@ -57,6 +57,10 @@ public class DatabaseEncryptionService
             SQLitePCL.Batteries_V2.Init();
             SQLitePCL.raw.sqlite3_initialize();
             
+            // CRITICAL: Clear connection pools to reset any cached cipher state
+            SqliteConnection.ClearAllPools();
+            _logger.LogInformation("Connection pools cleared before encryption");
+            
             // Attach and copy database using SQLCipher
             using (var sourceConn = new SqliteConnection($"Data Source={sourcePath}"))
             {
@@ -158,22 +162,34 @@ public class DatabaseEncryptionService
             if (File.Exists(decryptedPath))
             {
                 File.Delete(decryptedPath);
+                _logger.LogInformation("Deleted existing decrypted database at {Path}", decryptedPath);
             }
             
             // Initialize SQLCipher
             SQLitePCL.Batteries_V2.Init();
             SQLitePCL.raw.sqlite3_initialize();
             
+            // CRITICAL: Clear connection pools to reset any cached cipher state from interceptor
+            // This is especially important in Electron where the interceptor may have initialized
+            // SQLCipher with different parameters for the main database
+            SqliteConnection.ClearAllPools();
+            _logger.LogInformation("Connection pools cleared before decryption");
+            
             // Open encrypted database and export to unencrypted
+            _logger.LogInformation("Creating SqliteConnection for encrypted database: {Path}", encryptedPath);
             using (var encryptedConn = new SqliteConnection($"Data Source={encryptedPath}"))
             {
+                _logger.LogInformation("SqliteConnection object created, calling OpenAsync()...");
+                _logger.LogInformation("Password length: {Length} characters", password.Length);
                 await encryptedConn.OpenAsync();
+                _logger.LogInformation("✅ Encrypted database opened successfully");
                 
                 // Set password using PRAGMA
                 using (var cmd = encryptedConn.CreateCommand())
                 {
                     cmd.CommandText = $"PRAGMA key = '{password}';";
                     await cmd.ExecuteNonQueryAsync();
+                    _logger.LogInformation("Encryption key set with PRAGMA");
                 }
                 
                 // Attach unencrypted database
@@ -181,6 +197,7 @@ public class DatabaseEncryptionService
                 {
                     cmd.CommandText = $"ATTACH DATABASE '{decryptedPath}' AS plaintext KEY '';";
                     await cmd.ExecuteNonQueryAsync();
+                    _logger.LogInformation("Plaintext database attached");
                 }
                 
                 // Export schema and data to plaintext database
@@ -188,13 +205,16 @@ public class DatabaseEncryptionService
                 {
                     cmd.CommandText = "SELECT sqlcipher_export('plaintext');";
                     await cmd.ExecuteNonQueryAsync();
+                    _logger.LogInformation("SQLCipher export to plaintext completed");
                 }
                 
                 // Detach plaintext database
                 using (var cmd = encryptedConn.CreateCommand())
                 {
                     cmd.CommandText = "DETACH DATABASE plaintext;";
+                    
                     await cmd.ExecuteNonQueryAsync();
+                    _logger.LogInformation("Plaintext database detached");
                 }
             }
             
@@ -205,6 +225,7 @@ public class DatabaseEncryptionService
                 if (File.Exists(decryptedPath))
                 {
                     File.Delete(decryptedPath);
+                    _logger.LogWarning("Deleted existing decrypted database at {Path}", decryptedPath);
                 }
                 return (false, null, "Failed to verify decrypted database");
             }
@@ -221,7 +242,7 @@ public class DatabaseEncryptionService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to decrypt database");
-            return (false, null, $"Decryption failed: {ex.Message}");
+            return (false, null, $"Decryption failed: {ex.Message} Inner exception:{ex.InnerException?.Message}");
         }
     }
     
