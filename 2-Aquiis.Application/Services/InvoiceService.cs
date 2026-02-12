@@ -260,17 +260,38 @@ namespace Aquiis.Application.Services
         /// Generates a unique invoice number for the organization.
         /// Format: INV-YYYYMM-00001
         /// </summary>
+        /// <summary>
+        /// Generates invoice number in format: INV-{YYYYMM}-000n
+        /// Numbers reset monthly and are scoped to organization.
+        /// Uses MAX query to get last invoice number for current month.
+        /// </summary>
         public async Task<string> GenerateInvoiceNumberAsync()
         {
             try
             {
                 var organizationId = await _userContext.GetActiveOrganizationIdAsync();
-                var invoiceCount = await _context.Invoices
-                    .Where(i => i.OrganizationId == organizationId)
-                    .CountAsync();
-
-                var nextNumber = invoiceCount + 1;
-                return $"INV-{DateTime.Now:yyyyMM}-{nextNumber:D5}";
+                var yearMonth = DateTime.UtcNow.ToString("yyyyMM");
+                
+                // Get the highest invoice number for this month
+                var lastInvoice = await _context.Invoices
+                    .Where(i => i.OrganizationId == organizationId 
+                        && i.InvoiceNumber.StartsWith($"INV-{yearMonth}"))
+                    .OrderByDescending(i => i.InvoiceNumber)
+                    .Select(i => i.InvoiceNumber)
+                    .FirstOrDefaultAsync();
+                
+                int nextNum = 1;
+                if (lastInvoice != null)
+                {
+                    // Extract sequence number from: INV-202602-0001
+                    var parts = lastInvoice.Split('-');
+                    if (parts.Length == 3)
+                    {
+                        nextNum = int.Parse(parts[2]) + 1;
+                    }
+                }
+                
+                return $"INV-{yearMonth}-{nextNum:D4}";
             }
             catch (Exception ex)
             {

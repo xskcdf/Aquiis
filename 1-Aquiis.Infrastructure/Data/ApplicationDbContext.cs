@@ -176,7 +176,11 @@ namespace Aquiis.Infrastructure.Data
                     .HasForeignKey(i => i.DocumentId)
                     .OnDelete(DeleteBehavior.SetNull);
 
-                entity.HasIndex(e => e.InvoiceNumber).IsUnique();
+                // Unique constraint on (OrganizationId, InvoiceNumber) for multi-tenant isolation
+                entity.HasIndex(e => new { e.OrganizationId, e.InvoiceNumber })
+                    .IsUnique()
+                    .HasDatabaseName("IX_Invoice_OrgId_InvoiceNumber");
+                    
                 entity.Property(e => e.Amount).HasPrecision(18, 2);
                 entity.Property(e => e.AmountPaid).HasPrecision(18, 2);
                 
@@ -199,6 +203,11 @@ namespace Aquiis.Infrastructure.Data
                     .WithMany()
                     .HasForeignKey(p => p.DocumentId)
                     .OnDelete(DeleteBehavior.SetNull);
+
+                // Unique constraint on (OrganizationId, PaymentNumber) for multi-tenant isolation
+                entity.HasIndex(e => new { e.OrganizationId, e.PaymentNumber })
+                    .IsUnique()
+                    .HasDatabaseName("IX_Payment_OrgId_PaymentNumber");
 
                 entity.Property(e => e.Amount).HasPrecision(18, 2);
                 

@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<DigestService>();
         services.AddScoped<DocumentNotificationService>();
         services.AddScoped<DocumentService>();
+        services.AddScoped<DatabasePreviewService>();
         services.AddScoped<EmailService>();
         services.AddScoped<EmailSettingsService>();
         services.AddScoped<FinancialReportService>();
@@ -55,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<ProspectiveTenantService>();
         services.AddScoped<RentalApplicationService>();
         services.AddScoped<RepairService>();
+        services.AddScoped<SampleDataWorkflowService>();
         services.AddScoped<ScheduledTaskService>();
         services.AddScoped<SchemaValidationService>();
         services.AddScoped<ScreeningService>();

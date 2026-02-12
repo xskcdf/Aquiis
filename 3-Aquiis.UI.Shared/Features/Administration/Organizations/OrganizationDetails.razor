@@ -10,7 +10,14 @@
     <div class="col-md-8">
         
         <!--  Organization Information Card-->
-        <OrganizationCard OrganizationViewModel="OrganizationViewModel" OnEdit="OnEdit" />
+        <OrganizationCard 
+            OrganizationViewModel="OrganizationViewModel" 
+            OnEdit="OnEdit" 
+            OnGenerateSampleData="OnGenerateSampleData"
+            OnRemoveSampleData="OnRemoveSampleData"
+            IsOwner="@IsOwner"
+            IsGeneratingSample="@IsGeneratingSample"
+            IsRemovingSample="@IsRemovingSample" />
 
         <!-- Users with Access Card -->
         <OrganizationUsersListView 
@@ -58,6 +65,18 @@
 
     [Parameter]
     public EventCallback OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback OnGenerateSampleData { get; set; }
+
+    [Parameter]
+    public EventCallback OnRemoveSampleData { get; set; }
+
+    [Parameter]
+    public bool IsGeneratingSample { get; set; }
+
+    [Parameter]
+    public bool IsRemovingSample { get; set; }
 
     public Organization? Organization => OrganizationViewModel?.Organization;
 

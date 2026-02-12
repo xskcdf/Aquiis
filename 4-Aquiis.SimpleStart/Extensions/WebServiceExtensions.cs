@@ -10,8 +10,8 @@ using Aquiis.Application.Services;
 using Aquiis.Infrastructure.Data;  // For SqlCipherConnectionInterceptor
 using Aquiis.SimpleStart.Data;
 using Aquiis.SimpleStart.Entities;
-using Aquiis.SimpleStart.Services;
-using Aquiis.Infrastructure.Services;
+using Aquiis.SimpleStart.Services;  // For ElectronPathService, WebPathService
+using Aquiis.Infrastructure.Services;  // For DatabaseUnlockState
 using Microsoft.Data.Sqlite;
 
 namespace Aquiis.SimpleStart.Extensions;
@@ -48,11 +48,27 @@ public static class WebServiceExtensions
         // Check if database is encrypted and retrieve password if needed
         var encryptionPassword = GetEncryptionPasswordIfNeeded(connectionString);
 
+        // Register unlock state before any DbContext registration
+        var unlockState = new DatabaseUnlockState
+        {
+            NeedsUnlock = encryptionPassword == null && IsDatabaseEncrypted(connectionString),
+            DatabasePath = ExtractDatabasePath(connectionString),
+            ConnectionString = connectionString
+        };
+        services.AddSingleton(unlockState);
+
         // Register encryption status as singleton for use during startup
         services.AddSingleton(new EncryptionDetectionResult
         {
             IsEncrypted = !string.IsNullOrEmpty(encryptionPassword)
         });
+
+        // If unlock needed, we still register services (so DI doesn't fail)
+        // but they won't be able to access database until password is provided
+        if (unlockState.NeedsUnlock)
+        {
+            Console.WriteLine("Database unlock required - services will be registered but database inaccessible until unlock");
+        }
 
         // CRITICAL: Create interceptor instance BEFORE any DbContext registration
         // This single instance will be used by all DbContexts
@@ -167,9 +183,8 @@ public static class WebServiceExtensions
 
                 if (string.IsNullOrEmpty(password))
                 {
-                    throw new InvalidOperationException(
-                        "Database is encrypted but encryption password not found in keychain. " +
-                        "Please restore from an unencrypted backup.");
+                    Console.WriteLine("Database is encrypted but password not in keychain - will prompt user");
+                    return null; // Signal that unlock is needed
                 }
 
                 if (EnableVerboseLogging)
@@ -193,6 +208,44 @@ public static class WebServiceExtensions
             Console.WriteLine($"Warning: Could not check database encryption status: {ex.Message}");
             return null;
         }
+    }
+
+    /// <summary>
+    /// Helper method to check if database is encrypted
+    /// </summary>
+    private static bool IsDatabaseEncrypted(string connectionString)
+    {
+        var builder = new SqliteConnectionStringBuilder(connectionString);
+        var dbPath = builder.DataSource;
+        
+        if (!File.Exists(dbPath)) return false;
+        
+        try
+        {
+            using var conn = new SqliteConnection(connectionString);
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master;";
+            cmd.ExecuteScalar();
+            return false; // Opened successfully = not encrypted
+        }
+        catch (SqliteException ex) when (ex.SqliteErrorCode == 26)
+        {
+            return true; // Error 26 = encrypted
+        }
+        catch
+        {
+            return false; // Other errors = assume not encrypted
+        }
+    }
+
+    /// <summary>
+    /// Helper method to extract database path from connection string
+    /// </summary>
+    private static string ExtractDatabasePath(string connectionString)
+    {
+        var builder = new SqliteConnectionStringBuilder(connectionString);
+        return builder.DataSource;
     }
 }
 

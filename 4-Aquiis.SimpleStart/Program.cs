@@ -7,6 +7,7 @@ using Aquiis.Core.Entities;
 using Aquiis.Core.Interfaces;
 using Aquiis.Core.Interfaces.Services;
 using Aquiis.SimpleStart.Extensions;
+using Aquiis.Infrastructure.Services;
 using Aquiis.SimpleStart.Shared.Services;
 using Aquiis.SimpleStart.Shared.Authorization;
 using Aquiis.Application.Services;
@@ -17,7 +18,6 @@ using ElectronNET.API;
 using Microsoft.Extensions.Options;
 using Aquiis.Application.Services.PdfGenerators;
 using Aquiis.SimpleStart.Shared.Components.Account;
-using Aquiis.Infrastructure.Services;
 
 // Initialize SQLCipher before any database operations
 SQLitePCL.Batteries_V2.Init();
@@ -189,6 +189,9 @@ builder.Services.AddScoped<LinuxKeychainService>(sp =>
 builder.Services.AddScoped<DatabaseEncryptionService>();
 builder.Services.AddScoped<DatabasePasswordService>();
 
+// Database unlock service (always available, even when database locked)
+builder.Services.AddScoped<DatabaseUnlockService>();
+
 // Configure and register session timeout service
 builder.Services.AddScoped<SessionTimeoutService>(sp =>
 {
@@ -222,7 +225,15 @@ var app = builder.Build();
 // Ensure database is created and migrations are applied
 using (var scope = app.Services.CreateScope())
 {
-    // Get services
+    // Check if database is locked
+    var unlockState = scope.ServiceProvider.GetService<DatabaseUnlockState>();
+    if (unlockState?.NeedsUnlock == true)
+    {
+        app.Logger.LogWarning("Database locked - skipping migrations and seeding. User will be prompted to unlock.");
+    }
+    else
+    {
+        // Normal database initialization flow
     var dbService = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
     var identityContext = scope.ServiceProvider.GetRequiredService<SimpleStartDbContext>();
     var backupService = scope.ServiceProvider.GetRequiredService<DatabaseBackupService>();
@@ -542,6 +553,7 @@ using (var scope = app.Services.CreateScope())
     {
         app.Logger.LogInformation("Schema version validated: {Version}", currentDbVersion);
     }
+    } // End of else block for database initialization when not locked
 }
 
 // Configure the HTTP request pipeline.
@@ -616,42 +628,51 @@ app.MapPost("/api/session/refresh", async (HttpContext context) =>
 }).RequireAuthorization();
 
 // Create system service account for background jobs
-// Clear connection pool to ensure all connections use proper encryption interceptor
-Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-
+// Skip if database is locked
 using (var scope = app.Services.CreateScope())
 {
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    
-    var systemUser = await userManager.FindByIdAsync(ApplicationConstants.SystemUser.Id);
-    if (systemUser == null)
+    var unlockState = scope.ServiceProvider.GetService<DatabaseUnlockState>();
+    if (unlockState?.NeedsUnlock == true)
     {
-        systemUser = new ApplicationUser
-        {
-            Id = ApplicationConstants.SystemUser.Id,
-            UserName = ApplicationConstants.SystemUser.Email, // UserName = Email in this system
-            NormalizedUserName = ApplicationConstants.SystemUser.Email.ToUpperInvariant(),
-            Email = ApplicationConstants.SystemUser.Email,
-            NormalizedEmail = ApplicationConstants.SystemUser.Email.ToUpperInvariant(),
-            EmailConfirmed = true,
-            FirstName = ApplicationConstants.SystemUser.FirstName,
-            LastName = ApplicationConstants.SystemUser.LastName,
-            LockoutEnabled = true,  // CRITICAL: Account is locked by default
-            LockoutEnd = DateTimeOffset.MaxValue,  // Locked until end of time
-            AccessFailedCount = 0
-        };
+        app.Logger.LogWarning("Database locked - skipping system user creation. Will be created after unlock.");
+    }
+    else
+    {
+        // Clear connection pool to ensure all connections use proper encryption interceptor
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         
-        // Create without password - cannot be used for login
-        var result = await userManager.CreateAsync(systemUser);
-        
-        if (!result.Succeeded)
+        var systemUser = await userManager.FindByIdAsync(ApplicationConstants.SystemUser.Id);
+        if (systemUser == null)
         {
-            throw new Exception($"Failed to create system user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            systemUser = new ApplicationUser
+            {
+                Id = ApplicationConstants.SystemUser.Id,
+                UserName = ApplicationConstants.SystemUser.Email, // UserName = Email in this system
+                NormalizedUserName = ApplicationConstants.SystemUser.Email.ToUpperInvariant(),
+                Email = ApplicationConstants.SystemUser.Email,
+                NormalizedEmail = ApplicationConstants.SystemUser.Email.ToUpperInvariant(),
+                EmailConfirmed = true,
+                FirstName = ApplicationConstants.SystemUser.FirstName,
+                LastName = ApplicationConstants.SystemUser.LastName,
+                LockoutEnabled = true,  // CRITICAL: Account is locked by default
+                LockoutEnd = DateTimeOffset.MaxValue,  // Locked until end of time
+                AccessFailedCount = 0
+            };
+            
+            // Create without password - cannot be used for login
+            var result = await userManager.CreateAsync(systemUser);
+            
+            if (!result.Succeeded)
+            {
+                throw new Exception($"Failed to create system user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
+            
+            // DO NOT assign to any organization - service account is org-agnostic
+            // DO NOT create OrganizationUsers entries
+            // DO NOT set ActiveOrganizationId
         }
-        
-        // DO NOT assign to any organization - service account is org-agnostic
-        // DO NOT create OrganizationUsers entries
-        // DO NOT set ActiveOrganizationId
     }
 }
 

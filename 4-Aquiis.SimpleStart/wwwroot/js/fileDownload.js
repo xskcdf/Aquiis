@@ -72,3 +72,20 @@ window.viewFile = function (base64Data, mimeType) {
     alert("Error viewing file. Please try again.");
   }
 };
+
+/**
+ * Clicks an element by its ID (useful for triggering hidden file inputs)
+ * @param {string} elementId - The ID of the element to click
+ */
+window.clickElementById = function (elementId) {
+  try {
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.click();
+    } else {
+      console.error(`Element with ID '${elementId}' not found`);
+    }
+  } catch (error) {
+    console.error("Error clicking element:", error);
+  }
+};

@@ -2,6 +2,7 @@
 
 @using Aquiis.Core.Entities
 @using Aquiis.Application.Services
+@using Aquiis.Application.Services.Workflows
 @using Aquiis.Infrastructure.Data
 @using Aquiis.SimpleStart.Shared.Services
 @using Aquiis.SimpleStart.Shared.Components.Account
@@ -16,6 +17,7 @@
 @inject UserContextService UserContext
 @inject NavigationManager Navigation
 @inject ToastService ToastService
+@inject SampleDataWorkflowService SampleDataWorkflowService
 
 @attribute [OrganizationAuthorize("Owner", "Administrator")]
 @rendermode InteractiveServer
@@ -50,7 +52,12 @@
             IsOwner="@isOwner"
             IsAdministrator="@isAdministrator"
             IsCurrentOrganization="@isCurrentOrganization"
-            OnManageUsers="NavigateToManageUsers" OnEdit="NavigateToEdit" />
+            IsGeneratingSample="@isGeneratingSample"
+            IsRemovingSample="@isRemovingSample"
+            OnManageUsers="NavigateToManageUsers" 
+            OnEdit="NavigateToEdit"
+            OnGenerateSampleData="GenerateSampleData"
+            OnRemoveSampleData="RemoveSampleData" />
     }
 </div>
 
@@ -65,6 +72,8 @@
     private string currentUserRole = string.Empty;
     private bool isOwner = false;
     private bool isAdministrator = false;
+    private bool isGeneratingSample = false;
+    private bool isRemovingSample = false;
 
     private bool isCurrentOrganization = false;
 
@@ -196,5 +205,88 @@
     private void Cancel()
     {
         Navigation.NavigateTo("/administration/organizations");
+    }
+
+    private async Task GenerateSampleData()
+    {
+        if (!await ConfirmSampleDataGeneration())
+            return;
+
+        isGeneratingSample = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await SampleDataWorkflowService.GenerateSampleDataAsync();
+            
+            if (result.Success)
+            {
+                ToastService.ShowSuccess($"Sample data created successfully! {result.Message}");
+                await Task.Delay(2000); // Brief delay to show success message
+                Navigation.NavigateTo("/propertymanagement/properties");
+            }
+            else
+            {
+                ToastService.ShowError($"Failed to generate sample data: {result.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error generating sample data: {ex.Message}");
+        }
+        finally
+        {
+            isGeneratingSample = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<bool> ConfirmSampleDataGeneration()
+    {
+        // Simple confirmation - in production you might want a modal dialog
+        return true; // For now, proceed without confirmation
+        // TODO: Add confirmation modal in future enhancement
+    }
+
+    private async Task RemoveSampleData()
+    {
+        if (!await ConfirmSampleDataRemoval())
+            return;
+
+        isRemovingSample = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await SampleDataWorkflowService.RemoveSampleDataAsync();
+            
+            if (result.Success)
+            {
+                ToastService.ShowSuccess($"Sample data removed successfully! {result.Message}");
+                await Task.Delay(1000); // Brief delay to show success message
+                // Reload the page to reflect changes
+                Navigation.NavigateTo($"/administration/organizations/view/{Id}", forceLoad: true);
+            }
+            else
+            {
+                ToastService.ShowError($"Failed to remove sample data: {result.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error removing sample data: {ex.Message}");
+        }
+        finally
+        {
+            isRemovingSample = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<bool> ConfirmSampleDataRemoval()
+    {
+        // Simple confirmation - in production you might want a modal dialog
+        return true; // For now, proceed without confirmation
+        // TODO: Add confirmation modal: "Are you sure? This will delete all sample data."
     }
 }

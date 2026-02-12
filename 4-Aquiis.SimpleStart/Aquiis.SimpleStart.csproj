@@ -15,7 +15,7 @@
     <InformationalVersion>1.1.0</InformationalVersion>
   </PropertyGroup>
 
-  <ItemGroup>
+   <ItemGroup>
     <!-- Copy wwwroot assets to Assets folder for Electron -->
     <None Update="wwwroot\assets\splash.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

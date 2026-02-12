@@ -17,7 +17,7 @@
     "appId": "com.aquiis.propertymanagement",
     "productName": "Aquiis",
     "copyright": "Copyright © 2026",
-    "buildVersion": "1.0.1",
+    "buildVersion": "1.1.0",
     "compression": "normal",
     "directories": {
       "output": "../../../bin/Desktop"
@@ -44,7 +44,7 @@
     },
     "win": {
       "target": "portable",
-      "icon": "bin/Assets/icon.ico",
+      "icon": "Assets/icon.ico",
       "signAndEditExecutable": false,
       "artifactName": "${productName}-${version}-${arch}.${ext}"
     },

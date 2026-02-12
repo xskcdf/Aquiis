@@ -1,5 +1,6 @@
 using Aquiis.Core.Constants;
 using Aquiis.Core.Entities;
+using Aquiis.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
@@ -95,6 +96,14 @@ namespace Aquiis.Application.Services
 
                 using (var scope = _serviceProvider.CreateScope())
                 {
+                    // Check if database is locked - skip all tasks if so
+                    var unlockState = scope.ServiceProvider.GetService<DatabaseUnlockState>();
+                    if (unlockState?.NeedsUnlock == true)
+                    {
+                        _logger.LogWarning("Database locked - skipping scheduled tasks. Tasks will resume after unlock.");
+                        return;
+                    }
+
                     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                     var organizationService = scope.ServiceProvider.GetRequiredService<OrganizationService>();
                     var leaseNotificationService = scope.ServiceProvider.GetRequiredService<LeaseNotificationService>();
@@ -394,6 +403,15 @@ namespace Aquiis.Application.Services
             try
             {
                 using var scope = _serviceProvider.CreateScope();
+
+                // Check if database is locked - skip all tasks if so
+                var unlockState = scope.ServiceProvider.GetService<DatabaseUnlockState>();
+                if (unlockState?.NeedsUnlock == true)
+                {
+                    _logger.LogWarning("Database locked - skipping hourly tasks. Tasks will resume after unlock.");
+                    return;
+                }
+
                 var tourService = scope.ServiceProvider.GetRequiredService<TourService>();
                 var leaseService = scope.ServiceProvider.GetRequiredService<LeaseService>();
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();

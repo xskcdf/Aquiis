@@ -309,6 +309,10 @@
                                                         disabled="@isDownloading">
                                                     <i class="bi bi-download"></i> Download
                                                 </button>
+                                                <button class="btn btn-sm btn-info me-2" 
+                                                        @onclick="() => PreviewDatabase(backup)">
+                                                    <i class="bi bi-eye"></i> Preview
+                                                </button>
                                                 <button class="btn btn-sm btn-primary me-2" 
                                                         @onclick="() => RestoreBackup(backup)"
                                                         disabled="@isRestoring">
@@ -668,6 +672,13 @@
         }
     }
 
+    private void PreviewDatabase(BackupInfo backup)
+    {
+        // Encode filename for URL
+        var encodedFileName = Uri.EscapeDataString(backup.FileName);
+        Navigation.NavigateTo($"/administration/database/preview/{encodedFileName}");
+    }
+
     private async Task AttemptAutoRecovery()
     {
         var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
@@ -750,7 +761,8 @@
 
     private async Task TriggerFileUpload()
     {
-        await JSRuntime.InvokeVoidAsync("document.getElementById('backupFileInput').click");
+        // Call JavaScript helper function to click the hidden file input
+        await JSRuntime.InvokeVoidAsync("clickElementById", "backupFileInput");
     }
 
     private async Task HandleFileUpload(InputFileChangeEventArgs e)
