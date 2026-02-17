@@ -12,12 +12,6 @@ namespace Aquiis.Core.Entities
     {
         [Required]
         [JsonInclude]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
-        [Required]
-        [JsonInclude]
         public Guid LeaseId { get; set; }
 
         [Required]

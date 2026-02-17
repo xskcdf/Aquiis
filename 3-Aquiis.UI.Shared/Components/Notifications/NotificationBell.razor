@@ -1,7 +1,9 @@
 @using Aquiis.Application.Services
+@using Microsoft.AspNetCore.SignalR.Client
 @inject NotificationService NotificationService
 @inject NavigationManager NavigationManager
 @namespace Aquiis.UI.Shared.Components.Notifications
+@implements IAsyncDisposable
 
 @if (isLoading)
 {
@@ -113,6 +115,7 @@ else
     [Parameter] public Func<string?, Guid, string>? GetEntityRoute { get; set; }
     
     private Notification? selectedNotification;
+    private HubConnection? _hubConnection;
 
     private bool showNotificationModal = false;
    
@@ -125,6 +128,77 @@ else
     protected override async Task OnInitializedAsync()
     {
         await LoadNotificationsAsync();
+        await InitializeSignalRConnectionAsync();
+    }
+
+    private async Task InitializeSignalRConnectionAsync()
+    {
+        try
+        {
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(NavigationManager.ToAbsoluteUri("/hubs/notifications"))
+                .WithAutomaticReconnect() // Auto-reconnect on disconnect
+                .Build();
+
+            // Listen for new notifications
+            _hubConnection.On<object>("ReceiveNotification", async (notification) =>
+            {
+                await HandleNewNotificationAsync(notification);
+            });
+
+            // Listen for read notifications
+            _hubConnection.On<Guid, int>("NotificationRead", (notificationId, newCount) =>
+            {
+                HandleNotificationRead(notificationId, newCount);
+            });
+
+            // Listen for deleted notifications
+            _hubConnection.On<Guid, int>("NotificationDeleted", (notificationId, newCount) =>
+            {
+                HandleNotificationDeleted(notificationId, newCount);
+            });
+
+            // Listen for unread count updates
+            _hubConnection.On<int>("UpdateUnreadCount", (newCount) =>
+            {
+                notificationCount = newCount;
+                _ = InvokeAsync(StateHasChanged);
+            });
+
+            await _hubConnection.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't fail component initialization
+            Console.WriteLine($"SignalR connection failed: {ex.Message}");
+        }
+    }
+
+    private async Task HandleNewNotificationAsync(object notificationData)
+    {
+        // Reload notifications to include the new one
+        await LoadNotificationsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleNotificationRead(Guid notificationId, int newCount)
+    {
+        var notification = notifications.FirstOrDefault(n => n.Id == notificationId);
+        if (notification != null)
+        {
+            notification.IsRead = true;
+            notification.ReadOn = DateTime.UtcNow;
+        }
+
+        notificationCount = newCount;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleNotificationDeleted(Guid notificationId, int newCount)
+    {
+        notifications.RemoveAll(n => n.Id == notificationId);
+        notificationCount = newCount;
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private async Task LoadNotificationsAsync()
@@ -132,7 +206,7 @@ else
         isLoading = true;
         notifications = await NotificationService.GetUnreadNotificationsAsync();
         notifications = notifications.OrderByDescending(n => n.CreatedOn).Take(5).ToList();
-        notificationCount = notifications.Count;
+        notificationCount = notifications.Count(n => !n.IsRead);
 
         isLoading = false;
     }
@@ -140,11 +214,24 @@ else
     private async Task ShowNotification(Notification notification)
     {
         selectedNotification = notification;
-        notification.IsRead = true;
-        notification.ReadOn = DateTime.UtcNow;
-        await NotificationService.MarkAsReadAsync(notification.Id);
-        notificationCount = notifications.Count(n => !n.IsRead);
-        showNotificationModal = true;
+        
+        try
+        {
+            // Mark as read in database first
+            await NotificationService.MarkAsReadAsync(notification.Id);
+            
+            // Only update local state after successful database update
+            notification.IsRead = true;
+            notification.ReadOn = DateTime.UtcNow;
+            notificationCount = notifications.Count(n => !n.IsRead);
+            
+            showNotificationModal = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to mark notification as read: {ex.Message}");
+            // Don't update local state if database update failed
+        }
     }
 
     private void CloseModal()
@@ -172,15 +259,27 @@ else
 
     private async Task MarkAllAsRead()
     {
-        foreach (var notification in notifications)
+        try
         {
-            notification.IsRead = true;
-            notification.ReadOn = DateTime.UtcNow;
+            // Mark all as read in database first
+            await NotificationService.MarkAllAsReadAsync(notifications);
+            
+            // Only update local state after successful database update
+            foreach (var notification in notifications)
+            {
+                notification.IsRead = true;
+                notification.ReadOn = DateTime.UtcNow;
+            }
+            notificationCount = 0;
+            
+            ToggleDropdown();
+            StateHasChanged();
         }
-        notificationCount = 0;
-        ToggleDropdown();
-        StateHasChanged();
-        await NotificationService.MarkAllAsReadAsync(notifications);
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to mark all notifications as read: {ex.Message}");
+            // Don't update local state if database update failed
+        }
     }
 
     private void GoToNotificationCenter()
@@ -207,6 +306,14 @@ else
         "Success" => "success",
         _ => "secondary"
     };
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
 }
 
 <style>

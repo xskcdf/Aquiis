@@ -45,11 +45,6 @@ namespace Aquiis.Core.Entities
         public required DateTime PerformedOn { get; set; }
 
         /// <summary>
-        /// Organization context for the workflow action
-        /// </summary>
-        public required Guid OrganizationId { get; set; }
-
-        /// <summary>
         /// Additional context data (JSON serialized)
         /// </summary>
         public string? Metadata { get; set; }

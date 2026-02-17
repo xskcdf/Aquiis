@@ -51,4 +51,6 @@ public class PropertyFormModel
     public string Status { get; set; } = ApplicationConstants.PropertyStatuses.Available;
 
     public bool IsAvailable { get; set; } = true;
+
+    public bool IsSampleData { get; set; } = false;
 }

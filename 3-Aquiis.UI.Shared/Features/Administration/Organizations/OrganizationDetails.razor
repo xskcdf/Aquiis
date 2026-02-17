@@ -1,5 +1,6 @@
 @using Aquiis.Core.Entities
 @using Aquiis.Application.Services
+@using Aquiis.Application.Services.Workflows
 @using Aquiis.Core.Constants
 @using Aquiis.UI.Shared.Components.Entities.OrganizationUsers
 @using Aquiis.UI.Shared.Components.Entities.Organizations
@@ -17,7 +18,9 @@
             OnRemoveSampleData="OnRemoveSampleData"
             IsOwner="@IsOwner"
             IsGeneratingSample="@IsGeneratingSample"
-            IsRemovingSample="@IsRemovingSample" />
+            IsRemovingSample="@IsRemovingSample"
+            HasSampleData="@HasSampleData"
+            SampleDataSummary="@SampleDataSummary" />
 
         <!-- Users with Access Card -->
         <OrganizationUsersListView 
@@ -77,6 +80,12 @@
 
     [Parameter]
     public bool IsRemovingSample { get; set; }
+
+    [Parameter]
+    public bool HasSampleData { get; set; }
+
+    [Parameter]
+    public SampleDataSummary? SampleDataSummary { get; set; }
 
     public Organization? Organization => OrganizationViewModel?.Organization;
 

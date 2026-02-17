@@ -3,6 +3,8 @@ using Aquiis.Core.Entities;
 using Aquiis.Core.Constants;
 using Aquiis.Core.Interfaces.Services;
 using Aquiis.Infrastructure.Data;
+using Aquiis.Infrastructure.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Microsoft.Extensions.Logging;
@@ -80,6 +82,7 @@ public class ApplicationWorkflowServiceEdgeCaseTests
             mockEmailService.Object,
             mockSmsService.Object,
             Options.Create(new ApplicationSettings { SoftDeleteEnabled = true }),
+            Mock.Of<IHubContext<NotificationHub>>(),
             Mock.Of<ILogger<NotificationService>>()
         );
 

@@ -10,9 +10,6 @@ namespace Aquiis.Core.Entities
     public class SecurityDepositInvestmentPool : BaseModel
     {
         [Required]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
-        [Required]
         public int Year { get; set; }
 
         /// <summary>

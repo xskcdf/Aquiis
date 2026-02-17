@@ -5,9 +5,6 @@ using Aquiis.Core.Validation;
 namespace Aquiis.Core.Entities;
 public class NotificationPreferences : BaseModel
 {
-    [RequiredGuid]
-    public Guid OrganizationId { get; set; }
-
     [Required]
     public string UserId { get; set; } = string.Empty;
 

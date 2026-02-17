@@ -6,11 +6,6 @@ namespace Aquiis.Core.Entities {
     public class Payment : BaseModel
     {
         [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
-        [Required]
         [StringLength(50)]
         [Display(Name = "Payment Number")]
         public string PaymentNumber { get; set; } = string.Empty;

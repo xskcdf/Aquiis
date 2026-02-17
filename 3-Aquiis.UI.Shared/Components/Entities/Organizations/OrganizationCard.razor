@@ -1,5 +1,6 @@
 @using Aquiis.Core.Entities
 @using Aquiis.Application.Services
+@using Aquiis.Application.Services.Workflows
 @using Aquiis.Core.Constants
 
 @namespace Aquiis.UI.Shared.Components.Entities.Organizations
@@ -14,18 +15,37 @@
                     </button>
                     @if (IsOwner)
                     {
-                        <button class="btn btn-sm btn-warning" @onclick="() => OnGenerateSampleData.InvokeAsync()" disabled="@IsGeneratingSample">
-                            <i class="bi bi-database-add"></i> @(IsGeneratingSample ? "Generating..." : "Add Sample Data")
-                        </button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => OnRemoveSampleData.InvokeAsync()" disabled="@IsRemovingSample">
-                            <i class="bi bi-trash"></i> @(IsRemovingSample ? "Removing..." : "Remove Sample Data")
-                        </button>
+                        @if (HasSampleData)
+                        {
+                            <button class="btn btn-sm btn-danger" @onclick="() => OnRemoveSampleData.InvokeAsync()" disabled="@IsRemovingSample">
+                                <i class="bi bi-trash"></i> @(IsRemovingSample ? "Removing..." : "Remove Sample Data")
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-warning" @onclick="() => OnGenerateSampleData.InvokeAsync()" disabled="@IsGeneratingSample">
+                                <i class="bi bi-database-add"></i> @(IsGeneratingSample ? "Generating..." : "Add Sample Data")
+                            </button>
+                        }
                     }
                 </div>
             </div>
             @if(OrganizationViewModel?.Organization != null)
             {
             <div class="card-body">
+                @if (HasSampleData && SampleDataSummary?.HasData == true)
+                {
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-database"></i>
+                        <strong>Sample Data Present:</strong>
+                        @SampleDataSummary.PropertyCount properties,
+                        @SampleDataSummary.TenantCount tenants,
+                        @SampleDataSummary.LeaseCount leases,
+                        @SampleDataSummary.InvoiceCount invoices,
+                        @SampleDataSummary.PaymentCount payments,
+                        @SampleDataSummary.CalendarEventCount calendar events
+                    </div>
+                }
                 <dl class="row">
                     <dt class="col-sm-3">Organization Name:</dt>
                     <dd class="col-sm-9"><strong>@OrganizationViewModel?.Organization?.Name</strong></dd>
@@ -94,5 +114,11 @@
 
     [Parameter]
     public bool IsRemovingSample { get; set; }
+
+    [Parameter]
+    public bool HasSampleData { get; set; }
+
+    [Parameter]
+    public SampleDataSummary? SampleDataSummary { get; set; }
 
 }

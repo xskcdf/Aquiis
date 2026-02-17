@@ -5,12 +5,6 @@ namespace Aquiis.Core.Entities {
 
     public class Document:BaseModel
     {
-    
-        [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
         [Required]
         [StringLength(255)]
         public string FileName { get; set; } = string.Empty;

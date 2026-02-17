@@ -16,6 +16,7 @@ namespace Aquiis.Application.Services.Workflows
         private readonly ILogger<SampleDataWorkflowService> _logger;
         private readonly InvoiceService _invoiceService;
         private readonly PaymentService _paymentService;
+        private readonly NotificationService _notificationService;
         private readonly Random _random;
 
         public SampleDataWorkflowService(
@@ -23,11 +24,13 @@ namespace Aquiis.Application.Services.Workflows
             IUserContextService userContext,
             InvoiceService invoiceService,
             PaymentService paymentService,
+            NotificationService notificationService,
             ILogger<SampleDataWorkflowService> logger) : base(context, userContext)
         {
             _logger = logger;
             _invoiceService = invoiceService;
             _paymentService = paymentService;
+            _notificationService = notificationService;
             _random = new Random(DateTime.Now.Millisecond); // Seed for varied data
         }
 
@@ -57,6 +60,12 @@ namespace Aquiis.Application.Services.Workflows
                     // Generate entities in proper order (respecting dependencies)
                     var properties = await GeneratePropertiesAsync(orgId, systemUserId);
                     _logger.LogInformation($"Created {properties.Count} properties");
+
+                    var calendarEvents = await GenerateCalendarEventsForPropertiesAsync(properties);
+                    _logger.LogInformation($"Created {calendarEvents.Count} calendar events");
+
+                    var notifications = await GenerateNotificationsForRoutineInspections(properties);
+                    _logger.LogInformation($"Created {notifications.Count} notifications");
 
                     var tenants = await GenerateTenantsAsync(orgId, systemUserId);
                     _logger.LogInformation($"Created {tenants.Count} tenants");
@@ -127,6 +136,12 @@ namespace Aquiis.Application.Services.Workflows
                     var tenantsDeleted = await RemoveTenantsAsync(orgId, systemUserId);
                     _logger.LogInformation($"Deleted {tenantsDeleted} tenants");
 
+                    var calendarEventsDeleted = await RemoveCalendarEventsAsync(orgId, systemUserId);
+                    _logger.LogInformation($"Deleted {calendarEventsDeleted} calendar events");
+
+                    var notificationsDeleted = await RemoveNotificationsAsync(orgId, systemUserId);
+                    _logger.LogInformation($"Deleted {notificationsDeleted} notifications");
+
                     var propertiesDeleted = await RemovePropertiesAsync(orgId, systemUserId);
                     _logger.LogInformation($"Deleted {propertiesDeleted} properties");
 
@@ -137,12 +152,12 @@ namespace Aquiis.Application.Services.Workflows
                         fromStatus: "Generated",
                         toStatus: "Removed",
                         action: "RemoveSampleData",
-                        reason: $"Deleted {propertiesDeleted} properties, {tenantsDeleted} tenants, {leasesDeleted} leases, {invoicesDeleted} invoices, {paymentsDeleted} payments"
+                        reason: $"Deleted {propertiesDeleted} properties, {tenantsDeleted} tenants, {leasesDeleted} leases, {invoicesDeleted} invoices, {paymentsDeleted} payments, {calendarEventsDeleted} calendar events"
                     );
 
                     return WorkflowResult.Ok(
                         $"Successfully removed sample data: {propertiesDeleted} properties, {tenantsDeleted} tenants, " +
-                        $"{leasesDeleted} leases, {invoicesDeleted} invoices, {paymentsDeleted} payments");
+                        $"{leasesDeleted} leases, {invoicesDeleted} invoices, {paymentsDeleted} payments, {calendarEventsDeleted} calendar events");
                 }
                 catch (Exception ex)
                 {
@@ -193,10 +208,11 @@ namespace Aquiis.Application.Services.Workflows
                     Description = $"Beautiful {data.Beds} bedroom, {data.Baths} bath {data.Type.ToLower()} in {data.City}. " +
                                  $"{data.SqFt} square feet with modern amenities and convenient location.",
                     RoutineInspectionIntervalMonths = 12,
-                    NextRoutineInspectionDueDate = DateTime.Today.AddMonths(6),
+                    NextRoutineInspectionDueDate = createdDate.AddDays(30),
                     CreatedBy = userId,
                     CreatedOn = createdDate,
-                    IsDeleted = false
+                    IsDeleted = false,
+                    IsSampleData = true
                 };
 
                 _context.Properties.Add(property);
@@ -239,14 +255,15 @@ namespace Aquiis.Application.Services.Workflows
                     Email = $"{data.FirstName.ToLower()}.{data.LastName.ToLower()}@example.com",
                     PhoneNumber = $"555-{_random.Next(100, 999)}-{_random.Next(1000, 9999)}",
                     DateOfBirth = data.DOB,
-                    IdentificationNumber = $"DL-{_random.Next(10000000, 99999999)}",
+                    IdentificationNumber = $"ID-{_random.Next(10000000, 99999999)}",
                     IsActive = true,
                     EmergencyContactName = data.EmergencyName,
                     EmergencyContactPhone = data.EmergencyPhone,
                     Notes = $"Emergency contact relationship: {data.Relationship}",
                     CreatedBy = userId,
                     CreatedOn = createdDate,
-                    IsDeleted = false
+                    IsDeleted = false,
+                    IsSampleData = true
                 };
 
                 _context.Tenants.Add(tenant);
@@ -302,7 +319,8 @@ namespace Aquiis.Application.Services.Workflows
                     OfferedOn = startDate.AddDays(-20), // Offered 20 days before start
                     CreatedBy = userId,
                     CreatedOn = startDate.AddDays(-25),
-                    IsDeleted = false
+                    IsDeleted = false,
+                    IsSampleData = true
                 };
 
                 _context.Leases.Add(lease);
@@ -362,7 +380,8 @@ namespace Aquiis.Application.Services.Workflows
                         Description = $"Monthly Rent - {invoiceDate:MMMM yyyy}",
                         CreatedBy = userId,
                         CreatedOn = invoiceDate,
-                        IsDeleted = false
+                        IsDeleted = false,
+                        IsSampleData = true
                     };
 
                     _context.Invoices.Add(invoice);
@@ -442,7 +461,8 @@ namespace Aquiis.Application.Services.Workflows
                             Notes = $"Payment for {invoice.Description}",
                             CreatedBy = userId,
                             CreatedOn = paymentDate,
-                            IsDeleted = false
+                            IsDeleted = false,
+                            IsSampleData = true
                         };
 
                         _context.Payments.Add(payment);
@@ -470,6 +490,85 @@ namespace Aquiis.Application.Services.Workflows
             return payments;
         }
 
+        #endregion
+
+        #region Calendar Event Generation
+
+        private async Task<List<CalendarEvent>> GenerateCalendarEventsForPropertiesAsync(List<Property> properties)
+        {
+            var calendarEvents = new List<CalendarEvent>();
+
+            foreach (var property in properties)
+            {
+                if (!property.NextRoutineInspectionDueDate.HasValue)
+                {
+                    continue;
+                }
+
+                var calendarEvent = new CalendarEvent
+                {
+                    Id = Guid.NewGuid(),
+                    Title = $"Routine Inspection - {property.Address}",
+                    Description = $"Scheduled routine inspection for property at {property.Address}",
+                    StartOn = property.NextRoutineInspectionDueDate.Value,
+                    EndOn = property.NextRoutineInspectionDueDate.Value.AddHours(1),
+                    DurationMinutes = 60,
+                    Location = property.Address,
+                    SourceEntityType = nameof(Property),
+                    SourceEntityId = property.Id,
+                    PropertyId = property.Id,
+                    OrganizationId = property.OrganizationId,
+                    CreatedBy = property.CreatedBy,
+                    CreatedOn = DateTime.UtcNow,
+                    EventType = "Inspection",
+                    Status = "Scheduled",
+                    IsSampleData = true
+                };
+
+                calendarEvents.Add(calendarEvent);
+            }
+            _context.CalendarEvents.AddRange(calendarEvents);
+            await _context.SaveChangesAsync();
+            return calendarEvents;
+        }
+
+        #endregion
+
+        #region Notification Generation
+        private async Task<List<Notification>> GenerateNotificationsForRoutineInspections(List<Property> properties)
+        {
+            if (properties == null || properties.Count == 0)
+                return new List<Notification>();
+
+            var notifications = new List<Notification>();
+            var users = await _context.OrganizationUsers
+                .Where(o => o.OrganizationId == properties.First().OrganizationId && !o.IsDeleted && o.IsActive).ToListAsync();
+            
+            foreach(var user in users)
+            {
+                foreach(var property in properties)
+                {
+                    // Use NotificationService to send notifications with SignalR broadcasts
+                    var notification = await _notificationService.SendNotificationAsync(
+                        user.UserId,
+                        "Routine Inspection Scheduled",
+                        $"A routine inspection has been scheduled for the property at {property.Address} on {property.NextRoutineInspectionDueDate!.Value:d}.",
+                        NotificationConstants.Types.Info,
+                        NotificationConstants.Categories.Inspection,
+                        property.Id,
+                        nameof(Property)
+                    );
+                    
+                    // Mark as sample data
+                    notification.IsSampleData = true;
+                    await _context.SaveChangesAsync();
+                    
+                    notifications.Add(notification);
+                }
+            }
+
+            return notifications;
+        }
         #endregion
 
         #region Helper Methods
@@ -506,7 +605,7 @@ namespace Aquiis.Application.Services.Workflows
         private async Task<int> RemovePropertiesAsync(Guid organizationId, string systemUserId)
         {
             var properties = await _context.Properties
-                .Where(p => p.OrganizationId == organizationId && p.CreatedBy == systemUserId)
+                .Where(p => p.OrganizationId == organizationId && p.IsSampleData)
                 .ToListAsync();
 
             _context.Properties.RemoveRange(properties);
@@ -518,7 +617,7 @@ namespace Aquiis.Application.Services.Workflows
         private async Task<int> RemoveTenantsAsync(Guid organizationId, string systemUserId)
         {
             var tenants = await _context.Tenants
-                .Where(t => t.OrganizationId == organizationId && t.CreatedBy == systemUserId)
+                .Where(t => t.OrganizationId == organizationId && t.IsSampleData)
                 .ToListAsync();
 
             _context.Tenants.RemoveRange(tenants);
@@ -530,7 +629,7 @@ namespace Aquiis.Application.Services.Workflows
         private async Task<int> RemoveLeasesAsync(Guid organizationId, string systemUserId)
         {
             var leases = await _context.Leases
-                .Where(l => l.OrganizationId == organizationId && l.CreatedBy == systemUserId)
+                .Where(l => l.OrganizationId == organizationId && l.IsSampleData)
                 .ToListAsync();
 
             _context.Leases.RemoveRange(leases);
@@ -542,7 +641,7 @@ namespace Aquiis.Application.Services.Workflows
         private async Task<int> RemoveInvoicesAsync(Guid organizationId, string systemUserId)
         {
             var invoices = await _context.Invoices
-                .Where(i => i.OrganizationId == organizationId && i.CreatedBy == systemUserId)
+                .Where(i => i.OrganizationId == organizationId && i.IsSampleData)
                 .ToListAsync();
 
             _context.Invoices.RemoveRange(invoices);
@@ -554,7 +653,7 @@ namespace Aquiis.Application.Services.Workflows
         private async Task<int> RemovePaymentsAsync(Guid organizationId, string systemUserId)
         {
             var payments = await _context.Payments
-                .Where(p => p.OrganizationId == organizationId && p.CreatedBy == systemUserId)
+                .Where(p => p.OrganizationId == organizationId && p.IsSampleData)
                 .ToListAsync();
 
             _context.Payments.RemoveRange(payments);
@@ -563,6 +662,125 @@ namespace Aquiis.Application.Services.Workflows
             return payments.Count;
         }
 
+        private async Task<int> RemoveCalendarEventsAsync(Guid organizationId, string systemUserId)
+        {
+            var calendarEvents = await _context.CalendarEvents
+                .Where(ce => ce.OrganizationId == organizationId && ce.IsSampleData)
+                .ToListAsync();
+
+            _context.CalendarEvents.RemoveRange(calendarEvents);
+            await _context.SaveChangesAsync();
+
+            return calendarEvents.Count;
+        }
+
+        private async Task<int> RemoveNotificationsAsync(Guid organizationId, string systemUserId)
+        {
+            var notifications = await _context.Notifications
+                .Where(n => n.OrganizationId == organizationId && n.IsSampleData)
+                .ToListAsync();
+
+            _context.Notifications.RemoveRange(notifications);
+            await _context.SaveChangesAsync();
+
+            return notifications.Count;
+        }
+
+        //
+        // Potential future method to remove all sample data in one go (if needed) - currently we remove by entity type to ensure proper order and avoid FK issues
+        private async Task RemoveAllSampleDataAsync(Guid orgId)
+        {
+            var allSampleEntities = new List<object>();
+
+            foreach (var dbSet in _context.GetType().GetProperties().Where(p => p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>)))
+            {
+                var entity = dbSet.GetValue(_context);
+                if (entity is IQueryable<BaseModel> baseModelQueryable)
+                {
+                    var sampleData = baseModelQueryable
+                        .Where(e => e.OrganizationId == orgId && e.IsSampleData)
+                        .ToList();
+                    allSampleEntities.AddRange(sampleData);
+                }
+            }
+
+            _context.RemoveRange(allSampleEntities); // EF Core figures out order
+            await _context.SaveChangesAsync();
+        }
+
         #endregion
+
+        #region Sample Data Detection
+
+        /// <summary>
+        /// Checks if sample data exists for the active organization.
+        /// Used to conditionally show Add/Remove Sample Data buttons.
+        /// </summary>
+        public async Task<bool> HasSampleDataAsync()
+        {
+            var orgId = await GetActiveOrganizationIdAsync();
+            
+            // Check any entity type - if any sample data exists, return true
+            var hasSampleData = await _context.Properties
+                .AnyAsync(p => p.OrganizationId == orgId && p.IsSampleData && !p.IsDeleted);
+            
+            if (!hasSampleData)
+            {
+                hasSampleData = await _context.Tenants
+                    .AnyAsync(t => t.OrganizationId == orgId && t.IsSampleData && !t.IsDeleted);
+            }
+            
+            if (!hasSampleData)
+            {
+                hasSampleData = await _context.Leases
+                    .AnyAsync(l => l.OrganizationId == orgId && l.IsSampleData && !l.IsDeleted);
+            }
+            
+            if (!hasSampleData)
+            {
+                hasSampleData = await _context.CalendarEvents
+                    .AnyAsync(ce => ce.OrganizationId == orgId && ce.IsSampleData && !ce.IsDeleted);
+            }
+            
+            return hasSampleData;
+        }
+
+        /// <summary>
+        /// Gets count of sample data records by entity type.
+        /// Used for UI display (e.g., "3 sample properties, 2 sample tenants").
+        /// </summary>
+        public async Task<SampleDataSummary> GetSampleDataSummaryAsync()
+        {
+            var orgId = await GetActiveOrganizationIdAsync();
+            
+            return new SampleDataSummary
+            {
+                PropertyCount = await _context.Properties.CountAsync(p => p.OrganizationId == orgId && p.IsSampleData && !p.IsDeleted),
+                TenantCount = await _context.Tenants.CountAsync(t => t.OrganizationId == orgId && t.IsSampleData && !t.IsDeleted),
+                LeaseCount = await _context.Leases.CountAsync(l => l.OrganizationId == orgId && l.IsSampleData && !l.IsDeleted),
+                InvoiceCount = await _context.Invoices.CountAsync(i => i.OrganizationId == orgId && i.IsSampleData && !i.IsDeleted),
+                PaymentCount = await _context.Payments.CountAsync(p => p.OrganizationId == orgId && p.IsSampleData && !p.IsDeleted),
+                CalendarEventCount = await _context.CalendarEvents.CountAsync(ce => ce.OrganizationId == orgId && ce.IsSampleData && !ce.IsDeleted)
+            };
+        }
+
+        #endregion
+    }
+
+    /// <summary>
+    /// Summary of sample data counts by entity type.
+    /// </summary>
+    public class SampleDataSummary
+    {
+        public int PropertyCount { get; set; }
+        public int TenantCount { get; set; }
+        public int LeaseCount { get; set; }
+        public int InvoiceCount { get; set; }
+        public int PaymentCount { get; set; }
+        public int CalendarEventCount { get; set; }
+        public int NotificationCount { get; set; }
+        
+        public int TotalCount => PropertyCount + TenantCount + LeaseCount + InvoiceCount + PaymentCount + CalendarEventCount + NotificationCount;
+        public bool HasData => TotalCount > 0;
     }
 }

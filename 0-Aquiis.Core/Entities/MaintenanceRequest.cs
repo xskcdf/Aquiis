@@ -7,10 +7,6 @@ namespace Aquiis.Core.Entities
     public class MaintenanceRequest : BaseModel, ISchedulableEntity
     {
         [RequiredGuid]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
-        [RequiredGuid]
         public Guid PropertyId { get; set; }
 
         public Guid? CalendarEventId { get; set; }

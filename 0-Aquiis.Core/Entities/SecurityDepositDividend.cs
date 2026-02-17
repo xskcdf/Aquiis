@@ -11,12 +11,6 @@ namespace Aquiis.Core.Entities
     public class SecurityDepositDividend : BaseModel
     {
         [Required]
-        [JsonInclude]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
-        [Required]
         public Guid SecurityDepositId { get; set; }
 
         [Required]

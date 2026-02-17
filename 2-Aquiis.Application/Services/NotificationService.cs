@@ -5,12 +5,15 @@ using Aquiis.Core.Interfaces.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.SignalR;
+using Aquiis.Infrastructure.Hubs;
 
 namespace Aquiis.Application.Services;
 public class NotificationService : BaseService<Notification>
 {
     private readonly IEmailService _emailService;
     private readonly ISMSService _smsService;
+    private readonly IHubContext<NotificationHub> _hubContext;
 
     public NotificationService(
         ApplicationDbContext context,
@@ -18,11 +21,13 @@ public class NotificationService : BaseService<Notification>
         IEmailService emailService,
         ISMSService smsService,
         IOptions<ApplicationSettings> appSettings,
+        IHubContext<NotificationHub> hubContext,
         ILogger<NotificationService> logger)
         : base(context, logger, userContext, appSettings)
     {
         _emailService = emailService;
         _smsService = smsService;
+        _hubContext = hubContext;
     }
 
     /// <summary>
@@ -104,6 +109,9 @@ public class NotificationService : BaseService<Notification>
 
         await UpdateAsync(notification);
 
+        // Broadcast new notification via SignalR
+        await BroadcastNewNotificationAsync(notification);
+
         return notification;
     }
 
@@ -151,6 +159,28 @@ public class NotificationService : BaseService<Notification>
         notification.ReadOn = DateTime.UtcNow;
 
         await UpdateAsync(notification);
+
+        // Broadcast notification read event via SignalR
+        var unreadCount = await GetUnreadCountAsync(notification.RecipientUserId);
+        await BroadcastNotificationReadAsync(notificationId, notification.RecipientUserId, unreadCount);
+    }
+
+    /// <summary>
+    /// Mark notification as unread
+    /// </summary>
+    public async Task MarkAsUnreadAsync(Guid notificationId)
+    {
+        var notification = await GetByIdAsync(notificationId);
+        if (notification == null) return;
+
+        notification.IsRead = false;
+        notification.ReadOn = null;
+
+        await UpdateAsync(notification);
+
+        // Broadcast updated unread count via SignalR
+        var unreadCount = await GetUnreadCountAsync(notification.RecipientUserId);
+        await BroadcastUnreadCountChangedAsync(notification.RecipientUserId, unreadCount);
     }
 
     /// <summary>
@@ -158,6 +188,8 @@ public class NotificationService : BaseService<Notification>
     /// </summary>
     public async Task MarkAllAsReadAsync(List<Notification> notifications)
     {
+        var userId = notifications.FirstOrDefault()?.RecipientUserId;
+        
         foreach (var notification in notifications)
         {
             if (!notification.IsRead)
@@ -166,6 +198,13 @@ public class NotificationService : BaseService<Notification>
                 notification.ReadOn = DateTime.UtcNow;
                 await UpdateAsync(notification);
             }
+        }
+
+        // Broadcast updated unread count via SignalR
+        if (userId != null)
+        {
+            var unreadCount = await GetUnreadCountAsync(userId);
+            await BroadcastUnreadCountChangedAsync(userId, unreadCount);
         }
     }
 
@@ -309,4 +348,141 @@ public class NotificationService : BaseService<Notification>
     {
         await _emailService.SendEmailAsync(to, subject, body, fromName);
     }
+
+    /// <summary>
+    /// Delete a notification
+    /// </summary>
+    public async Task DeleteNotificationAsync(Guid notificationId)
+    {
+        var notification = await GetByIdAsync(notificationId);
+        if (notification == null) return;
+
+        var userId = notification.RecipientUserId;
+        await DeleteAsync(notificationId);
+
+        // Broadcast notification deleted event via SignalR
+        var unreadCount = await GetUnreadCountAsync(userId);
+        await BroadcastNotificationDeletedAsync(notificationId, userId, unreadCount);
+    }
+
+    /// <summary>
+    /// Get unread count for a specific user
+    /// </summary>
+    private async Task<int> GetUnreadCountAsync(string userId)
+    {
+        var organizationId = await _userContext.GetActiveOrganizationIdAsync();
+        
+        return await _context.Notifications
+            .CountAsync(n => n.OrganizationId == organizationId
+                && n.RecipientUserId == userId
+                && !n.IsRead
+                && !n.IsDeleted);
+    }
+
+    #region SignalR Broadcasting
+
+    /// <summary>
+    /// Broadcasts a new notification to the user via SignalR
+    /// </summary>
+    private async Task BroadcastNewNotificationAsync(Notification notification)
+    {
+        try
+        {
+            await _hubContext.Clients
+                .User(notification.RecipientUserId)
+                .SendAsync("ReceiveNotification", new
+                {
+                    notification.Id,
+                    notification.Title,
+                    notification.Message,
+                    notification.Type,
+                    notification.Category,
+                    notification.SentOn,
+                    notification.IsRead
+                });
+
+            _logger.LogInformation(
+                "Broadcasted notification {NotificationId} to user {UserId} via SignalR",
+                notification.Id,
+                notification.RecipientUserId);
+        }
+        catch (Exception ex)
+        {
+            // Don't fail notification creation if SignalR fails
+            _logger.LogWarning(ex,
+                "Failed to broadcast notification {NotificationId} via SignalR",
+                notification.Id);
+        }
+    }
+
+    /// <summary>
+    /// Broadcasts that a notification was marked as read
+    /// </summary>
+    private async Task BroadcastNotificationReadAsync(Guid notificationId, string userId, int newUnreadCount)
+    {
+        try
+        {
+            await _hubContext.Clients
+                .User(userId)
+                .SendAsync("NotificationRead", notificationId, newUnreadCount);
+
+            _logger.LogInformation(
+                "Broadcasted notification read {NotificationId} to user {UserId} via SignalR",
+                notificationId,
+                userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Failed to broadcast notification read via SignalR");
+        }
+    }
+
+    /// <summary>
+    /// Broadcasts that a notification was deleted
+    /// </summary>
+    private async Task BroadcastNotificationDeletedAsync(Guid notificationId, string userId, int newUnreadCount)
+    {
+        try
+        {
+            await _hubContext.Clients
+                .User(userId)
+                .SendAsync("NotificationDeleted", notificationId, newUnreadCount);
+
+            _logger.LogInformation(
+                "Broadcasted notification deleted {NotificationId} to user {UserId} via SignalR",
+                notificationId,
+                userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Failed to broadcast notification deletion via SignalR");
+        }
+    }
+
+    /// <summary>
+    /// Broadcasts updated unread count (e.g., mark all as read)
+    /// </summary>
+    private async Task BroadcastUnreadCountChangedAsync(string userId, int newUnreadCount)
+    {
+        try
+        {
+            await _hubContext.Clients
+                .User(userId)
+                .SendAsync("UpdateUnreadCount", newUnreadCount);
+
+            _logger.LogInformation(
+                "Broadcasted unread count {Count} to user {UserId} via SignalR",
+                newUnreadCount,
+                userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Failed to broadcast unread count change via SignalR");
+        }
+    }
+
+    #endregion
 }

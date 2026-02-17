@@ -35,6 +35,9 @@ if (HybridSupport.IsElectronActive)
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Add SignalR for real-time notification updates
+builder.Services.AddSignalR();
+
 // Add antiforgery services with options for Blazor
 builder.Services.AddAntiforgery(options =>
 {
@@ -581,6 +584,9 @@ app.MapRazorComponents<Aquiis.Professional.Shared.App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+// Map SignalR hub for real-time notifications
+app.MapHub<Aquiis.Infrastructure.Hubs.NotificationHub>("/hubs/notifications");
 
 // Add session refresh endpoint for session timeout feature
 app.MapPost("/api/session/refresh", async (HttpContext context) =>

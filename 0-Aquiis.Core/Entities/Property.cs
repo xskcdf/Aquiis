@@ -9,13 +9,6 @@ namespace Aquiis.Core.Entities
     {
         [Required]
         [JsonInclude]
-        [StringLength(100)]
-        [DataType(DataType.Text)]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
-        [Required]
-        [JsonInclude]
         [StringLength(200)]
         [DataType(DataType.Text)]
         [Display(Name = "Street Address", Description = "Street address of the property",

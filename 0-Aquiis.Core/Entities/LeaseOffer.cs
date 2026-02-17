@@ -6,11 +6,6 @@ namespace Aquiis.Core.Entities
     public class LeaseOffer : BaseModel
     {
         [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
-        [Required]
         public Guid RentalApplicationId { get; set; }
 
         [Required]

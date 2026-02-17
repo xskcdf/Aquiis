@@ -5,10 +5,6 @@ namespace Aquiis.Core.Entities {
 
     public class Tenant : BaseModel
     {
-
-        [RequiredGuid]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
         [Required]
         [StringLength(100)]
         public string FirstName { get; set; } = string.Empty;

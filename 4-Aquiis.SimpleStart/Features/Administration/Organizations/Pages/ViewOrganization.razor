@@ -54,6 +54,8 @@
             IsCurrentOrganization="@isCurrentOrganization"
             IsGeneratingSample="@isGeneratingSample"
             IsRemovingSample="@isRemovingSample"
+            HasSampleData="@hasSampleData"
+            SampleDataSummary="@sampleDataSummary"
             OnManageUsers="NavigateToManageUsers" 
             OnEdit="NavigateToEdit"
             OnGenerateSampleData="GenerateSampleData"
@@ -74,6 +76,8 @@
     private bool isAdministrator = false;
     private bool isGeneratingSample = false;
     private bool isRemovingSample = false;
+    private bool hasSampleData = false;
+    private SampleDataSummary? sampleDataSummary;
 
     private bool isCurrentOrganization = false;
 
@@ -168,6 +172,13 @@
                         PhoneNumber = currentUserProfile.PhoneNumber
                     };
                 }
+                
+                // Check for sample data presence
+                hasSampleData = await SampleDataWorkflowService.HasSampleDataAsync();
+                if (hasSampleData)
+                {
+                    sampleDataSummary = await SampleDataWorkflowService.GetSampleDataSummaryAsync();
+                }
             }
         }
         catch (Exception ex)
@@ -222,8 +233,14 @@
             if (result.Success)
             {
                 ToastService.ShowSuccess($"Sample data created successfully! {result.Message}");
-                await Task.Delay(2000); // Brief delay to show success message
-                Navigation.NavigateTo("/propertymanagement/properties");
+                
+                // Refresh sample data detection
+                hasSampleData = true;
+                sampleDataSummary = await SampleDataWorkflowService.GetSampleDataSummaryAsync();
+                
+                await Task.Delay(1000);
+                // Force reload the page to ensure all components refresh (including NotificationBell)
+                Navigation.NavigateTo($"/administration/organizations/{Id}", forceLoad: true);
             }
             else
             {
@@ -263,9 +280,14 @@
             if (result.Success)
             {
                 ToastService.ShowSuccess($"Sample data removed successfully! {result.Message}");
+                
+                // Refresh sample data detection
+                hasSampleData = false;
+                sampleDataSummary = null;
+                
                 await Task.Delay(1000); // Brief delay to show success message
                 // Reload the page to reflect changes
-                Navigation.NavigateTo($"/administration/organizations/view/{Id}", forceLoad: true);
+                Navigation.NavigateTo($"/administration/organizations/{Id}", forceLoad: true);
             }
             else
             {

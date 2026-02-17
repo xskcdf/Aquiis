@@ -10,12 +10,6 @@ namespace Aquiis.Core.Entities
     /// </summary>
     public class OrganizationSettings : BaseModel
     {
-        
-        [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
         [MaxLength(200)]
         public string? Name { get; set; }
 
