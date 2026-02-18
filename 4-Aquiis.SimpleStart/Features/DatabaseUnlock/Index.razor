@@ -1,6 +1,7 @@
 @page "/database-unlock"
 @using Aquiis.Infrastructure.Services
 @using Aquiis.Application.Services
+@using ElectronNET.API
 @inject DatabaseUnlockState UnlockState
 @inject DatabaseUnlockService UnlockService
 @inject NavigationManager Navigation
@@ -67,6 +68,22 @@
                 </button>
             </EditForm>
 
+            <!-- Divider for "Forgot Password" section -->
+            <div class="my-4">
+                <hr />
+                <div class="text-center text-muted small">
+                    Can't remember your password?
+                </div>
+            </div>
+
+            <!-- Start Fresh Button -->
+            <button type="button"
+                    class="btn btn-outline-warning w-100"
+                    @onclick="ShowStartFreshConfirmation"
+                    disabled="@isUnlocking">
+                <i class="bi bi-arrow-clockwise"></i> Start with New Database
+            </button>
+
             <div class="mt-4 text-center">
                 <small class="text-muted">
                     <i class="bi bi-info-circle"></i>
@@ -107,6 +124,68 @@
     </div>
 </div>
 
+<!-- Confirmation Modal for Start Fresh -->
+@if (showStartFreshModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Start with New Database?
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="() => showStartFreshModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>This will:</strong></p>
+                    <ul>
+                        <li>Archive your encrypted database to the Backups folder</li>
+                        <li>Create a fresh, empty database</li>
+                        <li>Allow you to start over with no data</li>
+                    </ul>
+                    <p class="mt-3"><strong>Your encrypted database will be saved to:</strong></p>
+                    <p class="font-monospace small bg-light p-2 rounded">
+                        @GetArchivePath()
+                    </p>
+                    <p class="text-muted small">
+                        You can download this file for later decryption attempts or professional data recovery.
+                    </p>
+                    
+                    @if (!string.IsNullOrEmpty(startFreshError))
+                    {
+                        <div class="alert alert-danger mt-3">
+                            <i class="bi bi-exclamation-triangle-fill"></i> @startFreshError
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" 
+                            class="btn btn-secondary" 
+                            @onclick="() => showStartFreshModal = false"
+                            disabled="@isStartingFresh">
+                        Cancel
+                    </button>
+                    <button type="button" 
+                            class="btn btn-warning" 
+                            @onclick="HandleStartFresh"
+                            disabled="@isStartingFresh">
+                        @if (isStartingFresh)
+                        {
+                            <span class="spinner-border spinner-border-sm"></span>
+                            <span class="ms-2">Processing...</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-arrow-clockwise"></i>
+                            <span class="ms-2">Yes, Start Fresh</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 <style>
     .database-unlock-container {
         min-height: 100vh;
@@ -134,6 +213,11 @@
     private bool unlockSuccessful = false;
     private int countdownSeconds = 5;
     private System.Threading.Timer? countdownTimer;
+    
+    // Start Fresh modal state
+    private bool showStartFreshModal = false;
+    private bool isStartingFresh = false;
+    private string? startFreshError = null;
 
     private async Task HandleUnlock()
     {
@@ -191,6 +275,71 @@
     {
         countdownTimer?.Dispose();
         Navigation.NavigateTo("/", forceLoad: true);
+    }
+
+    private void ShowStartFreshConfirmation()
+    {
+        Console.WriteLine($"[DatabaseUnlock] Opening modal. DatabasePath: {UnlockState.DatabasePath}");
+        showStartFreshModal = true;
+        startFreshError = null;
+    }
+
+    private string GetArchivePath()
+    {
+        if (string.IsNullOrEmpty(UnlockState.DatabasePath))
+            return "Backups/[database-name].[timestamp].encrypted.db";
+            
+        var dbFileNameWithoutExt = Path.GetFileNameWithoutExtension(UnlockState.DatabasePath);
+        var timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+        return $"Backups/{dbFileNameWithoutExt}.{timestamp}.encrypted.db";
+    }
+
+    private async Task HandleStartFresh()
+    {
+        Console.WriteLine("[DatabaseUnlock] HandleStartFresh called");
+        startFreshError = null;
+        isStartingFresh = true;
+
+        try
+        {
+            // Validate database path exists
+            if (string.IsNullOrEmpty(UnlockState.DatabasePath))
+            {
+                Console.WriteLine("[DatabaseUnlock] ERROR: Database path is null or empty");
+                startFreshError = "Database path is not set. Cannot proceed.";
+                isStartingFresh = false;
+                return;
+            }
+
+            Console.WriteLine($"[DatabaseUnlock] Calling StartWithNewDatabaseAsync for: {UnlockState.DatabasePath}");
+            var (success, archivedPath, error) = await UnlockService.StartWithNewDatabaseAsync(
+                UnlockState.DatabasePath);
+
+            if (success)
+            {
+                Console.WriteLine($"[DatabaseUnlock] Success! Archived to: {archivedPath}");
+                Console.WriteLine("[DatabaseUnlock] Restarting application...");
+                
+                // Restart Electron app to trigger Program.cs database detection workflow
+                // This will detect no database exists and start fresh setup
+                Electron.App.Relaunch();
+                Electron.App.Exit();
+            }
+            else
+            {
+                Console.WriteLine($"[DatabaseUnlock] Failed: {error}");
+                startFreshError = error;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DatabaseUnlock] Exception: {ex.Message}");
+            startFreshError = $"An unexpected error occurred: {ex.Message}";
+        }
+        finally
+        {
+            isStartingFresh = false;
+        }
     }
 
     public void Dispose()

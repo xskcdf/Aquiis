@@ -375,8 +375,169 @@ namespace Aquiis.Application.Services
         /// </summary>
         protected virtual async Task<TEntity> SetCreateDefaultsAsync(TEntity entity)
         {
+            // Automatically propagate IsSampleData flag from parent entities
+            await InheritSampleDataFlagFromParentsAsync(entity);
+            
             await Task.CompletedTask;
             return entity;
+        }
+
+        /// <summary>
+        /// Checks parent entities for IsSampleData flag and propagates to child entity.
+        /// If any parent entity has IsSampleData = true, the child entity is marked as sample data.
+        /// This ensures sample data "taints" all related records for proper cleanup.
+        /// </summary>
+        /// <param name="entity">The entity being created</param>
+        /// <returns>Task</returns>
+        protected virtual async Task InheritSampleDataFlagFromParentsAsync(TEntity entity)
+        {
+            try
+            {
+                // If already marked as sample data, no need to check parents
+                if (entity.IsSampleData)
+                {
+                    return;
+                }
+
+                // Check for common parent relationship properties
+                var entityType = typeof(TEntity);
+                var properties = entityType.GetProperties();
+
+                // Common parent ID properties to check
+                var parentIdProperties = new[] 
+                { 
+                    "PropertyId", 
+                    "LeaseId", 
+                    "InvoiceId", 
+                    "TenantId", 
+                    "ProspectiveTenantId", 
+                    "RentalApplicationId",
+                    "RepairId",
+                    "InspectionId",
+                    "MaintenanceRequestId",
+                    "OrganizationId" // Check organization itself for multi-tenant sample orgs
+                };
+
+                foreach (var parentPropName in parentIdProperties)
+                {
+                    var parentIdProperty = properties.FirstOrDefault(p => 
+                        p.Name == parentPropName && 
+                        (p.PropertyType == typeof(Guid) || p.PropertyType == typeof(Guid?)));
+
+                    if (parentIdProperty == null) continue;
+
+                    var parentId = parentIdProperty.GetValue(entity);
+                    if (parentId == null || (parentId is Guid guidValue && guidValue == Guid.Empty)) continue;
+
+                    // Determine parent entity type and check IsSampleData flag
+                    bool parentIsSampleData = await CheckParentEntityIsSampleDataAsync(parentPropName, (Guid)parentId);
+                    
+                    if (parentIsSampleData)
+                    {
+                        entity.IsSampleData = true;
+                        _logger.LogInformation(
+                            $"{typeof(TEntity).Name} marked as sample data - inherited from {parentPropName} ({parentId})");
+                        return; // Once marked as sample data, no need to check other parents
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log but don't fail entity creation if sample data check fails
+                _logger.LogWarning(ex, $"Error checking parent sample data flag for {typeof(TEntity).Name}");
+            }
+        }
+
+        /// <summary>
+        /// Checks if a parent entity has IsSampleData = true.
+        /// Simple direct query approach for better reliability and maintainability.
+        /// </summary>
+        /// <param name="parentPropertyName">Parent property name (e.g., "LeaseId", "PropertyId")</param>
+        /// <param name="parentId">Parent entity ID</param>
+        /// <returns>True if parent is sample data, false otherwise</returns>
+        private async Task<bool> CheckParentEntityIsSampleDataAsync(string parentPropertyName, Guid parentId)
+        {
+            try
+            {
+                // Direct queries for each entity type - simple and reliable
+                switch (parentPropertyName)
+                {
+                    case "PropertyId":
+                        var property = await _context.Properties
+                            .Where(p => p.Id == parentId)
+                            .Select(p => p.IsSampleData)
+                            .FirstOrDefaultAsync();
+                        return property;
+
+                    case "LeaseId":
+                        var lease = await _context.Leases
+                            .Where(l => l.Id == parentId)
+                            .Select(l => l.IsSampleData)
+                            .FirstOrDefaultAsync();
+                        return lease;
+
+                    case "InvoiceId":
+                        var invoice = await _context.Invoices
+                            .Where(i => i.Id == parentId)
+                            .Select(i => i.IsSampleData)
+                            .FirstOrDefaultAsync();
+                        return invoice;
+
+                    case "TenantId":
+                        var tenant = await _context.Tenants
+                            .Where(t => t.Id == parentId)
+                            .Select(t => t.IsSampleData)
+                            .FirstOrDefaultAsync();
+                        return tenant;
+
+                    case "ProspectiveTenantId":
+                        var prospect = await _context.ProspectiveTenants
+                            .Where(pt => pt.Id == parentId)
+                            .Select(pt => pt.IsSampleData)
+                            .FirstOrDefaultAsync();
+                        return prospect;
+
+                    case "RentalApplicationId":
+                        var application = await _context.RentalApplications
+                            .Where(ra => ra.Id == parentId)
+                            .Select(ra => ra.IsSampleData)
+                            .FirstOrDefaultAsync();
+                        return application;
+
+                    case "RepairId":
+                        var repair = await _context.Repairs
+                            .Where(r => r.Id == parentId)
+                            .Select(r => r.IsSampleData)
+                            .FirstOrDefaultAsync();
+                        return repair;
+
+                    case "InspectionId":
+                        var inspection = await _context.Inspections
+                            .Where(i => i.Id == parentId)
+                            .Select(i => i.IsSampleData)
+                            .FirstOrDefaultAsync();
+                        return inspection;
+
+                    case "MaintenanceRequestId":
+                        var maintenanceRequest = await _context.MaintenanceRequests
+                            .Where(mr => mr.Id == parentId)
+                            .Select(mr => mr.IsSampleData)
+                            .FirstOrDefaultAsync();
+                        return maintenanceRequest;
+
+                    // OrganizationId is NOT checked - Organizations don't have IsSampleData flag
+                    // Sample data is marked at the entity level within an organization
+
+                    default:
+                        _logger.LogDebug($"Unknown parent property: {parentPropertyName}");
+                        return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, $"Could not check IsSampleData for {parentPropertyName}");
+                return false;
+            }
         }
 
         /// <summary>

@@ -10,6 +10,7 @@ using Aquiis.Professional.Shared.Authorization;
 using Aquiis.Professional.Extensions;
 using Aquiis.Application.Services;
 using Aquiis.Application.Services.Workflows;
+using Aquiis.Infrastructure.Services;
 using Aquiis.Professional.Data;
 using Aquiis.Professional.Entities;
 using ElectronNET.API;
@@ -170,6 +171,20 @@ builder.Services.AddScoped<ChecklistPdfGenerator>();
 builder.Services.AddScoped<DatabaseBackupService>();
 builder.Services.AddScoped<SchemaValidationService>();
 builder.Services.AddScoped<LeaseWorkflowService>();
+
+// Database encryption services
+builder.Services.AddScoped<PasswordDerivationService>();
+builder.Services.AddScoped<LinuxKeychainService>(sp =>
+{
+    // Pass app name to prevent keychain conflicts between different apps and modes
+    var appName = HybridSupport.IsElectronActive ? "Professional-Electron" : "Professional-Web";
+    return new LinuxKeychainService(appName);
+});
+builder.Services.AddScoped<DatabaseEncryptionService>();
+builder.Services.AddScoped<DatabasePasswordService>();
+
+// Database unlock service (always available, even when database locked)
+builder.Services.AddScoped<DatabaseUnlockService>();
 
 // Configure and register session timeout service
 builder.Services.AddScoped<SessionTimeoutService>(sp =>

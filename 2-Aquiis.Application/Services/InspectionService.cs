@@ -152,33 +152,26 @@ namespace Aquiis.Application.Services
         /// </summary>
         public override async Task<Inspection> CreateAsync(Inspection inspection)
         {
-            // Base validation and creation
-            await ValidateEntityAsync(inspection);
+            // Call base.CreateAsync to handle:
+            // - Sample data propagation from Property
+            // - Organization context setup
+            // - Audit tracking fields
+            // - Validation
+            var createdInspection = await base.CreateAsync(inspection);
 
-            var userId = await GetUserIdAsync();
-            var organizationId = await GetActiveOrganizationIdAsync();
+            // Custom logic: Create calendar event for the inspection
+            await _calendarEventService.CreateOrUpdateEventAsync(createdInspection);
 
-            inspection.Id = Guid.NewGuid();
-            inspection.OrganizationId = organizationId;
-            inspection.CreatedBy = userId;
-            inspection.CreatedOn = DateTime.UtcNow;
-
-            await _context.Inspections.AddAsync(inspection);
-            await _context.SaveChangesAsync();
-
-            // Create calendar event for the inspection
-            await _calendarEventService.CreateOrUpdateEventAsync(inspection);
-
-            // Update property inspection tracking if this is a routine inspection
-            if (inspection.InspectionType == ApplicationConstants.InspectionTypes.Routine)
+            // Custom logic: Update property inspection tracking if this is a routine inspection
+            if (createdInspection.InspectionType == ApplicationConstants.InspectionTypes.Routine)
             {
-                await HandleRoutineInspectionCompletionAsync(inspection);
+                await HandleRoutineInspectionCompletionAsync(createdInspection);
             }
 
             _logger.LogInformation("Created inspection {InspectionId} for property {PropertyId}", 
-                inspection.Id, inspection.PropertyId);
+                createdInspection.Id, createdInspection.PropertyId);
 
-            return inspection;
+            return createdInspection;
         }
 
         /// <summary>

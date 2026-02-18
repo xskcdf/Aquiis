@@ -120,30 +120,92 @@ namespace Aquiis.Application.Services.Workflows
                         return WorkflowResult.Fail("Organization context not available.");
                     }
 
-                    var systemUserId = ApplicationConstants.SystemUser.Id;
-                    _logger.LogInformation($"Removing sample data for Organization: {orgId}, CreatedBy: {systemUserId}");
+                    _logger.LogInformation($"Removing sample data for Organization: {orgId}");
 
-                    // Delete in reverse order of dependencies
-                    var paymentsDeleted = await RemovePaymentsAsync(orgId, systemUserId);
-                    _logger.LogInformation($"Deleted {paymentsDeleted} payments");
-
-                    var invoicesDeleted = await RemoveInvoicesAsync(orgId, systemUserId);
-                    _logger.LogInformation($"Deleted {invoicesDeleted} invoices");
-
-                    var leasesDeleted = await RemoveLeasesAsync(orgId, systemUserId);
-                    _logger.LogInformation($"Deleted {leasesDeleted} leases");
-
-                    var tenantsDeleted = await RemoveTenantsAsync(orgId, systemUserId);
-                    _logger.LogInformation($"Deleted {tenantsDeleted} tenants");
-
-                    var calendarEventsDeleted = await RemoveCalendarEventsAsync(orgId, systemUserId);
-                    _logger.LogInformation($"Deleted {calendarEventsDeleted} calendar events");
-
-                    var notificationsDeleted = await RemoveNotificationsAsync(orgId, systemUserId);
+                    // Delete in reverse hierarchical order (leaf nodes first, parents last)
+                    // This prevents foreign key constraint violations
+                    
+                    var notificationsDeleted = await RemoveNotificationsAsync(orgId);
                     _logger.LogInformation($"Deleted {notificationsDeleted} notifications");
-
-                    var propertiesDeleted = await RemovePropertiesAsync(orgId, systemUserId);
+                    
+                    var notesDeleted = await RemoveNotesAsync(orgId);
+                    _logger.LogInformation($"Deleted {notesDeleted} notes");
+                    
+                    var checklistItemsDeleted = await RemoveChecklistItemsAsync(orgId);
+                    _logger.LogInformation($"Deleted {checklistItemsDeleted} checklist items");
+                    
+                    var checklistsDeleted = await RemoveChecklistsAsync(orgId);
+                    _logger.LogInformation($"Deleted {checklistsDeleted} checklists");
+                    
+                    var checklistTemplateItemsDeleted = await RemoveChecklistTemplateItemsAsync(orgId);
+                    _logger.LogInformation($"Deleted {checklistTemplateItemsDeleted} checklist template items");
+                    
+                    var checklistTemplatesDeleted = await RemoveChecklistTemplatesAsync(orgId);
+                    _logger.LogInformation($"Deleted {checklistTemplatesDeleted} checklist templates");
+                    
+                    var calendarEventsDeleted = await RemoveCalendarEventsAsync(orgId);
+                    _logger.LogInformation($"Deleted {calendarEventsDeleted} calendar events");
+                    
+                    var documentsDeleted = await RemoveDocumentsAsync(orgId);
+                    _logger.LogInformation($"Deleted {documentsDeleted} documents");
+                  
+                    
+                    var paymentsDeleted = await RemovePaymentsAsync(orgId);
+                    _logger.LogInformation($"Deleted {paymentsDeleted} payments");
+                    
+                    var invoicesDeleted = await RemoveInvoicesAsync(orgId);
+                    _logger.LogInformation($"Deleted {invoicesDeleted} invoices");
+                    
+                    var repairsDeleted = await RemoveRepairsAsync(orgId);
+                    _logger.LogInformation($"Deleted {repairsDeleted} repairs");
+                    
+                    var maintenanceRequestsDeleted = await RemoveMaintenanceRequestsAsync(orgId);
+                    _logger.LogInformation($"Deleted {maintenanceRequestsDeleted} maintenance requests");
+                    
+                    var inspectionsDeleted = await RemoveInspectionsAsync(orgId);
+                    _logger.LogInformation($"Deleted {inspectionsDeleted} inspections");
+                    
+                    var toursDeleted = await RemoveToursAsync(orgId);
+                    _logger.LogInformation($"Deleted {toursDeleted} tours");
+                    
+                    var applicationScreeningsDeleted = await RemoveApplicationScreeningsAsync(orgId);
+                    _logger.LogInformation($"Deleted {applicationScreeningsDeleted} application screenings");
+                    
+                    var rentalApplicationsDeleted = await RemoveRentalApplicationsAsync(orgId);
+                    _logger.LogInformation($"Deleted {rentalApplicationsDeleted} rental applications");
+                    
+                    var prospectiveTenantsDeleted = await RemoveProspectiveTenantsAsync(orgId);
+                    _logger.LogInformation($"Deleted {prospectiveTenantsDeleted} prospective tenants");
+                    
+                    var leaseOffersDeleted = await RemoveLeaseOffersAsync(orgId);
+                    _logger.LogInformation($"Deleted {leaseOffersDeleted} lease offers");
+                    
+                    var securityDepositsDeleted = await RemoveSecurityDepositsAsync(orgId);
+                    _logger.LogInformation($"Deleted {securityDepositsDeleted} security deposits");
+                    
+                    var securityDepositDividendsDeleted = await RemoveSecurityDepositDividendsAsync(orgId);
+                    _logger.LogInformation($"Deleted {securityDepositDividendsDeleted} security deposit dividends");
+                    
+                    var securityDepositInvestmentPoolsDeleted = await RemoveSecurityDepositInvestmentPoolsAsync(orgId);
+                    _logger.LogInformation($"Deleted {securityDepositInvestmentPoolsDeleted} security deposit investment pools");
+                    
+                    var leasesDeleted = await RemoveLeasesAsync(orgId);
+                    _logger.LogInformation($"Deleted {leasesDeleted} leases");
+                    
+                    var tenantsDeleted = await RemoveTenantsAsync(orgId);
+                    _logger.LogInformation($"Deleted {tenantsDeleted} tenants");
+                    
+                    var propertiesDeleted = await RemovePropertiesAsync(orgId);
                     _logger.LogInformation($"Deleted {propertiesDeleted} properties");
+
+                    // Calculate total records deleted
+                    var totalDeleted = propertiesDeleted + tenantsDeleted + leasesDeleted + invoicesDeleted + paymentsDeleted +
+                                     documentsDeleted + calendarEventsDeleted + notificationsDeleted + notesDeleted +
+                                     checklistItemsDeleted + checklistsDeleted + checklistTemplateItemsDeleted + checklistTemplatesDeleted +
+                                     repairsDeleted + maintenanceRequestsDeleted + inspectionsDeleted + toursDeleted +
+                                     applicationScreeningsDeleted + rentalApplicationsDeleted + prospectiveTenantsDeleted +
+                                     leaseOffersDeleted + securityDepositsDeleted + securityDepositDividendsDeleted +
+                                     securityDepositInvestmentPoolsDeleted;
 
                     // Log workflow completion
                     await LogTransitionAsync(
@@ -152,12 +214,15 @@ namespace Aquiis.Application.Services.Workflows
                         fromStatus: "Generated",
                         toStatus: "Removed",
                         action: "RemoveSampleData",
-                        reason: $"Deleted {propertiesDeleted} properties, {tenantsDeleted} tenants, {leasesDeleted} leases, {invoicesDeleted} invoices, {paymentsDeleted} payments, {calendarEventsDeleted} calendar events"
+                        reason: $"Deleted {totalDeleted} total records across all entity types"
                     );
 
                     return WorkflowResult.Ok(
-                        $"Successfully removed sample data: {propertiesDeleted} properties, {tenantsDeleted} tenants, " +
-                        $"{leasesDeleted} leases, {invoicesDeleted} invoices, {paymentsDeleted} payments, {calendarEventsDeleted} calendar events");
+                        $"Successfully removed {totalDeleted} sample data records: " +
+                        $"{propertiesDeleted} properties, {tenantsDeleted} tenants, {leasesDeleted} leases, " +
+                        $"{invoicesDeleted} invoices, {paymentsDeleted} payments, {documentsDeleted} documents, " +
+                        $"{maintenanceRequestsDeleted} maintenance requests, {inspectionsDeleted} inspections, " +
+                        $"{rentalApplicationsDeleted} applications, {prospectiveTenantsDeleted} prospects");
                 }
                 catch (Exception ex)
                 {
@@ -174,7 +239,7 @@ namespace Aquiis.Application.Services.Workflows
             var properties = new List<Property>();
             var now = DateTime.UtcNow;
 
-            // Define 6 properties in Texas with varied characteristics
+            // Define 9 properties in Texas with varied characteristics
             var propertyData = new[]
             {
                 new { Address = "1234 Riverside Dr", City = "Austin", State = "TX", Zip = "78701", Type = ApplicationConstants.PropertyTypes.House, Beds = 3, Baths = 2.0m, SqFt = 1850, Rent = 1850m, Status = ApplicationConstants.PropertyStatuses.Occupied },
@@ -182,7 +247,10 @@ namespace Aquiis.Application.Services.Workflows
                 new { Address = "910 Maple Ave", City = "Dallas", State = "TX", Zip = "75201", Type = ApplicationConstants.PropertyTypes.House, Beds = 4, Baths = 3.0m, SqFt = 2500, Rent = 2200m, Status = ApplicationConstants.PropertyStatuses.Occupied },
                 new { Address = "1122 Pine Ln", City = "San Antonio", State = "TX", Zip = "78205", Type = ApplicationConstants.PropertyTypes.Condo, Beds = 2, Baths = 1.0m, SqFt = 1100, Rent = 1200m, Status = ApplicationConstants.PropertyStatuses.Available },
                 new { Address = "3344 Elm Ct", City = "Fort Worth", State = "TX", Zip = "76102", Type = ApplicationConstants.PropertyTypes.House, Beds = 3, Baths = 2.0m, SqFt = 1750, Rent = 1750m, Status = ApplicationConstants.PropertyStatuses.Available },
-                new { Address = "5566 Cedar Rd", City = "El Paso", State = "TX", Zip = "79901", Type = ApplicationConstants.PropertyTypes.Apartment, Beds = 1, Baths = 1.0m, SqFt = 850, Rent = 1100m, Status = ApplicationConstants.PropertyStatuses.Available }
+                new { Address = "5566 Cedar Rd", City = "El Paso", State = "TX", Zip = "79901", Type = ApplicationConstants.PropertyTypes.Apartment, Beds = 1, Baths = 1.0m, SqFt = 850, Rent = 1100m, Status = ApplicationConstants.PropertyStatuses.Available },
+                new { Address = "7789 Bluebonnet Blvd", City = "Austin", State = "TX", Zip = "78758", Type = ApplicationConstants.PropertyTypes.House, Beds = 3, Baths = 2.5m, SqFt = 2000, Rent = 1950m, Status = ApplicationConstants.PropertyStatuses.Occupied },
+                new { Address = "9012 Ranch Road", City = "Plano", State = "TX", Zip = "75024", Type = ApplicationConstants.PropertyTypes.Townhouse, Beds = 3, Baths = 2.5m, SqFt = 1650, Rent = 1800m, Status = ApplicationConstants.PropertyStatuses.Occupied },
+                new { Address = "4455 Lonestar Dr", City = "Corpus Christi", State = "TX", Zip = "78401", Type = ApplicationConstants.PropertyTypes.Condo, Beds = 2, Baths = 2.0m, SqFt = 1300, Rent = 1350m, Status = ApplicationConstants.PropertyStatuses.Available }
             };
 
             for (int i = 0; i < propertyData.Length; i++)
@@ -233,12 +301,14 @@ namespace Aquiis.Application.Services.Workflows
         {
             var tenants = new List<Tenant>();
 
-            // Define 3 tenants with realistic data
+            // Define 5 tenants with realistic data
             var tenantData = new[]
             {
                 new { FirstName = "Sarah", LastName = "Johnson", DOB = new DateTime(1988, 5, 15), EmergencyName = "John Johnson", EmergencyPhone = "555-987-6543", Relationship = "Spouse" },
                 new { FirstName = "Michael", LastName = "Chen", DOB = new DateTime(1992, 8, 22), EmergencyName = "Lisa Chen", EmergencyPhone = "555-876-5432", Relationship = "Sister" },
-                new { FirstName = "Emily", LastName = "Rodriguez", DOB = new DateTime(1990, 3, 10), EmergencyName = "Carlos Rodriguez", EmergencyPhone = "555-765-4321", Relationship = "Father" }
+                new { FirstName = "Emily", LastName = "Rodriguez", DOB = new DateTime(1990, 3, 10), EmergencyName = "Carlos Rodriguez", EmergencyPhone = "555-765-4321", Relationship = "Father" },
+                new { FirstName = "James", LastName = "Martinez", DOB = new DateTime(1985, 11, 8), EmergencyName = "Maria Martinez", EmergencyPhone = "555-654-3210", Relationship = "Mother" },
+                new { FirstName = "Amanda", LastName = "Williams", DOB = new DateTime(1993, 7, 25), EmergencyName = "Robert Williams", EmergencyPhone = "555-543-2109", Relationship = "Brother" }
             };
 
             for (int i = 0; i < tenantData.Length; i++)
@@ -287,8 +357,9 @@ namespace Aquiis.Application.Services.Workflows
             string userId)
         {
             var leases = new List<Lease>();
+            var currentDate = DateTime.UtcNow.Date;
 
-            // Create 3 leases for first 3 properties
+            // Create 3 standard leases for first 3 properties (original logic)
             var leaseStartMonths = new[] { 5, 6, 7 }; // May, June, July 2025
 
             for (int i = 0; i < 3; i++)
@@ -330,6 +401,63 @@ namespace Aquiis.Application.Services.Workflows
                 property.Status = ApplicationConstants.PropertyStatuses.Occupied;
                 property.IsAvailable = false;
             }
+
+            // Create 2 new leases expiring soon (properties 6 and 7, tenants 3 and 4)
+            // Lease 1: Expires in 30 days from current date
+            var endDate30 = currentDate.AddDays(30);
+            var startDate30 = endDate30.AddMonths(-11); // 12-month lease
+            var lease30Days = new Lease
+            {
+                Id = Guid.NewGuid(),
+                OrganizationId = organizationId,
+                PropertyId = properties[6].Id, // 7789 Bluebonnet Blvd
+                TenantId = tenants[3].Id, // James Martinez
+                StartDate = startDate30,
+                EndDate = endDate30,
+                MonthlyRent = properties[6].MonthlyRent,
+                SecurityDeposit = properties[6].MonthlyRent,
+                Status = ApplicationConstants.LeaseStatuses.Active,
+                Terms = $"12-month {ApplicationConstants.LeaseTypes.FixedTerm} lease. Rent: ${properties[6].MonthlyRent}/month. " +
+                       $"Security Deposit: ${properties[6].MonthlyRent}. Payment due on the 5th of each month. EXPIRING SOON.",
+                SignedOn = startDate30.AddDays(-10), // Signed 10 days before start
+                OfferedOn = startDate30.AddDays(-20), // Offered 20 days before start
+                CreatedBy = userId,
+                CreatedOn = startDate30.AddDays(-25),
+                IsDeleted = false,
+                IsSampleData = true
+            };
+            _context.Leases.Add(lease30Days);
+            leases.Add(lease30Days);
+            properties[6].Status = ApplicationConstants.PropertyStatuses.Occupied;
+            properties[6].IsAvailable = false;
+
+            // Lease 2: Expires in 60 days from current date
+            var endDate60 = currentDate.AddDays(60);
+            var startDate60 = endDate60.AddMonths(-10); // 12-month lease
+            var lease60Days = new Lease
+            {
+                Id = Guid.NewGuid(),
+                OrganizationId = organizationId,
+                PropertyId = properties[7].Id, // 9012 Ranch Road
+                TenantId = tenants[4].Id, // Amanda Williams
+                StartDate = startDate60,
+                EndDate = endDate60,
+                MonthlyRent = properties[7].MonthlyRent,
+                SecurityDeposit = properties[7].MonthlyRent,
+                Status = ApplicationConstants.LeaseStatuses.Active,
+                Terms = $"12-month {ApplicationConstants.LeaseTypes.FixedTerm} lease. Rent: ${properties[7].MonthlyRent}/month. " +
+                       $"Security Deposit: ${properties[7].MonthlyRent}. Payment due on the 5th of each month. EXPIRING SOON.",
+                SignedOn = startDate60.AddDays(-10), // Signed 10 days before start
+                OfferedOn = startDate60.AddDays(-20), // Offered 20 days before start
+                CreatedBy = userId,
+                CreatedOn = startDate60.AddDays(-25),
+                IsDeleted = false,
+                IsSampleData = true
+            };
+            _context.Leases.Add(lease60Days);
+            leases.Add(lease60Days);
+            properties[7].Status = ApplicationConstants.PropertyStatuses.Occupied;
+            properties[7].IsAvailable = false;
 
             await _context.SaveChangesAsync();
             _logger.LogInformation($"Generated {leases.Count} leases");
@@ -415,73 +543,113 @@ namespace Aquiis.Application.Services.Workflows
             var payments = new List<Payment>();
             var currentDate = DateTime.UtcNow.Date;
 
-            // Group invoices by lease to check remaining months
+            // Group invoices by lease
             var invoicesByLease = invoices.GroupBy(i => i.LeaseId).ToList();
 
             foreach (var leaseGroup in invoicesByLease)
             {
                 var leaseInvoices = leaseGroup.OrderBy(i => i.InvoicedOn).ToList();
-
-                // Calculate months remaining (leases end in May/June/July 2026)
-                var lastInvoice = leaseInvoices.Last();
                 var lease = await _context.Leases.FindAsync(leaseGroup.Key);
                 
                 if (lease == null) continue;
 
-                var monthsRemaining = ((lease.EndDate.Year - currentDate.Year) * 12) + 
-                                     lease.EndDate.Month - currentDate.Month;
+                List<Invoice> invoicesToPay;
 
-                // If >3 months remaining, create payments for last 3 months only
-                if (monthsRemaining > 3)
+                // Check if this is one of the two new expiring leases by checking if lease has "EXPIRING SOON" in terms
+                if (lease.Terms != null && lease.Terms.Contains("EXPIRING SOON"))
                 {
-                    // Get last 3 invoices that have passed their due date
-                    var recentInvoices = leaseInvoices
+                    // New expiring leases: Pay ALL past-due invoices
+                    invoicesToPay = leaseInvoices
                         .Where(i => i.DueOn < currentDate)
-                        .OrderByDescending(i => i.InvoicedOn)
-                        .Take(3)
                         .ToList();
+                }
+                else
+                {
+                    // Original 3 leases: Pay only last 3 invoices
+                    var monthsRemaining = ((lease.EndDate.Year - currentDate.Year) * 12) + 
+                                         lease.EndDate.Month - currentDate.Month;
 
-                    foreach (var invoice in recentInvoices)
+                    if (monthsRemaining > 3)
                     {
-                        // Payment made 1-4 days before due date
-                        var paymentDate = invoice.DueOn.AddDays(-_random.Next(1, 5));
-
-                        // Generate proper payment number using service
-                        var paymentNumber = await _paymentService.GeneratePaymentNumberAsync();
-
-                        var payment = new Payment
-                        {
-                            Id = Guid.NewGuid(),
-                            OrganizationId = organizationId,
-                            InvoiceId = invoice.Id,
-                            Amount = invoice.Amount,
-                            PaymentNumber = paymentNumber,
-                            PaidOn = paymentDate,
-                            PaymentMethod = GetRandomPaymentMethod(),
-                            Notes = $"Payment for {invoice.Description}",
-                            CreatedBy = userId,
-                            CreatedOn = paymentDate,
-                            IsDeleted = false,
-                            IsSampleData = true
-                        };
-
-                        _context.Payments.Add(payment);
-                        
-                        // CRITICAL FIX: Save immediately after generating number to prevent collisions
-                        await _context.SaveChangesAsync();
-                        
-                        payments.Add(payment);
-
-                        // Update invoice status to Paid
-                        invoice.Status = ApplicationConstants.InvoiceStatuses.Paid;
-                        invoice.AmountPaid = invoice.Amount;
-                        invoice.PaidOn = paymentDate;
-                        invoice.LastModifiedBy = userId;
-                        invoice.LastModifiedOn = paymentDate;
-                        
-                        // Save invoice status update immediately
-                        await _context.SaveChangesAsync();
+                        invoicesToPay = leaseInvoices
+                            .Where(i => i.DueOn < currentDate)
+                            .OrderByDescending(i => i.InvoicedOn)
+                            .Take(3)
+                            .ToList();
                     }
+                    else
+                    {
+                        invoicesToPay = new List<Invoice>();
+                    }
+                }
+
+                foreach (var invoice in invoicesToPay)
+                {
+                    // Random payment date logic:
+                    // 70% chance: Pay before due date (between invoice date and due date)
+                    // 30% chance: Pay late (1-10 days after due date)
+                    DateTime paymentDate;
+                    decimal lateFee = 0m;
+                    
+                    if (_random.Next(100) < 70)
+                    {
+                        // Pay on time: Random date between invoice date and due date
+                        var daysInPeriod = (invoice.DueOn - invoice.InvoicedOn).Days;
+                        var randomDays = _random.Next(daysInPeriod + 1);
+                        paymentDate = invoice.InvoicedOn.AddDays(randomDays);
+                    }
+                    else
+                    {
+                        // Pay late: 1-10 days after due date
+                        var lateDays = _random.Next(1, 11);
+                        paymentDate = invoice.DueOn.AddDays(lateDays);
+                        lateFee = 50m; // $50 late fee
+                    }
+
+                    // Ensure payment date doesn't exceed current date
+                    if (paymentDate > currentDate)
+                        paymentDate = currentDate;
+
+                    // Calculate total payment amount (invoice + late fee if applicable)
+                    var totalAmount = invoice.Amount + lateFee;
+
+                    // Generate proper payment number using service
+                    var paymentNumber = await _paymentService.GeneratePaymentNumberAsync();
+
+                    var payment = new Payment
+                    {
+                        Id = Guid.NewGuid(),
+                        OrganizationId = organizationId,
+                        InvoiceId = invoice.Id,
+                        Amount = totalAmount,
+                        PaymentNumber = paymentNumber,
+                        PaidOn = paymentDate,
+                        PaymentMethod = GetRandomPaymentMethod(),
+                        Notes = lateFee > 0 
+                            ? $"Payment for {invoice.Description} (includes $50 late fee)"
+                            : $"Payment for {invoice.Description}",
+                        CreatedBy = userId,
+                        CreatedOn = paymentDate,
+                        IsDeleted = false,
+                        IsSampleData = true
+                    };
+
+                    _context.Payments.Add(payment);
+                    
+                    // CRITICAL FIX: Save immediately after generating number to prevent collisions
+                    await _context.SaveChangesAsync();
+                    
+                    payments.Add(payment);
+
+                    // Update invoice status to Paid
+                    invoice.Status = ApplicationConstants.InvoiceStatuses.Paid;
+                    invoice.AmountPaid = totalAmount;
+                    invoice.PaidOn = paymentDate;
+                    invoice.LastModifiedBy = userId;
+                    invoice.LastModifiedOn = paymentDate;
+                    
+                    // Save invoice status update immediately
+                    await _context.SaveChangesAsync();
                 }
             }
 
@@ -602,7 +770,7 @@ namespace Aquiis.Application.Services.Workflows
 
         #region Sample Data Removal
 
-        private async Task<int> RemovePropertiesAsync(Guid organizationId, string systemUserId)
+        private async Task<int> RemovePropertiesAsync(Guid organizationId)
         {
             var properties = await _context.Properties
                 .Where(p => p.OrganizationId == organizationId && p.IsSampleData)
@@ -614,7 +782,7 @@ namespace Aquiis.Application.Services.Workflows
             return properties.Count;
         }
 
-        private async Task<int> RemoveTenantsAsync(Guid organizationId, string systemUserId)
+        private async Task<int> RemoveTenantsAsync(Guid organizationId)
         {
             var tenants = await _context.Tenants
                 .Where(t => t.OrganizationId == organizationId && t.IsSampleData)
@@ -626,7 +794,7 @@ namespace Aquiis.Application.Services.Workflows
             return tenants.Count;
         }
 
-        private async Task<int> RemoveLeasesAsync(Guid organizationId, string systemUserId)
+        private async Task<int> RemoveLeasesAsync(Guid organizationId)
         {
             var leases = await _context.Leases
                 .Where(l => l.OrganizationId == organizationId && l.IsSampleData)
@@ -638,7 +806,7 @@ namespace Aquiis.Application.Services.Workflows
             return leases.Count;
         }
 
-        private async Task<int> RemoveInvoicesAsync(Guid organizationId, string systemUserId)
+        private async Task<int> RemoveInvoicesAsync(Guid organizationId)
         {
             var invoices = await _context.Invoices
                 .Where(i => i.OrganizationId == organizationId && i.IsSampleData)
@@ -650,7 +818,7 @@ namespace Aquiis.Application.Services.Workflows
             return invoices.Count;
         }
 
-        private async Task<int> RemovePaymentsAsync(Guid organizationId, string systemUserId)
+        private async Task<int> RemovePaymentsAsync(Guid organizationId)
         {
             var payments = await _context.Payments
                 .Where(p => p.OrganizationId == organizationId && p.IsSampleData)
@@ -662,7 +830,211 @@ namespace Aquiis.Application.Services.Workflows
             return payments.Count;
         }
 
-        private async Task<int> RemoveCalendarEventsAsync(Guid organizationId, string systemUserId)
+        private async Task<int> RemoveDocumentsAsync(Guid organizationId)
+        {
+            var documents = await _context.Documents
+                .Where(d => d.OrganizationId == organizationId && d.IsSampleData)
+                .ToListAsync();
+
+            _context.Documents.RemoveRange(documents);
+            await _context.SaveChangesAsync();
+
+            return documents.Count;
+        }
+
+        private async Task<int> RemoveNotesAsync(Guid organizationId)
+        {
+            var notes = await _context.Notes
+                .Where(n => n.OrganizationId == organizationId && n.IsSampleData)
+                .ToListAsync();
+
+            _context.Notes.RemoveRange(notes);
+            await _context.SaveChangesAsync();
+
+            return notes.Count;
+        }
+
+        private async Task<int> RemoveChecklistItemsAsync(Guid organizationId)
+        {
+            var checklistItems = await _context.ChecklistItems
+                .Where(ci => ci.OrganizationId == organizationId && ci.IsSampleData)
+                .ToListAsync();
+
+            _context.ChecklistItems.RemoveRange(checklistItems);
+            await _context.SaveChangesAsync();
+
+            return checklistItems.Count;
+        }
+
+        private async Task<int> RemoveChecklistsAsync(Guid organizationId)
+        {
+            var checklists = await _context.Checklists
+                .Where(c => c.OrganizationId == organizationId && c.IsSampleData)
+                .ToListAsync();
+
+            _context.Checklists.RemoveRange(checklists);
+            await _context.SaveChangesAsync();
+
+            return checklists.Count;
+        }
+
+        private async Task<int> RemoveChecklistTemplateItemsAsync(Guid organizationId)
+        {
+            var checklistTemplateItems = await _context.ChecklistTemplateItems
+                .Where(cti => cti.OrganizationId == organizationId && cti.IsSampleData)
+                .ToListAsync();
+
+            _context.ChecklistTemplateItems.RemoveRange(checklistTemplateItems);
+            await _context.SaveChangesAsync();
+
+            return checklistTemplateItems.Count;
+        }
+
+        private async Task<int> RemoveChecklistTemplatesAsync(Guid organizationId)
+        {
+            var checklistTemplates = await _context.ChecklistTemplates
+                .Where(ct => ct.OrganizationId == organizationId && ct.IsSampleData)
+                .ToListAsync();
+
+            _context.ChecklistTemplates.RemoveRange(checklistTemplates);
+            await _context.SaveChangesAsync();
+
+            return checklistTemplates.Count;
+        }
+
+        private async Task<int> RemoveRepairsAsync(Guid organizationId)
+        {
+            var repairs = await _context.Repairs
+                .Where(r => r.OrganizationId == organizationId && r.IsSampleData)
+                .ToListAsync();
+
+            _context.Repairs.RemoveRange(repairs);
+            await _context.SaveChangesAsync();
+
+            return repairs.Count;
+        }
+
+        private async Task<int> RemoveMaintenanceRequestsAsync(Guid organizationId)
+        {
+            var maintenanceRequests = await _context.MaintenanceRequests
+                .Where(mr => mr.OrganizationId == organizationId && mr.IsSampleData)
+                .ToListAsync();
+
+            _context.MaintenanceRequests.RemoveRange(maintenanceRequests);
+            await _context.SaveChangesAsync();
+
+            return maintenanceRequests.Count;
+        }
+
+        private async Task<int> RemoveInspectionsAsync(Guid organizationId)
+        {
+            var inspections = await _context.Inspections
+                .Where(i => i.OrganizationId == organizationId && i.IsSampleData)
+                .ToListAsync();
+
+            _context.Inspections.RemoveRange(inspections);
+            await _context.SaveChangesAsync();
+
+            return inspections.Count;
+        }
+
+        private async Task<int> RemoveToursAsync(Guid organizationId)
+        {
+            var tours = await _context.Tours
+                .Where(t => t.OrganizationId == organizationId && t.IsSampleData)
+                .ToListAsync();
+
+            _context.Tours.RemoveRange(tours);
+            await _context.SaveChangesAsync();
+
+            return tours.Count;
+        }
+
+        private async Task<int> RemoveApplicationScreeningsAsync(Guid organizationId)
+        {
+            var applicationScreenings = await _context.ApplicationScreenings
+                .Where(a => a.OrganizationId == organizationId && a.IsSampleData)
+                .ToListAsync();
+
+            _context.ApplicationScreenings.RemoveRange(applicationScreenings);
+            await _context.SaveChangesAsync();
+
+            return applicationScreenings.Count;
+        }
+
+        private async Task<int> RemoveRentalApplicationsAsync(Guid organizationId)
+        {
+            var rentalApplications = await _context.RentalApplications
+                .Where(ra => ra.OrganizationId == organizationId && ra.IsSampleData)
+                .ToListAsync();
+
+            _context.RentalApplications.RemoveRange(rentalApplications);
+            await _context.SaveChangesAsync();
+
+            return rentalApplications.Count;
+        }
+
+        private async Task<int> RemoveProspectiveTenantsAsync(Guid organizationId)
+        {
+            var prospectiveTenants = await _context.ProspectiveTenants
+                .Where(pt => pt.OrganizationId == organizationId && pt.IsSampleData)
+                .ToListAsync();
+
+            _context.ProspectiveTenants.RemoveRange(prospectiveTenants);
+            await _context.SaveChangesAsync();
+
+            return prospectiveTenants.Count;
+        }
+
+        private async Task<int> RemoveLeaseOffersAsync(Guid organizationId)
+        {
+            var leaseOffers = await _context.LeaseOffers
+                .Where(lo => lo.OrganizationId == organizationId && lo.IsSampleData)
+                .ToListAsync();
+
+            _context.LeaseOffers.RemoveRange(leaseOffers);
+            await _context.SaveChangesAsync();
+
+            return leaseOffers.Count;
+        }
+
+        private async Task<int> RemoveSecurityDepositsAsync(Guid organizationId)
+        {
+            var securityDeposits = await _context.SecurityDeposits
+                .Where(sd => sd.OrganizationId == organizationId && sd.IsSampleData)
+                .ToListAsync();
+
+            _context.SecurityDeposits.RemoveRange(securityDeposits);
+            await _context.SaveChangesAsync();
+
+            return securityDeposits.Count;
+        }
+
+        private async Task<int> RemoveSecurityDepositDividendsAsync(Guid organizationId)
+        {
+            var securityDepositDividends = await _context.SecurityDepositDividends
+                .Where(sdd => sdd.OrganizationId == organizationId && sdd.IsSampleData)
+                .ToListAsync();
+
+            _context.SecurityDepositDividends.RemoveRange(securityDepositDividends);
+            await _context.SaveChangesAsync();
+
+            return securityDepositDividends.Count;
+        }
+
+        private async Task<int> RemoveSecurityDepositInvestmentPoolsAsync(Guid organizationId)
+        {
+            var securityDepositInvestmentPools = await _context.SecurityDepositInvestmentPools
+                .Where(sdip => sdip.OrganizationId == organizationId && sdip.IsSampleData)
+                .ToListAsync();
+
+            _context.SecurityDepositInvestmentPools.RemoveRange(securityDepositInvestmentPools);
+            await _context.SaveChangesAsync();
+
+            return securityDepositInvestmentPools.Count;
+        }
+
+        private async Task<int> RemoveCalendarEventsAsync(Guid organizationId)
         {
             var calendarEvents = await _context.CalendarEvents
                 .Where(ce => ce.OrganizationId == organizationId && ce.IsSampleData)
@@ -674,7 +1046,7 @@ namespace Aquiis.Application.Services.Workflows
             return calendarEvents.Count;
         }
 
-        private async Task<int> RemoveNotificationsAsync(Guid organizationId, string systemUserId)
+        private async Task<int> RemoveNotificationsAsync(Guid organizationId)
         {
             var notifications = await _context.Notifications
                 .Where(n => n.OrganizationId == organizationId && n.IsSampleData)
@@ -760,6 +1132,7 @@ namespace Aquiis.Application.Services.Workflows
                 LeaseCount = await _context.Leases.CountAsync(l => l.OrganizationId == orgId && l.IsSampleData && !l.IsDeleted),
                 InvoiceCount = await _context.Invoices.CountAsync(i => i.OrganizationId == orgId && i.IsSampleData && !i.IsDeleted),
                 PaymentCount = await _context.Payments.CountAsync(p => p.OrganizationId == orgId && p.IsSampleData && !p.IsDeleted),
+                DocumentCount = await _context.Documents.CountAsync(d => d.OrganizationId == orgId && d.IsSampleData && !d.IsDeleted),
                 CalendarEventCount = await _context.CalendarEvents.CountAsync(ce => ce.OrganizationId == orgId && ce.IsSampleData && !ce.IsDeleted)
             };
         }
@@ -777,10 +1150,11 @@ namespace Aquiis.Application.Services.Workflows
         public int LeaseCount { get; set; }
         public int InvoiceCount { get; set; }
         public int PaymentCount { get; set; }
+        public int DocumentCount { get; set; }
         public int CalendarEventCount { get; set; }
         public int NotificationCount { get; set; }
         
-        public int TotalCount => PropertyCount + TenantCount + LeaseCount + InvoiceCount + PaymentCount + CalendarEventCount + NotificationCount;
+        public int TotalCount => PropertyCount + TenantCount + LeaseCount + InvoiceCount + PaymentCount + DocumentCount + CalendarEventCount + NotificationCount;
         public bool HasData => TotalCount > 0;
     }
 }

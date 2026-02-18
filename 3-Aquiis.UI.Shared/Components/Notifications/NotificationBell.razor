@@ -320,6 +320,7 @@ else
     .notification-bell {
         position: relative;
         display: inline-block;
+        z-index: 10000;
     }
 
     .notification-bell-button {
@@ -332,10 +333,12 @@ else
         color: var(--bs-body-color);
         transition: all 0.2s;
         white-space: nowrap;
+        z-index: 10000;
     }
 
     .notification-bell-button:hover {
         background-color: var(--bs-secondary-bg);
+        z-index: 10000;
     }
 
     .notification-bell-icon {
@@ -368,6 +371,7 @@ else
 
     .notification-dropdown {
         position: relative;
+        z-index: 9999;
     }
 
     .notification-dropdown .dropdown-menu {
@@ -378,28 +382,34 @@ else
         min-width: 320px;
         max-height: 400px;
         overflow-y: auto;
+        z-index: 10000;
     }
 
     .notification-dropdown .dropdown-item {
         padding: 0.75rem 1rem;
         border-bottom: 1px solid var(--bs-border-color);
+        z-index: 10000;
     }
 
     .notification-dropdown .dropdown-item:last-child {
         border-bottom: none;
+        z-index: 10000;
     }
 
     .notification-dropdown .dropdown-item a {
         color: var(--bs-body-color);
         text-decoration: none;
         cursor: pointer;
+        z-index: 10000;
     }
 
     .notification-dropdown .dropdown-item a:hover {
         text-decoration: underline;
+        z-index: 10000;
     }
 
     .notification-dropdown .dropdown-item i {
         margin-right: 0.5rem;
+        z-index: 10000;
     }
 </style>

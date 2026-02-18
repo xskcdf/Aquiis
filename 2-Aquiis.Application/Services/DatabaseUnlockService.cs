@@ -69,4 +69,41 @@ public class DatabaseUnlockService
             return (false, $"Error unlocking database: {ex.Message}");
         }
     }
+    
+    /// <summary>
+    /// Archive encrypted database and create fresh database when password forgotten
+    /// </summary>
+    /// <param name="databasePath">Path to encrypted database</param>
+    /// <returns>(Success, ArchivedPath, ErrorMessage)</returns>
+    public async Task<(bool Success, string? ArchivedPath, string? ErrorMessage)> StartWithNewDatabaseAsync(
+        string databasePath)
+    {
+        try
+        {
+            _logger.LogWarning("User requested new database - archiving encrypted database");
+
+            // Create backups directory if it doesn't exist
+            var dbDirectory = Path.GetDirectoryName(databasePath)!;
+            var backupsDir = Path.Combine(dbDirectory, "Backups");
+            Directory.CreateDirectory(backupsDir);
+
+            // Generate archived filename with timestamp and .db extension for easy identification
+            var dbFileNameWithoutExt = Path.GetFileNameWithoutExtension(databasePath);
+            var timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+            var archivedPath = Path.Combine(backupsDir, $"{dbFileNameWithoutExt}.{timestamp}.encrypted.db");
+
+            // Move encrypted database to backups
+            File.Move(databasePath, archivedPath);
+            _logger.LogInformation("Encrypted database archived to: {ArchivedPath}", archivedPath);
+
+            // New unencrypted database will be created automatically on app restart
+            // The app will detect no database exists and go through first-time setup
+            return (true, archivedPath, null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error archiving encrypted database");
+            return (false, null, $"Error archiving database: {ex.Message}");
+        }
+    }
 }

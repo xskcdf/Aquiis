@@ -239,6 +239,12 @@ namespace Aquiis.Application.Services
             where T : BaseModel, ISchedulableEntity
         {
             var eventType = entity.GetEventType();
+            var propertyId = entity.GetPropertyId();
+            
+            // Get property address for Location field
+            var property = propertyId.HasValue 
+                ? _context.Properties.FirstOrDefault(p => p.Id == propertyId.Value) 
+                : null;
             
             return new CalendarEvent
             {
@@ -249,14 +255,16 @@ namespace Aquiis.Application.Services
                 EventType = eventType,
                 Status = entity.GetEventStatus(),
                 Description = entity.GetEventDescription(),
-                PropertyId = entity.GetPropertyId(),
+                PropertyId = propertyId,
+                Location = property?.Address ?? string.Empty, // Set location to property address
                 Color = CalendarEventTypes.GetColor(eventType),
                 Icon = CalendarEventTypes.GetIcon(eventType),
                 SourceEntityId = entity.Id,
                 SourceEntityType = typeof(T).Name,
                 OrganizationId = entity.OrganizationId,
                 CreatedBy = entity.CreatedBy,
-                CreatedOn = DateTime.UtcNow
+                CreatedOn = DateTime.UtcNow,
+                IsSampleData = entity.IsSampleData // Inherit sample data flag from entity
             };
         }
 
@@ -264,17 +272,26 @@ namespace Aquiis.Application.Services
         /// Update a CalendarEvent from a schedulable entity
         /// </summary>
         private void UpdateEventFromEntity<T>(CalendarEvent evt, T entity) 
-            where T : ISchedulableEntity
+            where T : BaseModel, ISchedulableEntity
         {
+            var propertyId = entity.GetPropertyId();
+            
+            // Get property address for Location field
+            var property = propertyId.HasValue 
+                ? _context.Properties.FirstOrDefault(p => p.Id == propertyId.Value) 
+                : null;
+            
             evt.Title = entity.GetEventTitle();
             evt.StartOn = entity.GetEventStart();
             evt.DurationMinutes = entity.GetEventDuration();
             evt.EventType = entity.GetEventType();
             evt.Status = entity.GetEventStatus();
             evt.Description = entity.GetEventDescription();
-            evt.PropertyId = entity.GetPropertyId();
+            evt.PropertyId = propertyId;
+            evt.Location = property?.Address ?? string.Empty; // Update location to property address
             evt.Color = CalendarEventTypes.GetColor(entity.GetEventType());
             evt.Icon = CalendarEventTypes.GetIcon(entity.GetEventType());
+            evt.IsSampleData = entity.IsSampleData; // Inherit sample data flag from entity
         }
     }
 }
