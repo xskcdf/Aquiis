@@ -2,7 +2,7 @@
 
 **Modern Property Management for Landlords**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/xnodeoncode/Aquiis/releases)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/xnodeoncode/Aquiis/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey.svg)](#installation)
@@ -62,23 +62,26 @@
 - 📅 Background tasks for scheduling and cleanup
 - 🎯 Configurable notification preferences
 
-### Database Management
+### Database & Security
 
 - 💾 SQLite file-based database (no server required)
+- 🔒 **NEW:** Database encryption at rest (SQLCipher AES-256)
+- 🔑 **NEW:** OS keychain integration for password management
 - 🔄 Automatic schema migrations
 - 📦 Manual and scheduled backups
 - ♻️ Staged restore with preview
+- 🔐 Content Security Policy (CSP) headers for web security
 
 ---
 
 ## � Download
 
-**Latest Release: v1.0.0**
+**Latest Release: v1.1.0**
 
-[![Download for Linux](https://img.shields.io/badge/Download-Linux%20AppImage-blue.svg?style=for-the-badge&logo=linux)](https://github.com/xnodeoncode/Aquiis/releases/download/v1.0.0/AquiisPropertyManagement-1.0.0.AppImage)
-[![Download for Windows](https://img.shields.io/badge/Download-Windows%20Portable-blue.svg?style=for-the-badge&logo=windows)](https://github.com/xnodeoncode/Aquiis/releases/download/v1.0.0/AquiisPropertyManagement%201.0.0.exe)
+[![Download for Linux](https://img.shields.io/badge/Download-Linux%20AppImage-blue.svg?style=for-the-badge&logo=linux)](https://github.com/xnodeoncode/Aquiis/releases/download/v1.1.0/Aquiis-1.1.0-x86_64.AppImage)
+[![Download for Windows](https://img.shields.io/badge/Download-Windows%20Setup-blue.svg?style=for-the-badge&logo=windows)](https://github.com/xnodeoncode/Aquiis/releases/download/v1.1.0/Aquiis-1.1.0-x64-Setup.exe)
 
-**All Downloads:** [View v1.0.0 Release](https://github.com/xnodeoncode/Aquiis/releases/tag/v1.0.0)
+**All Downloads:** [View v1.1.0 Release](https://github.com/xnodeoncode/Aquiis/releases/tag/v1.1.0)
 
 ---
 
@@ -90,41 +93,48 @@
 
 ```bash
 # Download from releases page or use wget
-wget https://github.com/xnodeoncode/Aquiis/releases/download/v1.0.0/AquiisPropertyManagement-1.0.0.AppImage
+wget https://github.com/xnodeoncode/Aquiis/releases/download/v1.1.0/Aquiis-1.1.0-x86_64.AppImage
 
 # Make executable
-chmod +x AquiisPropertyManagement-1.0.0.AppImage
+chmod +x Aquiis-1.1.0-x86_64.AppImage
 
 # Option 1: Desktop integration (recommended)
-wget https://github.com/xnodeoncode/Aquiis/releases/download/v1.0.0/install-desktop-integration.sh
+wget https://github.com/xnodeoncode/Aquiis/releases/download/v1.1.0/install-desktop-integration.sh
 chmod +x install-desktop-integration.sh
-./install-desktop-integration.sh AquiisPropertyManagement-1.0.0.AppImage
+./install-desktop-integration.sh Aquiis-1.1.0-x86_64.AppImage
 
 # Option 2: Run directly
-./AquiisPropertyManagement-1.0.0.AppImage
+./Aquiis-1.1.0-x86_64.AppImage
 ```
 
-#### Windows (Portable Executable)
+#### Windows (Installer or Portable)
 
-1. **Download** `AquiisPropertyManagement 1.0.0.exe` from [releases page](https://github.com/xnodeoncode/Aquiis/releases/tag/v1.0.0)
+**Option A: Installer (Recommended)**
+
+1. **Download** `Aquiis-1.1.0-x64-Setup.exe` from [releases page](https://github.com/xnodeoncode/Aquiis/releases/tag/v1.1.0)
+2. **Run installer** and follow the setup wizard
+3. **Launch** from Start Menu or Desktop shortcut
+
+**Option B: Portable Executable**
+
+1. **Download** `Aquiis-1.1.0-x64-Portable.exe` from [releases page](https://github.com/xnodeoncode/Aquiis/releases/tag/v1.1.0)
 2. **Move to permanent location** (e.g., `C:\Program Files\Aquiis\`)
    - ⚠️ Database and settings are stored relative to the .exe location
 3. **Double-click** to run
-4. **First launch**: Windows SmartScreen warning is expected (app is unsigned)
-   - Click **"More info"** → **"Run anyway"**
-   - Code signing planned for v1.1.0
+
+**Note:** Windows SmartScreen warning may appear (app is unsigned). Click **"More info"** → **"Run anyway"**. Code signing planned for future release.
 
 #### Verify Download (Optional)
 
 ```bash
 # Download checksums
-wget https://github.com/xnodeoncode/Aquiis/releases/download/v1.0.0/checksums.txt
+wget https://github.com/xnodeoncode/Aquiis/releases/download/v1.1.0/checksums.txt
 
 # Linux
 sha256sum -c checksums.txt
 
 # Windows PowerShell
-Get-FileHash "AquiisPropertyManagement 1.0.0.exe" -Algorithm SHA256
+Get-FileHash "Aquiis-1.1.0-x64-Setup.exe" -Algorithm SHA256
 ```
 
 ### First Run
@@ -136,7 +146,7 @@ Get-FileHash "AquiisPropertyManagement 1.0.0.exe" -Algorithm SHA256
 
 ### 15-Minute Tutorial
 
-Follow our [Quick Start Guide](Documentation/v1.0.0/v1.0.0-Quick-Start-Guide.md) to:
+Follow our [Quick Start Guide](Documentation/Quick-Start-Guide.md) to:
 
 - Add your first property
 - Add a tenant
@@ -182,9 +192,11 @@ Aquiis is available as a portable Windows executable (.exe). No installation req
 
 ### User Documentation
 
-- 📖 **[Release Notes](Documentation/v1.0.0/v1.0.0-Release-Notes.md)** - What's new in v1.0.0
-- 🚀 **[Quick Start Guide](Documentation/v1.0.0/v1.0.0-Quick-Start-Guide.md)** - Get started in 15 minutes
-- 💾 **[Database Management Guide](Documentation/v1.0.0/v1.0.0-Database-Management-Guide.md)** - Backup, restore, troubleshooting
+- 📖 **[Release Notes](Documentation/v1.1.0/v1.1.0-Release-Notes.md)** - What's new in v1.1.0
+- 🚀 **[Quick Start Guide](Documentation/Quick-Start-Guide.md)** - Get started in 15 minutes
+- 💾 **[Database Management Guide](Documentation/Database-Management-Guide.md)** - Backup, restore, troubleshooting
+- 🔒 **[Security Features](Documentation/v1.1.0/Security-Enhancements.md)** - Database encryption, CSP, and more
+- 📊 **[Compatibility Matrix](Documentation/Compatibility-Matrix.md)** - Version compatibility and upgrade paths
 
 ### Developer Documentation
 
@@ -303,21 +315,34 @@ We use [Semantic Versioning](https://semver.org/):
 - **MINOR** version (0.X.0): New features, UI changes (backward compatible)
 - **PATCH** version (0.0.X): Bug fixes, minor updates
 
-**Current version:** 1.0.0 (Initial production release)
+**Current version:** 1.1.0 (Security and schema enhancement release)
+**Database version:** 1.1.0
 
 ---
 
 ## 🗺️ Roadmap
 
-### v1.1.0 (Q2 2026)
+### v1.1.0 (Released February 2026) ✅
+
+- ✅ Database encryption at rest (SQLCipher AES-256)
+- ✅ OS keychain integration (Linux)
+- ✅ Sample data management (IsSampleData flag)
+- ✅ Multi-tenant index fixes
+- ✅ Content Security Policy headers
+- ✅ Database schema v1.1.0 with automatic migrations
+
+### v1.2.0 (Q2 2026)
+
+- 🎯 Windows/macOS keychain integration
+- 🎯 Rate limiting for login endpoints
+- 🎯 Antiforgery tokens in all forms
+- 🎯 Code signing for Windows
+- 🎯 Calendar refactoring
+
+### v1.3.0 (Q3 2026)
 
 - 🎯 Tenant portal for online payment and maintenance requests
-- 🎯 Calendar refactoring (remove legacy service dependencies)
 - 🎯 Enhanced reporting and customization
-- 🎯 Mobile companion app (view-only)
-
-### v1.2.0 (Q3 2026)
-
 - 💳 Online rent payment processing (Stripe integration)
 - 📊 Advanced analytics and forecasting
 
@@ -345,7 +370,8 @@ Licensed under the **MIT License** - see [LICENSE](LICENSE) file for details.
 - 📧 **Email:** cisguru@outlook.com
 - 🐛 **Bug Reports:** [GitHub Issues](https://github.com/xnodeoncode/Aquiis/issues)
 - 💡 **Feature Requests:** [GitHub Discussions](https://github.com/xnodeoncode/Aquiis/discussions)
-- 📖 **Documentation:** [/Documentation/v1.0.0/](Documentation/v1.0.0/)
+- 📖 **Documentation:** [/Documentation/](Documentation/)
+- 🔒 **Security Issues:** Please report privately to cisguru@outlook.com
 
 ### Community
 
@@ -376,12 +402,14 @@ Licensed under the **MIT License** - see [LICENSE](LICENSE) file for details.
 
 ## 🎊 Status
 
-**v1.0.0 - General Availability** 🎉
+**v1.1.0 - Security & Schema Enhancement Release** 🎉
 
-- ✅ **95.75% Production Ready**
+- ✅ **Production Ready**
 - ✅ **303 tests passing**
+- ✅ **Database encryption at rest**
 - ✅ **CI/CD pipeline complete**
 - ✅ **Documentation complete**
+- 🔒 **Enterprise-grade security features**
 - 🚀 **Ready for production use!**
 
 ---
