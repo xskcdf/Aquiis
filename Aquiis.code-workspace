@@ -1,11 +1,14 @@
 {
   "folders": [
     {
-      "path": "."
+      "path": ".",
     },
     {
-      "path": "../../Documents/Orion/Projects/Aquiis"
-    }
+      "path": "../../Documents/Orion/Projects/Aquiis",
+    },
+    {
+      "path": "../appimage.github.io",
+    },
   ],
-  "settings": {}
+  "settings": {},
 }
