@@ -63,6 +63,21 @@
   </provides>
   
   <releases>
+    <release version="1.1.0" date="2026-02-19">
+      <description>
+        <p>Security and Schema Enhancement Release</p>
+        <ul>
+          <li>Database encryption at rest with SQLCipher AES-256</li>
+          <li>Sample data management system with IsSampleData flags</li>
+          <li>Content Security Policy (CSP) headers for web security</li>
+          <li>Multi-tenant data integrity enhancements</li>
+          <li>Database schema v1.1.0 with automatic migrations</li>
+          <li>OS keychain integration for password caching (Linux)</li>
+          <li>Automatic database location migration</li>
+          <li>New application naming convention</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.0.0" date="2026-01-28">
       <description>
         <p>First stable release for public distribution</p>
