@@ -1,7 +1,7 @@
 # Aquiis SimpleStart - Quick Start Guide
 
-**Version:** 1.0.0  
-**Last Updated:** January 28, 2026  
+**Version:** 1.1.0  
+**Last Updated:** February 18, 2026  
 **Estimated Time:** 15 minutes
 
 ---
@@ -33,7 +33,7 @@ Before you begin, ensure you have:
 - **Hardware:**
   - 2 GB RAM minimum (4 GB recommended)
   - 500 MB disk space
-- **Downloaded:** Aquiis SimpleStart v1.0.0 installer for your platform
+- **Downloaded:** Aquiis SimpleStart v1.1.0 installer for your platform
 
 ### Universal Linux Support:
 
@@ -53,20 +53,20 @@ Aquiis is available as a portable Windows executable (.exe). No installation req
 
 ```bash
 # 1. Download the file
-# File: Aquiis-SimpleStart-1.0.0.AppImage
+# File: Aquiis-1.1.0-x86_64.AppImage
 
 # 2. Make it executable
-chmod +x Aquiis-SimpleStart-1.0.0.AppImage
+chmod +x Aquiis-1.1.0-x86_64.AppImage
 
 # 3. Run the application
-./Aquiis-SimpleStart-1.0.0.AppImage
+./Aquiis-1.1.0-x86_64.AppImage
 ```
 
 **Option B: Debian Package (Ubuntu/Debian users)**
 
 ```bash
 # 1. Install the package
-sudo dpkg -i Aquiis-SimpleStart-1.0.0-amd64.deb
+sudo dpkg -i Aquiis-1.1.0-amd64.deb
 
 # 2. Run the application
 aquiis-simplestart
@@ -76,7 +76,7 @@ aquiis-simplestart
 
 **Option A: NSIS Installer (Recommended)**
 
-1. **Download** `Aquiis-SimpleStart-Setup-1.0.0.exe`
+1. **Download** `Aquiis-1.1.0-x64-Setup.exe`
 2. **Double-click** the installer
 3. **Follow the wizard:**
    - Click "Next" to begin
@@ -88,7 +88,7 @@ aquiis-simplestart
 
 **Option B: Portable Executable (No installation)**
 
-1. **Download** `Aquiis-SimpleStart-1.0.0-Portable.exe`
+1. **Download** `Aquiis-1.1.0-x64-Portable.exe`
 2. **Place** in your desired folder (e.g., `C:\Aquiis\`)
 3. **Double-click** to run
 
@@ -531,7 +531,7 @@ In just 15 minutes, you've learned how to:
 
 ### Documentation
 
-- **Release Notes** - What's new in v1.0.0
+- **Release Notes** - What's new in v1.1.0
 - **User Guide** - Comprehensive 10-chapter guide covering all features
 - **Administrator Guide** - System configuration and management
 - **Database Management Guide** - Backup, restore, troubleshooting
@@ -543,7 +543,7 @@ In just 15 minutes, you've learned how to:
 - 📧 **Email Support:** cisguru@outlook.com
 - 🐛 **Report Bugs:** [GitHub Issues](https://github.com/xnodeoncode/Aquiis/issues)
 - 💡 **Request Features:** [GitHub Discussions](https://github.com/xnodeoncode/Aquiis/discussions)
-- 📖 **Documentation:** `/Documentation/v1.0.0/`
+- 📖 **Documentation:** `/Documentation/v1.1.0/`
 
 **Community:**
 
@@ -632,7 +632,7 @@ In just 15 minutes, you've learned how to:
 
 ### Q: Can I import data from another property management system?
 
-**A:** Not directly in v1.0.0. You'll need to manually enter your properties, tenants, and leases. We're working on data import features for v1.1.0.
+**A:** Not directly in v1.1.0. You'll need to manually enter your properties, tenants, and leases. Data import features are planned for a future release.
 
 ### Q: What happens when I reach the 9-property limit?
 
@@ -672,11 +672,11 @@ In just 15 minutes, you've learned how to:
 
 ### Q: Can I run this on a Mac?
 
-**A:** Not in v1.0.0. macOS support is planned for a future release. For now, use a Windows or Linux computer.
+**A:** Not in v1.1.0. macOS support is planned for a future release. For now, use a Windows or Linux computer.
 
 ### Q: Is there a mobile app?
 
-**A:** Not yet. A mobile companion app (view-only) is planned for v1.1.0.
+**A:** Not yet. A mobile companion app (view-only) is planned for a future release.
 
 ---
 
@@ -760,6 +760,6 @@ We hope this Quick Start Guide helped you get up and running quickly. Enjoy mana
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** January 28, 2026  
+**Document Version:** 1.1  
+**Last Updated:** February 18, 2026  
 **Author:** CIS Guru with GitHub Copilot

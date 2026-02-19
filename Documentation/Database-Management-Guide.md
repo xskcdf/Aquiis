@@ -1,7 +1,7 @@
 # Aquiis SimpleStart - Database Management Guide
 
-**Version:** 1.0.0  
-**Last Updated:** January 28, 2026  
+**Version:** 1.1.0  
+**Last Updated:** February 18, 2026  
 **Audience:** Administrators and Power Users
 
 ---
@@ -62,19 +62,19 @@ Your database contains **all your property management data:**
 **Linux:**
 
 ```bash
-~/.config/Aquiis/Data/app_v1.0.0.db
+~/.config/Aquiis/Data/app_v1.1.0.db
 ```
 
 **Windows:**
 
 ```
-%APPDATA%\Aquiis\Data\app_v1.0.0.db
+%APPDATA%\Aquiis\Data\app_v1.1.0.db
 ```
 
 **Full path examples:**
 
-- **Linux:** `/home/username/.config/Aquiis/Data/app_v1.0.0.db`
-- **Windows:** `C:\Users\YourName\AppData\Roaming\Aquiis\Data\app_v1.0.0.db`
+- **Linux:** `/home/username/.config/Aquiis/Data/app_v1.1.0.db`
+- **Windows:** `C:\Users\YourName\AppData\Roaming\Aquiis\Data\app_v1.1.0.db`
 
 ### Database Structure
 
@@ -93,13 +93,13 @@ The database file is a **single SQLite file** containing:
 
 ### Schema Version
 
-Aquiis SimpleStart v1.0.0 uses schema version `1.0.0`. This tracks the database structure and ensures compatibility.
+Aquiis SimpleStart v1.1.0 uses schema version `1.1.0`. This tracks the database structure and ensures compatibility.
 
 **Check your schema version:**
 
 1. Navigate to **Settings** → **Database**
 2. View **"Database Information"** panel
-3. See **"Schema Version: 1.0.0"**
+3. See \*\*"Schema Version: 1.1.0""
 
 ### Auto-Migration System
 
@@ -112,6 +112,42 @@ When you upgrade Aquiis SimpleStart to a new version:
 5. Application starts normally
 
 **No manual intervention required** - migrations are automatic and seamless!
+
+#### Migration to v1.1.0
+
+When upgrading from v1.0.0 to v1.1.0, the following schema changes are automatically applied:
+
+**New Tables:**
+
+- **DatabaseSettings** - Tracks encryption state and configuration
+  - DatabaseEncryptionEnabled (boolean)
+  - EncryptionChangedOn (datetime)
+  - Other security settings
+
+**New Columns:**
+
+- **IsSampleData** - Boolean flag added to 30+ tables to identify sample/demo data
+  - Default value: false
+  - Helps distinguish real data from system-generated examples
+
+**Index Changes:**
+
+- **Invoice/Payment unique indexes** - Now composite indexes including OrganizationId
+  - Ensures multi-tenant data integrity
+  - Prevents number conflicts across organizations
+
+**Other Enhancements:**
+
+- **EncryptionSalt** column added (nullable) for future encryption support
+
+**Migration Notes:**
+
+- All changes are additive (no data loss)
+- Migration runs automatically on first startup with v1.1.0
+- Backup created automatically before migration
+- Typical migration time: 5-15 seconds
+
+**Important:** v1.1.0 application **requires** v1.1.0 database schema - the DatabaseSettings table is queried on startup. Running v1.1.0 app with v1.0.0 database will result in an error.
 
 ---
 
@@ -147,7 +183,7 @@ When you upgrade Aquiis SimpleStart to a new version:
 **Backup details:**
 
 - **Filename:** `backup_YYYYMMDD_HHMMSS.db`
-  - Example: `backup_20260128_143022.db` (January 28, 2026 at 2:30:22 PM)
+  - Example: `backup_20260218_143022.db` (February 18, 2026 at 2:30:22 PM)
 - **Location:** `Data/Backups/` folder
   - Linux: `~/.config/Aquiis/Data/Backups/`
   - Windows: `%APPDATA%\Aquiis\Data\Backups\`
@@ -265,7 +301,7 @@ Restore from backup when:
 2. **Click:** "Available Backups" dropdown
 3. **Select** a backup from the list:
    - Shows filename and date
-   - Example: `backup_20260128_143022.db (Jan 28, 2026 2:30 PM)`
+   - Example: `backup_20260218_143022.db (Feb 18, 2026 2:30 PM)`
 4. **Click:** "Staged Restore" button
 5. **Wait:** System creates temporary copy and validates backup
 6. **Preview:** Backup information shown:
@@ -348,13 +384,13 @@ pkill Aquiis
 cd ~/.config/Aquiis/Data/
 
 # Backup current (corrupted) database
-mv app_v1.0.0.db app_v1.0.0.db.corrupted
+mv app_v1.1.0.db app_v1.1.0.db.corrupted
 
 # Copy backup to main database
-cp Backups/backup_20260128_143022.db app_v1.0.0.db
+cp Backups/backup_20260218_143022.db app_v1.1.0.db
 
 # Restart application
-./Aquiis-SimpleStart-1.0.0.AppImage
+./Aquiis-SimpleStart-1.1.0.AppImage
 ```
 
 **Windows:**
@@ -366,10 +402,10 @@ cp Backups/backup_20260128_143022.db app_v1.0.0.db
 cd $env:APPDATA\Aquiis\Data
 
 # Backup current (corrupted) database
-Move-Item app_v1.0.0.db app_v1.0.0.db.corrupted
+Move-Item app_v1.1.0.db app_v1.1.0.db.corrupted
 
 # Copy backup to main database
-Copy-Item Backups\backup_20260128_143022.db app_v1.0.0.db
+Copy-Item Backups\backup_20260218_143022.db app_v1.1.0.db
 
 # Restart application (Start Menu or double-click icon)
 ```
@@ -435,7 +471,7 @@ Reset the database when:
 5. **Type:** `RESET` (exactly, uppercase)
 6. **Click:** "Confirm Reset"
 7. **Automatic steps:**
-   - Current database backed up (safety backup: `pre-reset-backup_DATE.db`)
+   - Current database backed up (safety backup: `pre-reset-backup_20260218_DATE.db`)
    - Database reset to empty schema
    - Application restarts to New Setup Wizard
 8. **Setup:** Go through New Setup Wizard to configure fresh installation
@@ -451,7 +487,7 @@ Reset the database when:
 If you reset by mistake, **immediately restore** from the pre-reset backup:
 
 1. Navigate to Backups folder
-2. Find: `pre-reset-backup_20260128_143022.db`
+2. Find: `pre-reset-backup_20260218_143022.db`
 3. Use restore procedure (Method 2 or 3 above)
 4. Your data will be recovered
 
@@ -480,9 +516,9 @@ Aquiis SimpleStart monitors database health continuously:
    ```
    ✅ Database Health Check: PASSED
 
-   Database file: app_v1.0.0.db
+   Database file: app_v1.1.0.db
    File size: 47.3 MB
-   Schema version: 1.0.0
+   Schema version: 1.1.0
    Connection status: Connected
    Integrity check: PASSED
 
@@ -493,8 +529,8 @@ Aquiis SimpleStart monitors database health continuously:
    - Invoices: 96
    - Payments: 89
 
-   Last backup: January 28, 2026 2:00 AM
-   Next scheduled backup: January 29, 2026 2:00 AM
+   Last backup: February 18, 2026 2:00 AM
+   Next scheduled backup: February 19, 2026 2:00 AM
    ```
 
 ### Health Indicators
@@ -503,7 +539,7 @@ Aquiis SimpleStart monitors database health continuously:
 
 - ✅ **Connection status: Connected** - Database accessible
 - ✅ **Integrity check: PASSED** - No corruption detected
-- ✅ **Schema version: 1.0.0** - Matches application version
+- ✅ **Schema version: 1.1.0** - Matches application version
 - ✅ **File accessible: Yes** - Database file readable and writable
 
 **Yellow indicators (warning):**
@@ -599,12 +635,12 @@ Aquiis SimpleStart monitors database health continuously:
    ```bash
    # Only if application is definitely closed
    # Linux
-   rm ~/.config/Aquiis/Data/app_v1.0.0.db-wal
-   rm ~/.config/Aquiis/Data/app_v1.0.0.db-shm
+   rm ~/.config/Aquiis/Data/app_v1.1.0.db-wal
+   rm ~/.config/Aquiis/Data/app_v1.1.0.db-shm
 
    # Windows
-   del %APPDATA%\Aquiis\Data\app_v1.0.0.db-wal
-   del %APPDATA%\Aquiis\Data\app_v1.0.0.db-shm
+   del %APPDATA%\Aquiis\Data\app_v1.1.0.db-wal
+   del %APPDATA%\Aquiis\Data\app_v1.1.0.db-shm
    ```
 
 ### Issue 2: Database Corruption
@@ -634,11 +670,11 @@ Aquiis SimpleStart monitors database health continuously:
 
    ```bash
    # Attempt to dump and rebuild database
-   sqlite3 app_v1.0.0.db ".dump" | sqlite3 app_v1.0.0_recovered.db
+   sqlite3 app_v1.1.0.db ".dump" | sqlite3 app_v1.1.0_recovered.db
 
    # Replace corrupted database with recovered one
-   mv app_v1.0.0.db app_v1.0.0.db.corrupted
-   mv app_v1.0.0_recovered.db app_v1.0.0.db
+   mv app_v1.1.0.db app_v1.1.0.db.corrupted
+   mv app_v1.1.0_recovered.db app_v1.1.0.db
    ```
 
 3. **Professional data recovery:**
@@ -764,21 +800,21 @@ Aquiis SimpleStart monitors database health continuously:
 
    ```bash
    # Linux
-   find ~ -name "app_v1.0.0.db" 2>/dev/null
+   find ~ -name "app_v1.1.0.db" 2>/dev/null
 
    # Windows (PowerShell)
-   Get-ChildItem -Path C:\ -Filter "app_v1.0.0.db" -Recurse -ErrorAction SilentlyContinue
+   Get-ChildItem -Path C:\ -Filter "app_v1.1.0.db" -Recurse -ErrorAction SilentlyContinue
    ```
 
 3. **Restore from backup:**
    - If original database lost
    - Copy backup to correct location
-   - Rename to `app_v1.0.0.db`
+   - Rename to `app_v1.1.0.db`
 
 4. **Fix permissions (Linux):**
    ```bash
-   chmod 644 ~/.config/Aquiis/Data/app_v1.0.0.db
-   chown $USER:$USER ~/.config/Aquiis/Data/app_v1.0.0.db
+   chmod 644 ~/.config/Aquiis/Data/app_v1.1.0.db
+   chown $USER:$USER ~/.config/Aquiis/Data/app_v1.1.0.db
    ```
 
 ---
@@ -796,9 +832,9 @@ Aquiis SimpleStart monitors database health continuously:
 
 You may notice these files alongside the database:
 
-- `app_v1.0.0.db` - Main database file
-- `app_v1.0.0.db-wal` - Write-Ahead Log (temporary)
-- `app_v1.0.0.db-shm` - Shared Memory file (temporary)
+- `app_v1.1.0.db` - Main database file
+- `app_v1.1.0.db-wal` - Write-Ahead Log (temporary)
+- `app_v1.1.0.db-shm` - Shared Memory file (temporary)
 
 **WAL benefits:**
 
@@ -872,11 +908,25 @@ GROUP BY l.PropertyId, p.PropertyName;
 
 ### Database Encryption
 
-SQLite databases are **not encrypted** by default. To add encryption:
+SQLite databases are **not encrypted** by default. Aquiis SimpleStart v1.1.0 includes database encryption options:
 
-**Option 1: SQLCipher (not included in v1.0.0)**
+**Option 1: SQLCipher (Included in v1.1.0)**
 
-SQLCipher provides AES-256 encryption. Would require custom build.
+SQLCipher provides AES-256 encryption for database files. This is integrated into Aquiis SimpleStart v1.1.0:
+
+- **Enable encryption:** Settings → Database → Security → Enable Database Encryption
+- **AES-256 encryption** of entire database file
+- **Master password** required to unlock database
+- **Encryption state** tracked in DatabaseSettings table
+- **Performance impact:** Minimal (2-5% overhead)
+
+**Important notes:**
+
+- ⚠️ **Backup before enabling encryption** (encrypted backups require password)
+- ⚠️ **Store password safely** - lost password = unrecoverable data
+- ✅ Encryption applied to new data immediately
+- ✅ Existing data encrypted in background (may take several minutes)
+- ✅ Transparent to application once enabled (automatic encryption/decryption)
 
 **Option 2: File-system encryption**
 
@@ -1000,7 +1050,7 @@ Aquiis SimpleStart is designed as single-computer desktop application. Multi-com
 
 ### Q: Can I restore a backup from an older version?
 
-**A:** Generally yes, if schema versions are compatible. The application will attempt to migrate the backup forward. However, backups from much older versions (e.g., v0.1.0 → v1.0.0) may not work. Always test staged restore first.
+**A:** Generally yes, if schema versions are compatible. The application will attempt to migrate the backup forward. However, backups from much older versions (e.g., v0.1.0 → v1.1.0) may not work. Always test staged restore first.
 
 ### Q: What if I lose all my backups?
 
@@ -1051,7 +1101,7 @@ Use application UI for all changes.
 
 ### Q: Can I have multiple databases?
 
-**A:** Not directly supported in v1.0.0. You can manually swap database files, but only one can be active at a time. For multi-organization use, wait for Aquiis Professional.
+**A:** Not directly supported in v1.1.0. You can manually swap database files, but only one can be active at a time. For multi-organization use, wait for Aquiis Professional.
 
 ---
 
@@ -1094,6 +1144,6 @@ Need help with database management? We're here for you!
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** January 28, 2026  
+**Document Version:** 1.1  
+**Last Updated:** February 18, 2026  
 **Author:** CIS Guru with GitHub Copilot

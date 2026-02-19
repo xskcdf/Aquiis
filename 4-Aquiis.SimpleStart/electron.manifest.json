@@ -7,7 +7,7 @@
     "--enable-features=VaapiVideoDecoder",
     "--disable-dev-shm-usage"
   ],
-  "name": "aquiis-property-management",
+  "name": "aquiis",
   "description": "Desktop property management application for landlords managing up to 9 residential properties",
   "author": "Aquiis",
   "singleInstance": false,
