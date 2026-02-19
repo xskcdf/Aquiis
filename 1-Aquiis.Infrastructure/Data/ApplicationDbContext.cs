@@ -72,6 +72,7 @@ namespace Aquiis.Infrastructure.Data
         public DbSet<Repair> Repairs { get; set; }
         public DbSet<OrganizationSettings> OrganizationSettings { get; set; }
         public DbSet<SchemaVersion> SchemaVersions { get; set; }
+        public DbSet<DatabaseSettings> DatabaseSettings { get; set; }
         public DbSet<ChecklistTemplate> ChecklistTemplates { get; set; }
         public DbSet<ChecklistTemplateItem> ChecklistTemplateItems { get; set; }
         public DbSet<Checklist> Checklists { get; set; }
@@ -175,7 +176,11 @@ namespace Aquiis.Infrastructure.Data
                     .HasForeignKey(i => i.DocumentId)
                     .OnDelete(DeleteBehavior.SetNull);
 
-                entity.HasIndex(e => e.InvoiceNumber).IsUnique();
+                // Unique constraint on (OrganizationId, InvoiceNumber) for multi-tenant isolation
+                entity.HasIndex(e => new { e.OrganizationId, e.InvoiceNumber })
+                    .IsUnique()
+                    .HasDatabaseName("IX_Invoice_OrgId_InvoiceNumber");
+                    
                 entity.Property(e => e.Amount).HasPrecision(18, 2);
                 entity.Property(e => e.AmountPaid).HasPrecision(18, 2);
                 
@@ -198,6 +203,11 @@ namespace Aquiis.Infrastructure.Data
                     .WithMany()
                     .HasForeignKey(p => p.DocumentId)
                     .OnDelete(DeleteBehavior.SetNull);
+
+                // Unique constraint on (OrganizationId, PaymentNumber) for multi-tenant isolation
+                entity.HasIndex(e => new { e.OrganizationId, e.PaymentNumber })
+                    .IsUnique()
+                    .HasDatabaseName("IX_Payment_OrgId_PaymentNumber");
 
                 entity.Property(e => e.Amount).HasPrecision(18, 2);
                 

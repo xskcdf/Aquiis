@@ -10,12 +10,6 @@ namespace Aquiis.Core.Entities
     /// </summary>
     public class OrganizationSettings : BaseModel
     {
-        
-        [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
         [MaxLength(200)]
         public string? Name { get; set; }
 
@@ -30,7 +24,7 @@ namespace Aquiis.Core.Entities
         [Required]
         [Range(0, 30)]
         [Display(Name = "Grace Period (Days)")]
-        public int LateFeeGracePeriodDays { get; set; } = 3;
+        public int LateFeeGracePeriodDays { get; set; } = 5;
 
         [Required]
         [Range(0, 1)]

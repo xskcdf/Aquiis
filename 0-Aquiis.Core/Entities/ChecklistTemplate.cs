@@ -5,10 +5,6 @@ namespace Aquiis.Core.Entities
 {
     public class ChecklistTemplate : BaseModel
     {
-        [RequiredGuid]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
         [Required]
         [StringLength(100)]
         [Display(Name = "Template Name")]

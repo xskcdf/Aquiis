@@ -1,6 +1,8 @@
 @using Aquiis.Core.Constants
+@using Microsoft.AspNetCore.SignalR.Client
 @inject NotificationService NotificationService
 @inject NavigationManager NavigationManager
+@inject ILogger<NotificationCenter> Logger
 @namespace Aquiis.UI.Shared.Components.Notifications
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -369,15 +371,115 @@
     private int pageSize = 25;
     private int totalPages = 1;
     private int totalRecords = 0;
+    
+    // SignalR connection
+    private HubConnection? hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadNotificationsAsync();
+        await InitializeSignalRAsync();
+    }
+
+    private async Task InitializeSignalRAsync()
+    {
+        try
+        {
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl(NavigationManager.ToAbsoluteUri("/hubs/notifications"))
+                .WithAutomaticReconnect()
+                .Build();
+
+            // Handle new notification received
+            hubConnection.On<Guid, string, string, string, string>(
+                "NotificationReceived",
+                async (id, title, message, type, category) =>
+                {
+                    Logger.LogInformation($"NotificationReceived: {id} - {title}");
+                    await LoadNotificationsAsync();
+                    await InvokeAsync(StateHasChanged);
+                });
+
+            // Handle notification marked as read
+            hubConnection.On<Guid, int>("NotificationRead", async (notificationId, newUnreadCount) =>
+            {
+                Logger.LogInformation($"NotificationRead: {notificationId}, new count: {newUnreadCount}");
+                
+                var notification = notifications.FirstOrDefault(n => n.Id == notificationId);
+                if (notification != null)
+                {
+                    notification.IsRead = true;
+                    notification.ReadOn = DateTime.UtcNow;
+                    SortAndPaginateNotifications();
+                }
+                
+                await InvokeAsync(StateHasChanged);
+            });
+
+            // Handle all notifications marked as read
+            hubConnection.On("NotificationsMarkedAllRead", async () =>
+            {
+                Logger.LogInformation("NotificationsMarkedAllRead event received");
+                await LoadNotificationsAsync();
+                await InvokeAsync(StateHasChanged);
+            });
+
+            // Handle reconnection
+            hubConnection.Reconnecting += error =>
+            {
+                Logger.LogWarning($"SignalR connection lost. Reconnecting... Error: {error?.Message}");
+                return Task.CompletedTask;
+            };
+
+            hubConnection.Reconnected += connectionId =>
+            {
+                Logger.LogInformation($"SignalR reconnected. ConnectionId: {connectionId}");
+                return LoadNotificationsAsync();
+            };
+
+            hubConnection.Closed += async error =>
+            {
+                Logger.LogError($"SignalR connection closed. Error: {error?.Message}");
+                await Task.Delay(5000);
+                await StartConnectionAsync();
+            };
+
+            await StartConnectionAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to initialize SignalR connection");
+        }
+    }
+
+    private async Task StartConnectionAsync()
+    {
+        try
+        {
+            if (hubConnection?.State == HubConnectionState.Disconnected)
+            {
+                await hubConnection.StartAsync();
+                Logger.LogInformation("SignalR connection started successfully");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to start SignalR connection");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
     }
 
     private async Task LoadNotificationsAsync()
     {
-        notifications = await NotificationService.GetUnreadNotificationsAsync();
+        // Load ALL notifications (both read and unread) for proper filtering
+        notifications = await NotificationService.GetNotificationHistoryAsync(500);
         filteredNotifications = notifications;
         SortAndPaginateNotifications();
     }
@@ -464,13 +566,27 @@
 
     private async Task MarkAllAsRead()
     {
-        foreach (var notification in notifications.Where(n => !n.IsRead))
+        try
         {
-            notification.IsRead = true;
-            notification.ReadOn = DateTime.UtcNow;
+            var unreadNotifications = notifications.Where(n => !n.IsRead).ToList();
+            if (unreadNotifications.Any())
+            {
+                // Update database first
+                await NotificationService.MarkAllAsReadAsync(unreadNotifications);
+                
+                // Update local state after successful database update
+                foreach (var notification in unreadNotifications)
+                {
+                    notification.IsRead = true;
+                    notification.ReadOn = DateTime.UtcNow;
+                }
+                SortAndPaginateNotifications();
+            }
         }
-        await Task.CompletedTask;
-        SortAndPaginateNotifications();
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to mark all notifications as read");
+        }
     }
 
     private void SortAndPaginateNotifications()
@@ -532,22 +648,53 @@
         }
     }
 
-    private void ToggleReadStatus(Guid id){
-        var notification = notifications.FirstOrDefault(n => n.Id == id);
-        if (notification != null)
-        {
-            notification.IsRead = !notification.IsRead;
-            SortAndPaginateNotifications();
-        }
-    }
-
-    private void DeleteNotification(Guid id)
+    private async Task ToggleReadStatus(Guid id)
     {
         var notification = notifications.FirstOrDefault(n => n.Id == id);
         if (notification != null)
         {
-            notifications.Remove(notification);
-            SortAndPaginateNotifications();
+            try
+            {
+                // Update database first
+                if (!notification.IsRead)
+                {
+                    await NotificationService.MarkAsReadAsync(id);
+                }
+                else
+                {
+                    await NotificationService.MarkAsUnreadAsync(id);
+                }
+                
+                // Update local state after successful database update
+                notification.IsRead = !notification.IsRead;
+                notification.ReadOn = notification.IsRead ? DateTime.UtcNow : null;
+                SortAndPaginateNotifications();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, $"Failed to toggle read status for notification {id}");
+            }
+        }
+    }
+
+    private async Task DeleteNotification(Guid id)
+    {
+        var notification = notifications.FirstOrDefault(n => n.Id == id);
+        if (notification != null)
+        {
+            try
+            {
+                // Delete from database first
+                await NotificationService.DeleteAsync(id);
+                
+                // Remove from local list after successful database delete
+                notifications.Remove(notification);
+                SortAndPaginateNotifications();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, $"Failed to delete notification {id}");
+            }
         }
     }
 
@@ -562,18 +709,28 @@
     }
 
     // Modal Methods
-    private void OpenMessageModal(Guid id)
+    private async Task OpenMessageModal(Guid id)
     {
         selectedNotification = notifications.FirstOrDefault(n => n.Id == id);
         if (selectedNotification != null)
         {
-            // Mark as read when opened
-            if (!selectedNotification.IsRead)
+            try
             {
-                selectedNotification.IsRead = true;
-                selectedNotification.ReadOn = DateTime.UtcNow;
+                // Mark as read in database when opened
+                if (!selectedNotification.IsRead)
+                {
+                    await NotificationService.MarkAsReadAsync(id);
+                    selectedNotification.IsRead = true;
+                    selectedNotification.ReadOn = DateTime.UtcNow;
+                }
+                showMessageModal = true;
             }
-            showMessageModal = true;
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, $"Failed to mark notification {id} as read");
+                // Still show modal even if marking as read fails
+                showMessageModal = true;
+            }
         }
     }
 
@@ -584,12 +741,23 @@
         SortAndPaginateNotifications();
     }
 
-    private void DeleteCurrentNotification()
+    private async Task DeleteCurrentNotification()
     {
         if (selectedNotification != null)
         {
-            notifications.Remove(selectedNotification);
-            CloseMessageModal();
+            try
+            {
+                // Delete from database first
+                await NotificationService.DeleteAsync(selectedNotification.Id);
+                
+                // Remove from local list after successful database delete
+                notifications.Remove(selectedNotification);
+                CloseMessageModal();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, $"Failed to delete notification {selectedNotification.Id}");
+            }
         }
     }
 
@@ -636,3 +804,5 @@
         _ => "secondary"
     };
 }
+
+@implements IAsyncDisposable

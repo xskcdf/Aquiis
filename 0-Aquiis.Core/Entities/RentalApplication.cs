@@ -7,13 +7,6 @@ namespace Aquiis.Core.Entities
     public class RentalApplication : BaseModel
     {
         [Required]
-        [JsonInclude]
-        [StringLength(100)]
-        [DataType(DataType.Text)]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
-        [Required]
         [Display(Name = "Prospective Tenant")]
         public Guid ProspectiveTenantId { get; set; }
 

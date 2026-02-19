@@ -19,6 +19,7 @@
 @inject InspectionService InspectionService
 @inject MaintenanceService MaintenanceService
 @inject LeaseService LeaseService
+@inject IJSRuntime JSRuntime
 
 @rendermode InteractiveServer
 
@@ -28,15 +29,73 @@
     <div class="row mb-3">
         <div class="col">
             <h1><i class="bi bi-list-ul"></i> Calendar - List View</h1>
-            <p class="text-muted">All scheduled events for the next 30 days</p>
+            <p class="text-muted">@GetDateRangeDescription()</p>
         </div>
         <div class="col-auto">
+            @if (overdueCount > 0)
+            {
+                <span class="badge bg-danger me-2" style="font-size: 0.9rem;">
+                    <i class="bi bi-exclamation-triangle"></i> @overdueCount overdue
+                </span>
+            }
             <button class="btn btn-outline-secondary me-2" @onclick="ToggleFilters">
-                <i class="bi bi-funnel"></i> Filters
+                <i class="bi bi-funnel"></i>
             </button>
             <button class="btn btn-primary" @onclick="NavigateToCalendar">
-                <i class="bi bi-calendar3"></i> Calendar View
+                <i class="bi bi-calendar3"></i>
             </button>
+        </div>
+    </div>
+
+    <!-- Date Range Filter - Always Visible -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-12">
+                    <h6 class="card-title">Date Range</h6>
+                    <div class="btn-group mb-2" role="group">
+                        <button class="btn @(dateRangeMode == "7" ? "btn-primary" : "btn-outline-secondary")" 
+                                @onclick='() => SetDateRange("7")'>
+                            Next 7 Days
+                        </button>
+                        <button class="btn @(dateRangeMode == "30" ? "btn-primary" : "btn-outline-secondary")" 
+                                @onclick='() => SetDateRange("30")'>
+                            Next 30 Days
+                        </button>
+                        <button class="btn @(dateRangeMode == "90" ? "btn-primary" : "btn-outline-secondary")" 
+                                @onclick='() => SetDateRange("90")'>
+                            Next 90 Days
+                        </button>
+                        <button class="btn @(dateRangeMode == "overdue" ? "btn-danger" : "btn-outline-danger")" 
+                                @onclick='() => SetDateRange("overdue")'>
+                            <i class="bi bi-exclamation-triangle"></i> Overdue Only
+                        </button>
+                        <button class="btn @(dateRangeMode == "custom" ? "btn-info" : "btn-outline-info")" 
+                                @onclick='() => SetDateRange("custom")'>
+                            Custom Range
+                        </button>
+                    </div>
+                    
+                    @if (dateRangeMode == "custom")
+                    {
+                        <div class="row mt-2">
+                            <div class="col-md-5">
+                                <label class="form-label">Start Date</label>
+                                <input type="date" class="form-control" @bind="customStartDate" @bind:after="LoadEvents" />
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">End Date</label>
+                                <input type="date" class="form-control" @bind="customEndDate" @bind:after="LoadEvents" />
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-outline-secondary" @onclick="ResetDateRange">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 
@@ -44,6 +103,35 @@
     {
         <div class="card mb-3">
             <div class="card-body">
+
+                <!-- Sort Options -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <h6 class="card-title">Sort By</h6>
+                        <div class="btn-group" role="group">
+                            <button class="btn @(sortBy == "date-asc" ? "btn-primary" : "btn-outline-secondary")" 
+                                    @onclick='() => SetSort("date-asc")'>
+                                <i class="bi bi-sort-down"></i> Date (Earliest First)
+                            </button>
+                            <button class="btn @(sortBy == "date-desc" ? "btn-primary" : "btn-outline-secondary")" 
+                                    @onclick='() => SetSort("date-desc")'>
+                                <i class="bi bi-sort-up"></i> Date (Latest First)
+                            </button>
+                            <button class="btn @(sortBy == "type" ? "btn-primary" : "btn-outline-secondary")" 
+                                    @onclick='() => SetSort("type")'>
+                                <i class="bi bi-tag"></i> Event Type
+                            </button>
+                            <button class="btn @(sortBy == "status" ? "btn-primary" : "btn-outline-secondary")" 
+                                    @onclick='() => SetSort("status")'>
+                                <i class="bi bi-info-circle"></i> Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <hr />
+
+                <!-- Event Types Filter -->
                 <h6 class="card-title">Event Types</h6>
                 <div class="row">
                     @foreach (var eventType in CalendarEventTypes.GetAllTypes())
@@ -439,6 +527,16 @@
     </div>
 }
 
+<style>
+    /* Remove outline from date range filter buttons */
+    .btn-group .btn:focus,
+    .btn-group .btn:active,
+    .btn-group .btn.active {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+</style>
+
 @code {
     private List<CalendarEvent> allEvents = new();
     private List<CalendarEvent> filteredEvents = new();
@@ -457,18 +555,84 @@
     private int currentPage = 1;
     private int pageSize = 20;
     private int totalPages => (int)Math.Ceiling(filteredEvents.Count / (double)pageSize);
+    private bool firstRenderCompleted = false;
+
+    // Date range filtering
+    private string dateRangeMode = "30"; // 7, 30, 90, overdue, custom
+    private DateTime customStartDate = DateTime.Today;
+    private DateTime customEndDate = DateTime.Today.AddDays(30);
+    private int overdueCount = 0;
+
+    // Sorting
+    private string sortBy = "date-asc"; // date-asc, date-desc, type, status
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadEvents();
-        
         // Initialize with all event types selected
         foreach (var eventType in CalendarEventTypes.GetAllTypes())
         {
             selectedEventTypes.Add(eventType);
         }
         
-        ApplyFilters();
+        // Check for overdue events before loading - this determines initial view mode
+        await CheckForOverdueEvents();
+        
+        // If overdue tasks exist, start in overdue mode; otherwise use 30-day view
+        if (overdueCount > 0)
+        {
+            dateRangeMode = "overdue";
+        }
+        
+        // Now load events with the correct date range mode
+        await LoadEvents();
+        ApplyFiltersAndSort();
+    }
+    
+    private async Task CheckForOverdueEvents()
+    {
+        try
+        {
+            // Query for overdue events (past events that aren't completed/cancelled)
+            var today = DateTime.Today;
+            var startDate = today.AddDays(-365); // Look back 1 year
+            var endDate = today.AddSeconds(-1); // Up to end of yesterday
+            
+            var overdueEvents = await CalendarEventService.GetEventsAsync(startDate, endDate);
+            
+            overdueCount = overdueEvents.Count(e => 
+                e.StartOn.Date < today && 
+                !string.IsNullOrEmpty(e.Status) &&
+                e.Status != "Completed" && 
+                e.Status != "Cancelled");
+        }
+        catch
+        {
+            // Silently fail - default to 30-day view if check fails
+            overdueCount = 0;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !firstRenderCompleted)
+        {
+            firstRenderCompleted = true;
+            
+            // Check if user prefers grid view - redirect if so
+            var savedPagePreference = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "calendarViewPage");
+            await JSRuntime.InvokeVoidAsync("console.log", $"Retrieved calendarViewPage: {savedPagePreference ?? "null"}");
+            
+            if (savedPagePreference == "grid")
+            {
+                await JSRuntime.InvokeVoidAsync("console.log", "User prefers grid view, redirecting...");
+                Navigation.NavigateTo("/Calendar");
+                return; // Stop execution, we're navigating away
+            }
+            
+            // User is staying on list view - update preference
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "calendarViewPage", "list");
+            await JSRuntime.InvokeVoidAsync("console.log", "Saved preference: calendarViewPage = list");
+        }
     }
 
     private async Task LoadEvents()
@@ -477,15 +641,57 @@
         {
             loading = true;
             
-           
-            // Get events for the next 30 days
-            var startDate = DateTime.Today;
-            var endDate = DateTime.Today.AddDays(30);
+            // Calculate date range based on selected mode
+            DateTime startDate;
+            DateTime endDate;
+            
+            switch (dateRangeMode)
+            {
+                case "7":
+                    startDate = DateTime.Today;
+                    endDate = DateTime.Today.AddDays(7);
+                    break;
+                case "30":
+                    startDate = DateTime.Today;
+                    endDate = DateTime.Today.AddDays(30);
+                    break;
+                case "90":
+                    startDate = DateTime.Today;
+                    endDate = DateTime.Today.AddDays(90);
+                    break;
+                case "overdue":
+                    startDate = DateTime.Today.AddDays(-365); // Look back 1 year for overdue
+                    endDate = DateTime.Today.AddSeconds(-1); // Up to end of yesterday
+                    break;
+                case "custom":
+                    startDate = customStartDate;
+                    endDate = customEndDate;
+                    // Validate custom range
+                    if (endDate < startDate)
+                    {
+                        ToastService.ShowWarning("End date must be after start date. Swapping dates.");
+                        (startDate, endDate) = (endDate, startDate);
+                        customStartDate = startDate;
+                        customEndDate = endDate;
+                    }
+                    break;
+                default:
+                    startDate = DateTime.Today;
+                    endDate = DateTime.Today.AddDays(30);
+                    break;
+            }
             
             allEvents = await CalendarEventService.GetEventsAsync(startDate, endDate);
-            allEvents = allEvents.OrderBy(e => e.StartOn).ToList();
             
-            ApplyFilters();
+            // Calculate overdue count (events in the past that aren't completed/cancelled)
+            var today = DateTime.Today;
+            overdueCount = allEvents.Count(e => 
+                e.StartOn.Date < today && 
+                !string.IsNullOrEmpty(e.Status) &&
+                e.Status != "Completed" && 
+                e.Status != "Cancelled");
+            
+            ApplyFiltersAndSort();
         }
         catch (Exception ex)
         {
@@ -509,16 +715,63 @@
         }
         
         currentPage = 1; // Reset to first page when filtering
-        ApplyFilters();
+        ApplyFiltersAndSort();
     }
 
-    private void ApplyFilters()
+    private void ApplyFiltersAndSort()
     {
+        // Apply event type filters
         filteredEvents = allEvents
             .Where(e => selectedEventTypes.Contains(e.EventType))
             .ToList();
         
+        // Apply sorting
+        filteredEvents = sortBy switch
+        {
+            "date-asc" => filteredEvents.OrderBy(e => e.StartOn).ToList(),
+            "date-desc" => filteredEvents.OrderByDescending(e => e.StartOn).ToList(),
+            "type" => filteredEvents.OrderBy(e => e.EventType).ThenBy(e => e.StartOn).ToList(),
+            "status" => filteredEvents.OrderBy(e => e.Status ?? "zzz").ThenBy(e => e.StartOn).ToList(),
+            _ => filteredEvents.OrderBy(e => e.StartOn).ToList()
+        };
+        
         UpdatePagedEvents();
+    }
+
+    private void SetDateRange(string mode)
+    {
+        dateRangeMode = mode;
+        currentPage = 1; // Reset to first page
+        _ = LoadEvents(); // Fire and forget async
+    }
+
+    private void SetSort(string sorting)
+    {
+        sortBy = sorting;
+        currentPage = 1; // Reset to first page
+        ApplyFiltersAndSort();
+    }
+
+    private void ResetDateRange()
+    {
+        dateRangeMode = "30";
+        customStartDate = DateTime.Today;
+        customEndDate = DateTime.Today.AddDays(30);
+        currentPage = 1;
+        _ = LoadEvents();
+    }
+
+    private string GetDateRangeDescription()
+    {
+        return dateRangeMode switch
+        {
+            "7" => "Events for the next 7 days",
+            "30" => "Events for the next 30 days",
+            "90" => "Events for the next 90 days",
+            "overdue" => $"Overdue events ({overdueCount} found)",
+            "custom" => $"Events from {customStartDate:MMM dd, yyyy} to {customEndDate:MMM dd, yyyy}",
+            _ => "All scheduled events"
+        };
     }
 
     private void UpdatePagedEvents()
@@ -543,8 +796,19 @@
         showFilters = !showFilters;
     }
 
-    private void NavigateToCalendar()
+    private async void NavigateToCalendar()
     {
+        // Save preference for grid view before navigating back
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "calendarViewPage", "grid");
+            await JSRuntime.InvokeVoidAsync("console.log", "Saved preference: calendarViewPage = grid");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("console.error", $"Failed to save grid view preference: {ex.Message}");
+        }
+        
         Navigation.NavigateTo("/Calendar");
     }
 

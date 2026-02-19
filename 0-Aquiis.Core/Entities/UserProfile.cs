@@ -31,8 +31,9 @@ public class UserProfile : BaseModel
     
     /// <summary>
     /// User's "home" organization - their primary/default organization.
+    /// Shadows BaseModel.OrganizationId to keep it nullable (users can exist before org assignment).
     /// </summary>
-    public Guid? OrganizationId { get; set; }
+    public new Guid? OrganizationId { get; set; }
     
     /// <summary>
     /// Currently active organization the user is viewing/working with.

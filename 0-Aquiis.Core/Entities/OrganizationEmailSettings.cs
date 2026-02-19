@@ -11,9 +11,6 @@ namespace Aquiis.Core.Entities
     /// </summary>
     public class OrganizationEmailSettings : BaseModel
     {
-        [RequiredGuid]
-        public Guid OrganizationId { get; set; }
-
         public string ProviderName { get; set; } = "SMTP";
 
         public string SmtpServer { get; set; } = string.Empty;

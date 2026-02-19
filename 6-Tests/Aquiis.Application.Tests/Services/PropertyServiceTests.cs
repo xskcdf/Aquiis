@@ -5,6 +5,8 @@ using Aquiis.Core.Entities;
 using Aquiis.Core.Interfaces.Services;
 using Aquiis.SimpleStart.Entities;
 using Aquiis.Infrastructure.Data;
+using Aquiis.Infrastructure.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -99,6 +101,7 @@ namespace Aquiis.Application.Tests
                 mockEmailService.Object,
                 mockSMSService.Object,
                 mockSettings,
+                Mock.Of<IHubContext<NotificationHub>>(),
                 mockNotificationLogger.Object
             );
 

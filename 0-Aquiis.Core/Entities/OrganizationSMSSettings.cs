@@ -11,9 +11,6 @@ namespace Aquiis.Core.Entities
     /// </summary>
     public class OrganizationSMSSettings : BaseModel
     {
-        [RequiredGuid]
-        public Guid OrganizationId { get; set; }
-
         // Twilio Configuration
         public bool IsSMSEnabled { get; set; }
 

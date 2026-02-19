@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Aquiis.Core.Interfaces;
+using Aquiis.Core.Validation;
 
 namespace Aquiis.Core.Entities
 {
@@ -11,6 +12,15 @@ namespace Aquiis.Core.Entities
         [JsonInclude]
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
         public Guid Id { get; set; }
+
+        /// <summary>
+        /// Organization partition key - all entities are scoped to an organization for multi-tenancy.
+        /// This is the fundamental isolation boundary in the system.
+        /// </summary>
+        [RequiredGuid]
+        [JsonInclude]
+        [Display(Name = "Organization ID")]
+        public Guid OrganizationId { get; set; } = Guid.Empty;
 
         [Required]
         [JsonInclude]
@@ -39,5 +49,9 @@ namespace Aquiis.Core.Entities
         [JsonInclude]
         [Display(Name = "Is Deleted?")]
         public bool IsDeleted { get; set; } = false;
+
+        [JsonInclude]
+        [Display(Name = "Is Sample Data?")]
+        public bool IsSampleData { get; set; } = false;
     }
 }

@@ -377,21 +377,39 @@ namespace Aquiis.Application.Services
         /// <summary>
         /// Generates a unique payment number in the format PYMT-YYYYMMDD-####.
         /// </summary>
+        /// <summary>
+        /// Generates payment number in format: PYMT-{YYYYMM}-000n
+        /// Numbers reset monthly and are scoped to organization.
+        /// Uses MAX query to get last payment number for current month.
+        /// Format matches invoice numbering for consistency.
+        /// </summary>
         public async Task<string> GeneratePaymentNumberAsync()
         {
             try
             {
                 var organizationId = await _userContext.GetActiveOrganizationIdAsync();
-                var today = DateTime.Now.Date;
+                var yearMonth = DateTime.UtcNow.ToString("yyyyMM");
                 
-                // Get count of payments for today to generate sequential number
-                var todayPaymentCount = await _context.Payments
+                // Get the highest payment number for this month
+                var lastPayment = await _context.Payments
                     .Where(p => p.OrganizationId == organizationId 
-                        && p.PaidOn.Date == today)
-                    .CountAsync();
-
-                var nextNumber = todayPaymentCount + 1;
-                return $"PYMT-{DateTime.Now:yyyyMMdd}-{nextNumber:D4}";
+                        && p.PaymentNumber.StartsWith($"PYMT-{yearMonth}"))
+                    .OrderByDescending(p => p.PaymentNumber)
+                    .Select(p => p.PaymentNumber)
+                    .FirstOrDefaultAsync();
+                
+                int nextNum = 1;
+                if (lastPayment != null)
+                {
+                    // Extract sequence number from: PYMT-202602-0001
+                    var parts = lastPayment.Split('-');
+                    if (parts.Length == 3)
+                    {
+                        nextNum = int.Parse(parts[2]) + 1;
+                    }
+                }
+                
+                return $"PYMT-{yearMonth}-{nextNum:D4}";
             }
             catch (Exception ex)
             {

@@ -117,7 +117,8 @@ else
             SquareFeet = property.SquareFeet,
             Description = property.Description,
             Status = property.Status,
-            IsAvailable = property.IsAvailable
+            IsAvailable = property.IsAvailable,
+            IsSampleData = property.IsSampleData
         };
     }
 
@@ -161,6 +162,7 @@ else
                 property.Description = model.Description;
                 property.Status = model.Status;
                 property.IsAvailable = model.IsAvailable;
+                property.IsSampleData = model.IsSampleData;
 
                 await PropertyService.UpdateAsync(property);
                 NavigationManager.NavigateTo("/propertymanagement/properties");

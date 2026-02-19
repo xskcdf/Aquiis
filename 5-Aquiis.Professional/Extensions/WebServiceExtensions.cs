@@ -31,9 +31,13 @@ public static class WebServiceExtensions
         // Register path service
         services.AddScoped<IPathService, WebPathService>();
         
-        // Get connection string from configuration
-        var connectionString = configuration.GetConnectionString("DefaultConnection") 
-            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+        // ✅ SECURITY: Get connection string from environment variable first (production),
+        // then fall back to configuration (development)
+        var connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING")
+            ?? configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException(
+                "Connection string not found. " +
+                "Set DATABASE_CONNECTION_STRING environment variable or configure DefaultConnection in appsettings.json");
 
         // ✅ Register Application layer (includes Infrastructure internally)
         services.AddApplication(connectionString);
@@ -55,11 +59,14 @@ public static class WebServiceExtensions
         services.AddIdentity<ApplicationUser, IdentityRole>(options => {
             // For web app, require confirmed email
             options.SignIn.RequireConfirmedAccount = true;
+            
+            // ✅ SECURITY: Strong password policy (12+ chars, special characters required)
             options.Password.RequireDigit = true;
-            options.Password.RequiredLength = 6;
-            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequiredLength = 12;
+            options.Password.RequireNonAlphanumeric = true;
             options.Password.RequireUppercase = true;
             options.Password.RequireLowercase = true;
+            options.Password.RequiredUniqueChars = 4; // Prevent patterns like "aaa111!!!"
         })
         .AddEntityFrameworkStores<ProfessionalDbContext>()
         .AddDefaultTokenProviders();

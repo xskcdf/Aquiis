@@ -5,9 +5,6 @@ using Aquiis.Core.Validation;
 
 public class Notification : BaseModel
 {
-    [RequiredGuid]
-    public Guid OrganizationId { get; set; }
-
     [Required]
     [StringLength(200)]
     public string Title { get; set; } = string.Empty;

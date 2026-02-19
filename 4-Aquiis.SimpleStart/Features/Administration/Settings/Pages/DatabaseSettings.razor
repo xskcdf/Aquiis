@@ -4,6 +4,8 @@
 @using Aquiis.Application.Services.PdfGenerators
 @using Aquiis.Core.Constants
 @using Aquiis.Core.Interfaces
+@using Aquiis.Core.Interfaces.Services
+@using Aquiis.Infrastructure.Services
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Extensions.Options
 @using ElectronNET.API
@@ -14,6 +16,10 @@
 @inject IOptions<ApplicationSettings> AppSettings
 @inject IJSRuntime JSRuntime
 @inject IHostApplicationLifetime AppLifetime
+@inject IDatabaseService DatabaseService
+@inject DatabaseEncryptionService EncryptionService
+@inject PasswordDerivationService PasswordDerivation
+@inject UserContextService UserContext
 @attribute [OrganizationAuthorize("Owner", "Administrator")]
 @rendermode InteractiveServer
 
@@ -54,6 +60,79 @@
             <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
         </div>
     }
+
+    <!-- Database Encryption -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-shield-lock-fill"></i> Database Encryption</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" 
+                               class="form-check-input" 
+                               id="encryptionEnabled"
+                               checked="@isEncryptionEnabled"
+                               @onchange="@ToggleEncryption" />
+                        <label class="form-check-label" for="encryptionEnabled">
+                            <strong>Enable Database Encryption</strong>
+                        </label>
+                    </div>
+                    
+                    @if (isEncryptionEnabled)
+                    {
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle-fill"></i> 
+                            <strong>Encryption Active</strong> - Database is encrypted at rest
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-primary" @onclick="ChangeEncryptionPassword" disabled="@isChangingPassword">
+                                @if (isChangingPassword)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-key me-2"></i>
+                                }
+                                Change Password
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="ExportUnencryptedBackup" disabled="@isExporting">
+                                @if (isExporting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-file-earmark-arrow-down me-2"></i>
+                                }
+                                Export Unencrypted Backup
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle-fill"></i> 
+                            <strong>Encryption Disabled</strong> - Database is stored in plaintext
+                        </div>
+                        <p class="text-muted small mb-0">
+                            <i class="bi bi-info-circle me-1"></i>
+                            <strong>What happens when you enable encryption:</strong>
+                        </p>
+                        <ul class="text-muted small mb-0">
+                            <li>You'll create a master password to encrypt the database</li>
+                            <li>Password is cached in your system keychain for convenience</li>
+                            <li>Database remains portable - use the same password on any device</li>
+                            <li>A backup will be created before encryption begins</li>
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Database Health Status -->
     <div class="row mb-4">
@@ -230,6 +309,10 @@
                                                         disabled="@isDownloading">
                                                     <i class="bi bi-download"></i> Download
                                                 </button>
+                                                <button class="btn btn-sm btn-info me-2" 
+                                                        @onclick="() => PreviewDatabase(backup)">
+                                                    <i class="bi bi-eye"></i> Preview
+                                                </button>
                                                 <button class="btn btn-sm btn-primary me-2" 
                                                         @onclick="() => RestoreBackup(backup)"
                                                         disabled="@isRestoring">
@@ -270,7 +353,9 @@
                 <div class="alert alert-info">
                     <h6><i class="bi bi-info-circle"></i> Important Information</h6>
                     <ul class="mb-0">
-                        <li><strong>Automatic Backups:</strong> Created before each migration</li>
+                        <li><strong>Database Encryption:</strong> Protects your data at rest using password-based encryption (Phase 2 feature)</li>
+                        <li><strong>Password Portability:</strong> Your password works on any device - database remains portable</li>
+                        <li><strong>Automatic Backups:</strong> Created before each migration and encryption change</li>
                         <li><strong>Health Check:</strong> Validates database integrity using SQLite's built-in PRAGMA integrity_check</li>
                         <li><strong>Auto-Recovery:</strong> Attempts to restore from the most recent valid backup</li>
                         <li><strong>Retention:</strong> Last 10 backups are kept automatically, older ones are deleted</li>
@@ -280,6 +365,9 @@
             </div>
         </div>
     </div>
+
+@* Password input modal for Electron compatibility *@
+<PasswordInputModal @ref="passwordModal" />
 
 @code {
     private List<BackupInfo> backups = new();
@@ -297,6 +385,14 @@
     private bool isRestarting = false;
     private (bool IsHealthy, string Message)? healthCheckResult;
     private DateTime? lastHealthCheck;
+    
+    // Database encryption
+    private bool isEncryptionEnabled = false;
+    private bool isChangingPassword = false;
+    private bool isExporting = false;
+    
+    // Password modal reference
+    private PasswordInputModal passwordModal = null!;
 
     private async Task ResetDatabase()
     {
@@ -412,6 +508,7 @@
     {
         await LoadBackups();
         await CheckDatabaseHealth();
+        await CheckEncryptionStatus();
     }
 
     private async Task LoadBackups()
@@ -575,6 +672,13 @@
         }
     }
 
+    private void PreviewDatabase(BackupInfo backup)
+    {
+        // Encode filename for URL
+        var encodedFileName = Uri.EscapeDataString(backup.FileName);
+        Navigation.NavigateTo($"/administration/database/preview/{encodedFileName}");
+    }
+
     private async Task AttemptAutoRecovery()
     {
         var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
@@ -657,7 +761,8 @@
 
     private async Task TriggerFileUpload()
     {
-        await JSRuntime.InvokeVoidAsync("document.getElementById('backupFileInput').click");
+        // Call JavaScript helper function to click the hidden file input
+        await JSRuntime.InvokeVoidAsync("clickElementById", "backupFileInput");
     }
 
     private async Task HandleFileUpload(InputFileChangeEventArgs e)
@@ -733,5 +838,367 @@
             len = len / 1024;
         }
         return $"{len:0.##} {sizes[order]}";
+    }
+    
+    // Database Encryption Methods
+    
+    private async Task CheckEncryptionStatus()
+    {
+        try
+        {
+            // Load encryption status from database settings
+            isEncryptionEnabled = await DatabaseService.IsDatabaseEncryptionEnabledAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log to server console (not JavaScript) since this runs during prerender
+            Console.WriteLine($"Error checking encryption status: {ex.Message}");
+            isEncryptionEnabled = false;
+        }
+    }
+    
+    private async Task ToggleEncryption(ChangeEventArgs e)
+    {
+        bool enabled = (bool)e.Value!;
+        
+        if (enabled)
+        {
+            // Enable encryption - prompt for password with confirmation
+            var password = await passwordModal.ShowAsync(
+                "Create Master Password",
+                "Create a master password for database encryption.\n\n" +
+                "IMPORTANT: This password cannot be recovered if lost!\n" +
+                "Minimum 12 characters required.",
+                requireConfirmation: true);
+            
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                errorMessage = "Encryption cancelled - no password provided.";
+                isEncryptionEnabled = false; // Reset toggle to OFF
+                StateHasChanged();
+                return;
+            }
+            
+            var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+                "⚠️ IMPORTANT WARNINGS ⚠️\n\n" +
+                "• A backup will be created before encryption\n" +
+                "• Application will restart after encryption\n" +
+                "• You'll need this password to access the database\n" +
+                "• Lost password = Lost data (no recovery possible)\n\n" +
+                "Proceed with encryption?");
+            
+            if (!confirmed)
+            {
+                errorMessage = "Encryption cancelled by user.";
+                isEncryptionEnabled = false; // Reset toggle to OFF
+                StateHasChanged();
+                return;
+            }
+            
+            await EnableEncryption(password);
+        }
+        else
+        {
+            // Disable encryption - prompt for password to decrypt
+            var password = await passwordModal.ShowAsync(
+                "Decrypt Database",
+                "Enter your master password to decrypt the database:",
+                requireConfirmation: false);
+            
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                errorMessage = "Decryption cancelled - no password provided.";
+                isEncryptionEnabled = true; // Keep it enabled since decrypt was cancelled
+                StateHasChanged();
+                return;
+            }
+            
+            var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+                "⚠️ WARNING ⚠️\n\n" +
+                "This will decrypt your database and store it in plaintext.\n" +
+                "A backup will be created before decryption.\n\n" +
+                "Proceed with decryption?");
+            
+            if (!confirmed)
+            {
+                errorMessage = "Decryption cancelled by user.";
+                isEncryptionEnabled = true; // Keep it enabled since decrypt was cancelled
+                StateHasChanged();
+                return;
+            }
+            
+            await DisableEncryption(password);
+        }
+    }
+    
+    private async Task EnableEncryption(string password)
+    {
+        try
+        {
+            errorMessage = null;
+            successMessage = "Creating backup before encryption...";
+            StateHasChanged();
+            
+            // Step 1: Create backup
+            var backupPath = await BackupService.CreateBackupAsync("BeforeEncryption");
+            
+            if (string.IsNullOrEmpty(backupPath))
+            {
+                errorMessage = "Failed to create backup. Encryption cancelled.";
+                isEncryptionEnabled = false;
+                StateHasChanged();
+                return;
+            }
+            
+            successMessage = "Encrypting database... This may take a moment.";
+            StateHasChanged();
+            
+            // Step 2: Get database path and close connections
+            var dbPath = await PathService.GetDatabasePathAsync();
+            await BackupService.PrepareForFileCopyAsync();
+            
+            // Step 3: Copy database file
+            var copyPath = $"{dbPath}.copy_to_encrypt";
+            File.Copy(dbPath, copyPath, overwrite: true);
+            
+            // Step 4: Encrypt the copy (with raw password)
+            var (success, encryptedPath, errorMsg) = 
+                await EncryptionService.EncryptDatabaseAsync(copyPath, password);
+            
+            if (!success || encryptedPath == null)
+            {
+                errorMessage = $"Encryption failed: {errorMsg}";
+                isEncryptionEnabled = false;
+                if (File.Exists(copyPath)) File.Delete(copyPath);
+                if (File.Exists($"{copyPath}-wal")) File.Delete($"{copyPath}-wal");
+                if (File.Exists($"{copyPath}-shm")) File.Delete($"{copyPath}-shm");
+                if (encryptedPath != null && File.Exists(encryptedPath)) File.Delete(encryptedPath);
+                StateHasChanged();
+                return;
+            }
+            
+            // Step 5: Stage encrypted db for restart
+            var stagedRestorePath = $"{dbPath}.restore_pending";
+            File.Move(encryptedPath, stagedRestorePath, overwrite: true);
+            
+            // Cleanup temp copy and SQLite auxiliary files
+            if (File.Exists(copyPath)) File.Delete(copyPath);
+            if (File.Exists($"{copyPath}-wal")) File.Delete($"{copyPath}-wal");
+            if (File.Exists($"{copyPath}-shm")) File.Delete($"{copyPath}-shm");
+            
+            successMessage = "✅ Database encrypted successfully! Application will restart...";
+            StateHasChanged();
+            await Task.Delay(2000);
+            
+            // Step 6: Restart - Program.cs will swap in .restore_pending
+            if (HybridSupport.IsElectronActive)
+            {
+                Electron.App.Relaunch();
+                Electron.App.Exit();
+            }
+            else
+            {
+                AppLifetime.StopApplication();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error enabling encryption: {ex.Message}";
+            isEncryptionEnabled = false;
+            StateHasChanged();
+        }
+    }
+    
+    private async Task DisableEncryption(string password)
+    {
+        try
+        {
+            errorMessage = null;
+            successMessage = "Creating backup before decryption...";
+            StateHasChanged();
+            
+            // Create backup before decryption
+            var backupPath = await BackupService.CreateBackupAsync("BeforeDecryption");
+            
+            if (string.IsNullOrEmpty(backupPath))
+            {
+                errorMessage = "Failed to create backup. Decryption cancelled.";
+                isEncryptionEnabled = true;
+                StateHasChanged();
+                return;
+            }
+            
+            successMessage = "Decrypting database copy... This may take a moment.";
+            StateHasChanged();
+            
+            // Get database path
+            var dbPath = await PathService.GetDatabasePathAsync();
+            
+            // CRITICAL: Close connections and prepare for file copy
+            await BackupService.PrepareForFileCopyAsync();
+            
+            successMessage = "Copying encrypted database... This may take a moment.";
+            StateHasChanged();
+            
+            // Create a temporary copy to decrypt (can't decrypt live database - it's locked)
+            var tempCopyPath = $"{dbPath}.temp_for_decryption";
+            File.Copy(dbPath, tempCopyPath, overwrite: true);
+            
+            try
+            {
+                // Decrypt the copy (not the live database) using raw password
+                var (success, decryptedPath, errorMsg) = 
+                    await EncryptionService.DecryptDatabaseAsync(tempCopyPath, password);
+                
+                if (!success || decryptedPath == null)
+                {
+                    errorMessage = $"Decryption failed: {errorMsg ?? "Invalid password or corrupted database"}";
+                    isEncryptionEnabled = true;
+                    StateHasChanged();
+                    
+                    // Cleanup temp files and SQLite auxiliary files
+                    if (File.Exists(tempCopyPath)) File.Delete(tempCopyPath);
+                    if (File.Exists($"{tempCopyPath}-wal")) File.Delete($"{tempCopyPath}-wal");
+                    if (File.Exists($"{tempCopyPath}-shm")) File.Delete($"{tempCopyPath}-shm");
+                    if (decryptedPath != null && File.Exists(decryptedPath)) File.Delete(decryptedPath);
+                    return;
+                }
+                
+                // Stage decrypted database for restart (same pattern as restore operations)
+                var stagedRestorePath = $"{dbPath}.restore_pending";
+                File.Move(decryptedPath, stagedRestorePath, overwrite: true);
+                
+                // Cleanup temp copy and SQLite auxiliary files
+                if (File.Exists(tempCopyPath)) File.Delete(tempCopyPath);
+                if (File.Exists($"{tempCopyPath}-wal")) File.Delete($"{tempCopyPath}-wal");
+                if (File.Exists($"{tempCopyPath}-shm")) File.Delete($"{tempCopyPath}-shm");
+                
+                successMessage = "✅ Database decrypted successfully! Application will restart...";
+                StateHasChanged();
+                await Task.Delay(2000);
+                
+                // Restart the application - on startup it will swap in the decrypted database
+                if (HybridSupport.IsElectronActive)
+                {
+                    Electron.App.Relaunch();
+                    Electron.App.Exit();
+                }
+                else
+                {
+                    AppLifetime.StopApplication();
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Decryption error: {ex.Message}";
+                isEncryptionEnabled = true;
+                StateHasChanged();
+                
+                // Cleanup on error
+                if (File.Exists(tempCopyPath)) File.Delete(tempCopyPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error disabling encryption: {ex.Message}";
+            isEncryptionEnabled = true;
+            StateHasChanged();
+        }
+    }
+    
+    private async Task ChangeEncryptionPassword()
+    {
+        isChangingPassword = true;
+        errorMessage = null;
+        
+        try
+        {
+            var currentPassword = await passwordModal.ShowAsync(
+                "Current Password",
+                "Enter your current master password:",
+                requireConfirmation: false);
+            
+            if (string.IsNullOrWhiteSpace(currentPassword))
+            {
+                errorMessage = "Password change cancelled.";
+                return;
+            }
+            
+            var newPassword = await passwordModal.ShowAsync(
+                "New Master Password",
+                "Enter new master password (minimum 12 characters):",
+                requireConfirmation: true);
+            
+            if (string.IsNullOrWhiteSpace(newPassword))
+            {
+                errorMessage = "Password change cancelled.";
+                return;
+            }
+            
+            // TODO: Implement password change
+            // 1. Verify current password
+            // 2. Re-encrypt database with new password-derived key
+            // 3. Update OS keychain with new key
+            // 4. Restart application
+            
+            errorMessage = "⚠️ Password change feature not yet implemented (Phase 2).";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error changing password: {ex.Message}";
+        }
+        finally
+        {
+            isChangingPassword = false;
+        }
+    }
+    
+    private async Task ExportUnencryptedBackup()
+    {
+        isExporting = true;
+        errorMessage = null;
+        
+        try
+        {
+            var password = await passwordModal.ShowAsync(
+                "Export Unencrypted Backup",
+                "Enter your master password to export unencrypted backup:",
+                requireConfirmation: false);
+            
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                errorMessage = "Export cancelled.";
+                return;
+            }
+            
+            var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+                "⚠️ SECURITY WARNING ⚠️\n\n" +
+                "This will create an UNENCRYPTED backup of your database.\n" +
+                "Anyone with access to this file can read all your data.\n\n" +
+                "Only use this if you need to transfer data to another system.\n\n" +
+                "Continue?");
+            
+            if (!confirmed)
+            {
+                errorMessage = "Export cancelled.";
+                return;
+            }
+            
+            // TODO: Implement unencrypted export
+            // 1. Verify password
+            // 2. Decrypt database to temporary file
+            // 3. Trigger download
+            // 4. Delete temporary file
+            
+            errorMessage = "⚠️ Unencrypted export feature not yet implemented (Phase 2).";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error exporting backup: {ex.Message}";
+        }
+        finally
+        {
+            isExporting = false;
+        }
     }
 }

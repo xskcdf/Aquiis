@@ -1,11 +1,23 @@
 ﻿@using Aquiis.SimpleStart.Shared.Components.Account.Shared
-<Router AppAssembly="typeof(Program).Assembly">
-    <Found Context="routeData">
-        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Shared.Layout.MainLayout)">
-            <NotAuthorized>
-                <RedirectToLogin />
-            </NotAuthorized>
-        </AuthorizeRouteView>
-        <FocusOnNavigate RouteData="routeData" Selector="h1" />
-    </Found>
-</Router>
+@using Aquiis.Infrastructure.Services
+@inject DatabaseUnlockState? UnlockState
+
+@if (UnlockState?.NeedsUnlock == true)
+{
+    <!-- Show unlock page BEFORE routing -->
+    <Aquiis.SimpleStart.Features.DatabaseUnlock.Index />
+}
+else
+{
+    <!-- Normal routing -->
+    <Router AppAssembly="typeof(Program).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Shared.Layout.MainLayout)">
+                <NotAuthorized>
+                    <RedirectToLogin />
+                </NotAuthorized>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        </Found>
+    </Router>
+}

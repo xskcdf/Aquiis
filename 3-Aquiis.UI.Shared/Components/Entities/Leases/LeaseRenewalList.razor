@@ -88,7 +88,7 @@
             <div class="card-footer">
                 <small class="text-muted">
                     <i class="bi bi-info-circle"></i>
-                    Showing @GetFilteredLeases().Count() of @Leases.Count() expiring leases
+                    Showing @GetFilteredLeases().Count() of @leases90Days.Count() expiring leases
                 </small>
             </div>
         }
@@ -111,6 +111,7 @@
     private List<Lease> leases90Days = new();
     private bool isLoading = true; 
     private int selectedFilter = 60;
+
 
     [Parameter]
     public EventCallback OnViewAll { get; set; }

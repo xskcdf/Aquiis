@@ -5,9 +5,6 @@ namespace Aquiis.Core.Entities;
 
 public class CalendarSettings : BaseModel
 {
-    [RequiredGuid]
-    [Display(Name = "Organization ID")]
-    public Guid OrganizationId { get; set; } = Guid.Empty;
     public string EntityType { get; set; } = string.Empty;
     public bool AutoCreateEvents { get; set; } = true;
     public bool ShowOnCalendar { get; set; } = true;

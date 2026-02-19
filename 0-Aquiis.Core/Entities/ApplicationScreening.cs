@@ -7,10 +7,6 @@ namespace Aquiis.Core.Entities
     public class ApplicationScreening : BaseModel
     {
         [RequiredGuid]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
-        [RequiredGuid]
         [Display(Name = "Rental Application")]
         public Guid RentalApplicationId { get; set; }
 

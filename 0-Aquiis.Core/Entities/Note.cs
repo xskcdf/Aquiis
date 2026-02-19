@@ -9,11 +9,6 @@ namespace Aquiis.Core.Entities
     public class Note : BaseModel
     {
         [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
-        [Required]
         [StringLength(5000)]
         [Display(Name = "Content")]
         public string Content { get; set; } = string.Empty;

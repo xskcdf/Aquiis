@@ -5,12 +5,6 @@ namespace Aquiis.Core.Entities
 {
     public class Invoice : BaseModel
     {
-
-        [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
         [Required]
         public Guid LeaseId { get; set; }
 

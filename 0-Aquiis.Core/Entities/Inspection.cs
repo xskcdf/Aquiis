@@ -7,11 +7,6 @@ namespace Aquiis.Core.Entities
     public class Inspection : BaseModel, ISchedulableEntity
     {
         [Required]
-        [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
-        [Required]
         public Guid PropertyId { get; set; }
 
         public Guid? CalendarEventId { get; set; }

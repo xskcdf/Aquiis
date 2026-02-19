@@ -10,10 +10,6 @@ namespace Aquiis.Core.Entities
     /// </summary>
     public class CalendarEvent : BaseModel
     {
-        [RequiredGuid]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
         [Required]
         [StringLength(200)]
         [Display(Name = "Title")]

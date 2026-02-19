@@ -156,6 +156,14 @@ Follow our [Quick Start Guide](Documentation/v1.0.0/v1.0.0-Quick-Start-Guide.md)
 - **RAM:** 2 GB
 - **Disk:** 500 MB
 
+### Universal Linux Support:
+
+Aquiis is distributed as an AppImage, which runs on all major Linux distributions—including Ubuntu, Debian, Fedora, RedHat, Arch, openSUSE, and more. No installation required: just download, make executable, and run.
+
+### Windows Portable Version:
+
+Aquiis is available as a portable Windows executable (.exe). No installation required—just download, extract, and run. All application data is stored locally in the same folder, making it easy to use Aquiis from a USB drive or move between systems.
+
 ### Recommended
 
 - **CPU:** 4-core, 2.5 GHz

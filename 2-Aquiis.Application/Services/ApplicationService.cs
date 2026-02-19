@@ -9,6 +9,8 @@ namespace Aquiis.Application.Services
         private readonly ApplicationSettings _settings;
         private readonly PaymentService _paymentService;
         private readonly LeaseService _leaseService;
+
+        public ApplicationSettings ApplicationSettings => _settings;
         
         public bool SoftDeleteEnabled { get; }
 
@@ -26,6 +28,11 @@ namespace Aquiis.Application.Services
         public string GetAppInfo()
         {
             return $"{_settings.AppName} - {_settings.Version}";
+        }
+
+        public string GetDatabaseInfo()
+        {
+            return $"{_settings.DatabaseFileName} - v{_settings.SchemaVersion}";
         }
 
         /// <summary>

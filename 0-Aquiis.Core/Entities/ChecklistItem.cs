@@ -6,11 +6,6 @@ namespace Aquiis.Core.Entities
 {
     public class ChecklistItem : BaseModel
     {
-
-        [RequiredGuid]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
         [RequiredGuid]
         [Display(Name = "Checklist ID")]
         public Guid ChecklistId { get; set; }

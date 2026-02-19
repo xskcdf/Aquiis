@@ -7,10 +7,6 @@ namespace Aquiis.Core.Entities
     public class Tour : BaseModel, ISchedulableEntity
     {
         [RequiredGuid]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-        
-        [RequiredGuid]
         [Display(Name = "Prospective Tenant")]
         public Guid ProspectiveTenantId { get; set; }
 

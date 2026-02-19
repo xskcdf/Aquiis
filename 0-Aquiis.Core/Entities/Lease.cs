@@ -8,10 +8,6 @@ namespace Aquiis.Core.Entities
     public class Lease : BaseModel
     {
         [RequiredGuid]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
-        [RequiredGuid]
         public Guid PropertyId { get; set; }
 
         [RequiredGuid]

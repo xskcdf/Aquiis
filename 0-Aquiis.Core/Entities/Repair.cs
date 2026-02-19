@@ -14,10 +14,6 @@ public class Repair : BaseModel
 {
     // Core Identity
     [RequiredGuid]
-    [Display(Name = "Organization ID")]
-    public Guid OrganizationId { get; set; } = Guid.Empty;
-
-    [RequiredGuid]
     public Guid PropertyId { get; set; }
 
     // Optional Relationships (Soft References)

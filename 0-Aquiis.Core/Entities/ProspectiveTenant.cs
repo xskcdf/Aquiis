@@ -7,11 +7,6 @@ namespace Aquiis.Core.Entities
     {
         [Required]
         [StringLength(100)]
-        [Display(Name = "Organization ID")]
-        public Guid OrganizationId { get; set; } = Guid.Empty;
-
-        [Required]
-        [StringLength(100)]
         [Display(Name = "First Name")]
         public string FirstName { get; set; } = string.Empty;
 

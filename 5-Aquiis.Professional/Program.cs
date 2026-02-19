@@ -10,6 +10,7 @@ using Aquiis.Professional.Shared.Authorization;
 using Aquiis.Professional.Extensions;
 using Aquiis.Application.Services;
 using Aquiis.Application.Services.Workflows;
+using Aquiis.Infrastructure.Services;
 using Aquiis.Professional.Data;
 using Aquiis.Professional.Entities;
 using ElectronNET.API;
@@ -34,6 +35,9 @@ if (HybridSupport.IsElectronActive)
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Add SignalR for real-time notification updates
+builder.Services.AddSignalR();
 
 // Add antiforgery services with options for Blazor
 builder.Services.AddAntiforgery(options =>
@@ -168,6 +172,20 @@ builder.Services.AddScoped<DatabaseBackupService>();
 builder.Services.AddScoped<SchemaValidationService>();
 builder.Services.AddScoped<LeaseWorkflowService>();
 
+// Database encryption services
+builder.Services.AddScoped<PasswordDerivationService>();
+builder.Services.AddScoped<LinuxKeychainService>(sp =>
+{
+    // Pass app name to prevent keychain conflicts between different apps and modes
+    var appName = HybridSupport.IsElectronActive ? "Professional-Electron" : "Professional-Web";
+    return new LinuxKeychainService(appName);
+});
+builder.Services.AddScoped<DatabaseEncryptionService>();
+builder.Services.AddScoped<DatabasePasswordService>();
+
+// Database unlock service (always available, even when database locked)
+builder.Services.AddScoped<DatabaseUnlockService>();
+
 // Configure and register session timeout service
 builder.Services.AddScoped<SessionTimeoutService>(sp =>
 {
@@ -213,6 +231,55 @@ using (var scope = app.Services.CreateScope())
         {
             var pathService = scope.ServiceProvider.GetRequiredService<IPathService>();
             var dbPath = await pathService.GetDatabasePathAsync();
+            
+            // ✅ v0.3.1: Automatic migration from old Electron folder to new Aquiis folder
+            var basePath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+            {
+                basePath = Environment.GetEnvironmentVariable("HOME")!;
+                basePath = OperatingSystem.IsLinux() 
+                    ? Path.Combine(basePath, ".config") 
+                    : Path.Combine(basePath, "Library/Application Support");
+            }
+            
+            var dbFileName = Path.GetFileName(dbPath);
+            var oldDbPath = Path.Combine(basePath, "Electron", dbFileName);
+            var oldBackupPath = Path.Combine(basePath, "Electron", "Backups");
+            var newBackupPath = Path.Combine(Path.GetDirectoryName(dbPath)!, "Backups");
+            
+            // One-time migration: copy database and backups if old location exists and new doesn't
+            if (File.Exists(oldDbPath) && !File.Exists(dbPath))
+            {
+                app.Logger.LogInformation("Migrating database from Electron folder to Aquiis folder");
+                app.Logger.LogInformation("Old path: {OldPath}", oldDbPath);
+                app.Logger.LogInformation("New path: {NewPath}", dbPath);
+                
+                // Ensure destination directory exists
+                Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
+                
+                // Copy database file
+                File.Copy(oldDbPath, dbPath);
+                app.Logger.LogInformation("Database file migrated successfully");
+                
+                // Copy backups folder if it exists
+                if (Directory.Exists(oldBackupPath))
+                {
+                    app.Logger.LogInformation("Migrating backups folder");
+                    Directory.CreateDirectory(newBackupPath);
+                    
+                    var backupFiles = Directory.GetFiles(oldBackupPath);
+                    foreach (var backupFile in backupFiles)
+                    {
+                        var destFile = Path.Combine(newBackupPath, Path.GetFileName(backupFile));
+                        File.Copy(backupFile, destFile);
+                    }
+                    
+                    app.Logger.LogInformation("Migrated {Count} backup files", backupFiles.Length);
+                }
+                
+                app.Logger.LogInformation("Database migration from Electron to Aquiis folder completed successfully");
+            }
+            
             var stagedRestorePath = $"{dbPath}.restore_pending";
             
             // Check if there's a staged restore waiting
@@ -485,10 +552,41 @@ else
 
 app.UseSession();
 
-// Only use HTTPS redirection in web mode, not in Electron
+// ✅ SECURITY: Content Security Policy and security headers
+app.UseSecurityHeaders();
+
+// ✅ SECURITY: HTTPS enforcement for production web mode
 if (!HybridSupport.IsElectronActive)
 {
-    app.UseHttpsRedirection();
+    if (!app.Environment.IsDevelopment())
+    {
+        // Production: MUST use HTTPS
+        app.UseHttpsRedirection();
+        app.UseHsts();
+
+        // Validate HTTPS is actually configured
+        var httpsUrl = builder.Configuration["Kestrel:Endpoints:Https:Url"];
+        if (string.IsNullOrEmpty(httpsUrl))
+        {
+            app.Logger.LogWarning(
+                "HTTPS not configured in production. " +
+                "Configure Kestrel:Endpoints:Https in appsettings.Production.json or set ASPNETCORE_URLS environment variable.");
+        }
+    }
+    else
+    {
+        // Development: Optional HTTPS (for testing)
+        var useHttps = builder.Configuration.GetValue<bool>("Development:UseHttps", false);
+        if (useHttps)
+        {
+            app.UseHttpsRedirection();
+            app.Logger.LogInformation("HTTPS enabled for development");
+        }
+        else
+        {
+            app.Logger.LogInformation("Running in development without HTTPS");
+        }
+    }
 }
 
 app.UseAuthentication();
@@ -501,6 +599,9 @@ app.MapRazorComponents<Aquiis.Professional.Shared.App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+// Map SignalR hub for real-time notifications
+app.MapHub<Aquiis.Infrastructure.Hubs.NotificationHub>("/hubs/notifications");
 
 // Add session refresh endpoint for session timeout feature
 app.MapPost("/api/session/refresh", async (HttpContext context) =>

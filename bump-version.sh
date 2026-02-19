@@ -6,8 +6,8 @@
 set -e
 
 VERSION_TYPE="${1:-patch}"
-CSPROJ_FILE="Aquiis.SimpleStart/Aquiis.SimpleStart.csproj"
-APPSETTINGS_FILE="Aquiis.SimpleStart/appsettings.json"
+CSPROJ_FILE="4-Aquiis.SimpleStart/Aquiis.SimpleStart.csproj"
+APPSETTINGS_FILE="4-Aquiis.SimpleStart/appsettings.json"
 
 # Colors for output
 RED='\033[0;31m'

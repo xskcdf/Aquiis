@@ -1,5 +1,6 @@
 @using Aquiis.Core.Entities
 @using Aquiis.Application.Services
+@using Aquiis.Application.Services.Workflows
 @using Aquiis.Core.Constants
 @using Aquiis.UI.Shared.Components.Entities.OrganizationUsers
 @using Aquiis.UI.Shared.Components.Entities.Organizations
@@ -10,7 +11,16 @@
     <div class="col-md-8">
         
         <!--  Organization Information Card-->
-        <OrganizationCard OrganizationViewModel="OrganizationViewModel" OnEdit="OnEdit" />
+        <OrganizationCard 
+            OrganizationViewModel="OrganizationViewModel" 
+            OnEdit="OnEdit" 
+            OnGenerateSampleData="OnGenerateSampleData"
+            OnRemoveSampleData="OnRemoveSampleData"
+            IsOwner="@IsOwner"
+            IsGeneratingSample="@IsGeneratingSample"
+            IsRemovingSample="@IsRemovingSample"
+            HasSampleData="@HasSampleData"
+            SampleDataSummary="@SampleDataSummary" />
 
         <!-- Users with Access Card -->
         <OrganizationUsersListView 
@@ -22,15 +32,14 @@
     </div>
 
     <div class="col-md-4">
-        <!-- Quick Stats Card -->
-        <OrganizationUserStatistics OrganizationViewModel="@OrganizationViewModel" />
-
         <!-- Your Access Card -->
         @if (CurrentUserViewModel != null)
         {
             <UserProfileCard OrganizationUserViewModel="@CurrentUserViewModel" />
         }
         <UserAccessCard CurrentUserRole="@CurrentUserRole" />
+        <!-- Quick Stats Card -->
+        <OrganizationUserStatistics OrganizationViewModel="@OrganizationViewModel" />
     </div>
 </div>
 
@@ -59,6 +68,24 @@
 
     [Parameter]
     public EventCallback OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback OnGenerateSampleData { get; set; }
+
+    [Parameter]
+    public EventCallback OnRemoveSampleData { get; set; }
+
+    [Parameter]
+    public bool IsGeneratingSample { get; set; }
+
+    [Parameter]
+    public bool IsRemovingSample { get; set; }
+
+    [Parameter]
+    public bool HasSampleData { get; set; }
+
+    [Parameter]
+    public SampleDataSummary? SampleDataSummary { get; set; }
 
     public Organization? Organization => OrganizationViewModel?.Organization;
 

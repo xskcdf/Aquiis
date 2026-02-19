@@ -554,8 +554,24 @@ namespace Aquiis.Application.Tests
         [Fact]
         public async Task GenerateInvoiceNumberAsync_GeneratesUniqueNumber()
         {
-            // Act
+            // Act - Generate first number and create invoice to persist it
             var invoiceNumber1 = await _service.GenerateInvoiceNumberAsync();
+            var invoice1 = new Invoice
+            {
+                OrganizationId = _testOrgId,
+                LeaseId = _testLeaseId,
+                InvoiceNumber = invoiceNumber1,
+                InvoicedOn = DateTime.Today,
+                DueOn = DateTime.Today.AddDays(30),
+                Amount = 1500,
+                Description = "Test Invoice 1",
+                Status = "Pending",
+                CreatedBy = _testUserId,
+                CreatedOn = DateTime.UtcNow
+            };
+            await _service.CreateAsync(invoice1);
+            
+            // Generate second number - should see the first invoice and increment
             var invoiceNumber2 = await _service.GenerateInvoiceNumberAsync();
 
             // Assert
@@ -563,8 +579,22 @@ namespace Aquiis.Application.Tests
             Assert.NotNull(invoiceNumber2);
             Assert.StartsWith("INV-", invoiceNumber1);
             Assert.StartsWith("INV-", invoiceNumber2);
-            // Numbers should be same format but potentially different sequence
-            Assert.Matches(@"^INV-\d{6}-\d{5}$", invoiceNumber1);
+            
+            // Verify correct format: INV-{YYYYMM}-{0001}
+            Assert.Matches(@"^INV-\d{6}-\d{4}$", invoiceNumber1);
+            Assert.Matches(@"^INV-\d{6}-\d{4}$", invoiceNumber2);
+            
+            // Verify both numbers are unique
+            Assert.NotEqual(invoiceNumber1, invoiceNumber2);
+            
+            // Verify sequential numbering (both must be in same month for this test)
+            var parts1 = invoiceNumber1.Split('-');
+            var parts2 = invoiceNumber2.Split('-');
+            Assert.Equal(parts1[1], parts2[1]); // Same month (test runs fast enough)
+            
+            var seq1 = int.Parse(parts1[2]);
+            var seq2 = int.Parse(parts2[2]);
+            Assert.Equal(seq1 + 1, seq2); // Should increment: 0001 -> 0002
         }
 
         [Fact]

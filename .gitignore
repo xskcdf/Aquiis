@@ -32,3 +32,6 @@ publish_profile.xml
 .venv/
 
 obj/
+
+# VS Code user-specific settings (keep launch.json and tasks.json)
+.vscode/settings.json

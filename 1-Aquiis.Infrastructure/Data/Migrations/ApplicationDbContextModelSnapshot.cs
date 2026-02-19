@@ -68,6 +68,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -141,6 +144,9 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSampleData")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("LastModifiedBy")
@@ -229,6 +235,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -288,6 +297,9 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSampleData")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("LastModifiedBy")
@@ -361,6 +373,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("ItemOrder")
                         .HasColumnType("INTEGER");
 
@@ -429,6 +444,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsSystemTemplate")
                         .HasColumnType("INTEGER");
 
@@ -464,6 +482,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Standard property showing checklist",
                             IsDeleted = false,
+                            IsSampleData = false,
                             IsSystemTemplate = true,
                             Name = "Property Tour",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000")
@@ -476,6 +495,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Move-in inspection checklist",
                             IsDeleted = false,
+                            IsSampleData = false,
                             IsSystemTemplate = true,
                             Name = "Move-In",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000")
@@ -488,6 +508,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Move-out inspection checklist",
                             IsDeleted = false,
+                            IsSampleData = false,
                             IsSystemTemplate = true,
                             Name = "Move-Out",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000")
@@ -500,6 +521,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Open house event checklist",
                             IsDeleted = false,
+                            IsSampleData = false,
                             IsSystemTemplate = true,
                             Name = "Open House",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000")
@@ -533,6 +555,9 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsRequired")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSampleData")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("ItemOrder")
@@ -576,6 +601,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 1,
                             ItemText = "Greeted prospect and verified appointment",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -592,6 +618,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 2,
                             ItemText = "Reviewed property exterior and curb appeal",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -608,6 +635,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 3,
                             ItemText = "Showed parking area/garage",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -624,6 +652,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 4,
                             ItemText = "Toured living room/common areas",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -640,6 +669,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 5,
                             ItemText = "Showed all bedrooms",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -656,6 +686,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 6,
                             ItemText = "Showed all bathrooms",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -672,6 +703,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 7,
                             ItemText = "Toured kitchen and demonstrated appliances",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -688,6 +720,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 8,
                             ItemText = "Explained which appliances are included",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -704,6 +737,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 9,
                             ItemText = "Explained HVAC system and thermostat controls",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -720,6 +754,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 10,
                             ItemText = "Reviewed utility responsibilities (tenant vs landlord)",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -736,6 +771,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 11,
                             ItemText = "Showed water heater location",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -752,6 +788,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 12,
                             ItemText = "Showed storage areas (closets, attic, basement)",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -768,6 +805,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 13,
                             ItemText = "Showed laundry facilities",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -784,6 +822,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 14,
                             ItemText = "Showed outdoor space (yard, patio, balcony)",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -800,6 +839,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 15,
                             ItemText = "Discussed monthly rent amount",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -816,6 +856,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 16,
                             ItemText = "Explained security deposit and move-in costs",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -832,6 +873,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 17,
                             ItemText = "Reviewed lease term length and start date",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -848,6 +890,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 18,
                             ItemText = "Explained pet policy",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -864,6 +907,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 19,
                             ItemText = "Explained application process and requirements",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -880,6 +924,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 20,
                             ItemText = "Reviewed screening process (background, credit check)",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -896,6 +941,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 21,
                             ItemText = "Answered all prospect questions",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -912,6 +958,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 22,
                             ItemText = "Prospect Interest Level",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -928,6 +975,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 23,
                             ItemText = "Overall showing feedback and notes",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -944,6 +992,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 1,
                             ItemText = "Document property condition",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -960,6 +1009,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 2,
                             ItemText = "Collect keys and access codes",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -976,6 +1026,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 3,
                             ItemText = "Review lease terms with tenant",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -992,6 +1043,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 1,
                             ItemText = "Inspect property condition",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -1008,6 +1060,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 2,
                             ItemText = "Collect all keys and access devices",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -1024,6 +1077,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 3,
                             ItemText = "Document damages and needed repairs",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -1040,6 +1094,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 1,
                             ItemText = "Set up signage and directional markers",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -1056,6 +1111,7 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 2,
                             ItemText = "Prepare information packets",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
@@ -1072,12 +1128,42 @@ namespace Aquiis.Infrastructure.Migrations
                             CreatedOn = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsRequired = true,
+                            IsSampleData = false,
                             ItemOrder = 3,
                             ItemText = "Set up visitor sign-in sheet",
                             OrganizationId = new Guid("00000000-0000-0000-0000-000000000000"),
                             RequiresValue = false,
                             SectionOrder = 1
                         });
+                });
+
+            modelBuilder.Entity("Aquiis.Core.Entities.DatabaseSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("DatabaseEncryptionEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("EncryptionChangedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EncryptionSalt")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LastModifiedOn")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DatabaseSettings");
                 });
 
             modelBuilder.Entity("Aquiis.Core.Entities.Document", b =>
@@ -1141,6 +1227,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -1152,7 +1241,6 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("OrganizationId")
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid?>("PaymentId")
@@ -1331,6 +1419,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("KitchenAppliancesGood")
                         .HasColumnType("INTEGER");
 
@@ -1372,7 +1463,6 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("OrganizationId")
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("OverallCondition")
@@ -1451,6 +1541,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -1476,7 +1569,6 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("OrganizationId")
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("PaidOn")
@@ -1497,12 +1589,11 @@ namespace Aquiis.Infrastructure.Migrations
 
                     b.HasIndex("DocumentId");
 
-                    b.HasIndex("InvoiceNumber")
-                        .IsUnique();
-
                     b.HasIndex("LeaseId");
 
-                    b.HasIndex("OrganizationId");
+                    b.HasIndex("OrganizationId", "InvoiceNumber")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Invoice_OrgId_InvoiceNumber");
 
                     b.ToTable("Invoices");
                 });
@@ -1539,6 +1630,9 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSampleData")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("LastModifiedBy")
@@ -1669,6 +1763,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -1688,7 +1785,6 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("OrganizationId")
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("PropertyId")
@@ -1772,6 +1868,9 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSampleData")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("LastModifiedBy")
@@ -1880,6 +1979,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -1888,7 +1990,6 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("OrganizationId")
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UserFullName")
@@ -1954,6 +2055,9 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSampleData")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("LastModifiedBy")
@@ -2088,6 +2192,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsEmailEnabled")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsVerified")
                         .HasColumnType("INTEGER");
 
@@ -2192,6 +2299,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsSMSEnabled")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsVerified")
                         .HasColumnType("INTEGER");
 
@@ -2291,6 +2401,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -2321,7 +2434,6 @@ namespace Aquiis.Infrastructure.Migrations
 
                     b.Property<string>("OrganizationId")
                         .IsRequired()
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("OrganizationSharePercentage")
@@ -2441,6 +2553,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -2454,7 +2569,6 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("OrganizationId")
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("PaidOn")
@@ -2476,7 +2590,9 @@ namespace Aquiis.Infrastructure.Migrations
 
                     b.HasIndex("InvoiceId");
 
-                    b.HasIndex("OrganizationId");
+                    b.HasIndex("OrganizationId", "PaymentNumber")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Payment_OrgId_PaymentNumber");
 
                     b.ToTable("Payments");
                 });
@@ -2523,6 +2639,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -2541,7 +2660,6 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("OrganizationId")
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PropertyType")
@@ -2630,6 +2748,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -2647,7 +2768,6 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("OrganizationId")
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Phone")
@@ -2756,6 +2876,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("JobTitle")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -2783,7 +2906,6 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("OrganizationId")
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("PropertyId")
@@ -2889,6 +3011,9 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSampleData")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("LastModifiedBy")
@@ -3006,6 +3131,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -3021,7 +3149,6 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("OrganizationId")
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PaymentMethod")
@@ -3106,6 +3233,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -3128,7 +3258,6 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("OrganizationId")
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PaymentMethod")
@@ -3209,6 +3338,9 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSampleData")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("LastModifiedBy")
@@ -3315,6 +3447,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -3393,6 +3528,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -3461,6 +3599,9 @@ namespace Aquiis.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSampleData")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -3526,6 +3667,9 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSampleData")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("LastModifiedBy")
@@ -3606,6 +3750,9 @@ namespace Aquiis.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsRead")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSampleData")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("LastModifiedBy")

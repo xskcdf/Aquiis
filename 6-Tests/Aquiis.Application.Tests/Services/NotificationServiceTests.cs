@@ -4,6 +4,8 @@ using Aquiis.Core.Entities;
 using Aquiis.Core.Interfaces.Services;
 using Aquiis.SimpleStart.Entities;
 using Aquiis.Infrastructure.Data;
+using Aquiis.Infrastructure.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -94,6 +96,7 @@ namespace Aquiis.Application.Tests
                 _mockEmailService.Object,
                 _mockSMSService.Object,
                 settings,
+                Mock.Of<IHubContext<NotificationHub>>(),
                 new NullLogger<NotificationService>());
         }
 
