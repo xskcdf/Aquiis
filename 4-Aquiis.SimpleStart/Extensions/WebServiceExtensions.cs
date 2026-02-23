@@ -12,6 +12,7 @@ using Aquiis.SimpleStart.Data;
 using Aquiis.SimpleStart.Entities;
 using Aquiis.SimpleStart.Services;  // For ElectronPathService, WebPathService
 using Aquiis.Infrastructure.Services;  // For DatabaseUnlockState
+using Aquiis.Infrastructure.Interfaces;  // For IKeychainService
 using Microsoft.Data.Sqlite;
 
 namespace Aquiis.SimpleStart.Extensions;
@@ -178,7 +179,9 @@ public static class WebServiceExtensions
                 // Database is encrypted - try to get password from keychain
                 if (EnableVerboseLogging)
                     Console.WriteLine("Detected encrypted database, retrieving password from keychain...");
-                var keychain = new LinuxKeychainService("SimpleStart-Web"); // Pass app name to prevent keychain conflicts
+                var keychain = OperatingSystem.IsWindows()
+                    ? (IKeychainService)new WindowsKeychainService("SimpleStart-Web")
+                    : new LinuxKeychainService("SimpleStart-Web"); // Pass app name to prevent keychain conflicts
                 var password = keychain.RetrieveKey();
 
                 if (string.IsNullOrEmpty(password))

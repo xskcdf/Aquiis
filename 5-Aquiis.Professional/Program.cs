@@ -11,6 +11,7 @@ using Aquiis.Professional.Extensions;
 using Aquiis.Application.Services;
 using Aquiis.Application.Services.Workflows;
 using Aquiis.Infrastructure.Services;
+using Aquiis.Infrastructure.Interfaces;
 using Aquiis.Professional.Data;
 using Aquiis.Professional.Entities;
 using ElectronNET.API;
@@ -174,10 +175,12 @@ builder.Services.AddScoped<LeaseWorkflowService>();
 
 // Database encryption services
 builder.Services.AddScoped<PasswordDerivationService>();
-builder.Services.AddScoped<LinuxKeychainService>(sp =>
+builder.Services.AddScoped<IKeychainService>(sp =>
 {
     // Pass app name to prevent keychain conflicts between different apps and modes
     var appName = HybridSupport.IsElectronActive ? "Professional-Electron" : "Professional-Web";
+    if (OperatingSystem.IsWindows())
+        return new WindowsKeychainService(appName);
     return new LinuxKeychainService(appName);
 });
 builder.Services.AddScoped<DatabaseEncryptionService>();

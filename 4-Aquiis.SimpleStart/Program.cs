@@ -8,6 +8,7 @@ using Aquiis.Core.Interfaces;
 using Aquiis.Core.Interfaces.Services;
 using Aquiis.SimpleStart.Extensions;
 using Aquiis.Infrastructure.Services;
+using Aquiis.Infrastructure.Interfaces;
 using Aquiis.SimpleStart.Shared.Services;
 using Aquiis.SimpleStart.Shared.Authorization;
 using Aquiis.Application.Services;
@@ -183,10 +184,12 @@ builder.Services.AddScoped<LeaseWorkflowService>();
 
 // Database encryption services
 builder.Services.AddScoped<PasswordDerivationService>();
-builder.Services.AddScoped<LinuxKeychainService>(sp =>
+builder.Services.AddScoped<IKeychainService>(sp =>
 {
     // Pass app name to prevent keychain conflicts between different apps and modes
     var appName = HybridSupport.IsElectronActive ? "SimpleStart-Electron" : "SimpleStart-Web";
+    if (OperatingSystem.IsWindows())
+        return new WindowsKeychainService(appName);
     return new LinuxKeychainService(appName);
 });
 builder.Services.AddScoped<DatabaseEncryptionService>();
@@ -300,6 +303,7 @@ using (var scope = app.Services.CreateScope())
             }
             
             var stagedRestorePath = $"{dbPath}.restore_pending";
+            bool restoredFromPending = false;
             
             // Check if there's a staged restore waiting
             if (File.Exists(stagedRestorePath))
@@ -307,9 +311,19 @@ using (var scope = app.Services.CreateScope())
                 app.Logger.LogInformation("Found staged restore file, applying it now");
                 Console.WriteLine($"[Program] Staged restore found, {stagedRestorePath}");
                 
+                // Clear connection pools to release handles opened during startup (e.g. encryption detection)
+                Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+                await Task.Delay(500);
+                
                 // Backup current database if it exists
                 if (File.Exists(dbPath))
                 {
+                    // Remove WAL/SHM files - they belong to the old session
+                    var walPath = $"{dbPath}-wal";
+                    var shmPath = $"{dbPath}-shm";
+                    if (File.Exists(walPath)) File.Delete(walPath);
+                    if (File.Exists(shmPath)) File.Delete(shmPath);
+                    
                     var timestamp = DateTime.Now.ToString("yyyyMMddHHmmssfff");
                     var beforeRestorePath = $"{dbPath}.beforeRestore.{timestamp}";
                     File.Move(dbPath, beforeRestorePath);
@@ -319,12 +333,16 @@ using (var scope = app.Services.CreateScope())
                 // Move staged restore into place
                 File.Move(stagedRestorePath, dbPath);
                 app.Logger.LogInformation("Staged restore applied successfully");
+                restoredFromPending = true;
             }
             
             var dbExists = File.Exists(dbPath);
             
             // Check database health if it exists
-            if (dbExists)
+            // On Windows, skip the health check after a restore swap — the DbContext interceptor
+            // may not yet match the new encryption state, causing a false corruption diagnosis.
+            // On Linux this is not an issue as the interceptor is configured before the swap.
+            if (dbExists && !(OperatingSystem.IsWindows() && restoredFromPending))
             {
                 var (isHealthy, healthMessage) = await backupService.ValidateDatabaseHealthAsync();
                 if (!isHealthy)

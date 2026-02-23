@@ -953,38 +953,25 @@
             successMessage = "Encrypting database... This may take a moment.";
             StateHasChanged();
             
-            // Step 2: Get database path and close connections
+            // Step 2: Get database path
             var dbPath = await PathService.GetDatabasePathAsync();
-            await BackupService.PrepareForFileCopyAsync();
             
-            // Step 3: Copy database file
-            var copyPath = $"{dbPath}.copy_to_encrypt";
-            File.Copy(dbPath, copyPath, overwrite: true);
-            
-            // Step 4: Encrypt the copy (with raw password)
+            // Step 3: Encrypt the backup directly — avoids File.Copy of the live database
             var (success, encryptedPath, errorMsg) = 
-                await EncryptionService.EncryptDatabaseAsync(copyPath, password);
+                await EncryptionService.EncryptDatabaseAsync(backupPath, password);
             
             if (!success || encryptedPath == null)
             {
                 errorMessage = $"Encryption failed: {errorMsg}";
                 isEncryptionEnabled = false;
-                if (File.Exists(copyPath)) File.Delete(copyPath);
-                if (File.Exists($"{copyPath}-wal")) File.Delete($"{copyPath}-wal");
-                if (File.Exists($"{copyPath}-shm")) File.Delete($"{copyPath}-shm");
                 if (encryptedPath != null && File.Exists(encryptedPath)) File.Delete(encryptedPath);
                 StateHasChanged();
                 return;
             }
             
-            // Step 5: Stage encrypted db for restart
+            // Step 4: Stage encrypted db for restart
             var stagedRestorePath = $"{dbPath}.restore_pending";
             File.Move(encryptedPath, stagedRestorePath, overwrite: true);
-            
-            // Cleanup temp copy and SQLite auxiliary files
-            if (File.Exists(copyPath)) File.Delete(copyPath);
-            if (File.Exists($"{copyPath}-wal")) File.Delete($"{copyPath}-wal");
-            if (File.Exists($"{copyPath}-shm")) File.Delete($"{copyPath}-shm");
             
             successMessage = "✅ Database encrypted successfully! Application will restart...";
             StateHasChanged();
@@ -1028,38 +1015,23 @@
                 return;
             }
             
-            successMessage = "Decrypting database copy... This may take a moment.";
+            successMessage = "Decrypting database... This may take a moment.";
             StateHasChanged();
             
             // Get database path
             var dbPath = await PathService.GetDatabasePathAsync();
             
-            // CRITICAL: Close connections and prepare for file copy
-            await BackupService.PrepareForFileCopyAsync();
-            
-            successMessage = "Copying encrypted database... This may take a moment.";
-            StateHasChanged();
-            
-            // Create a temporary copy to decrypt (can't decrypt live database - it's locked)
-            var tempCopyPath = $"{dbPath}.temp_for_decryption";
-            File.Copy(dbPath, tempCopyPath, overwrite: true);
-            
             try
             {
-                // Decrypt the copy (not the live database) using raw password
+                // Decrypt the backup directly — avoids File.Copy of the live database
                 var (success, decryptedPath, errorMsg) = 
-                    await EncryptionService.DecryptDatabaseAsync(tempCopyPath, password);
+                    await EncryptionService.DecryptDatabaseAsync(backupPath, password);
                 
                 if (!success || decryptedPath == null)
                 {
                     errorMessage = $"Decryption failed: {errorMsg ?? "Invalid password or corrupted database"}";
                     isEncryptionEnabled = true;
                     StateHasChanged();
-                    
-                    // Cleanup temp files and SQLite auxiliary files
-                    if (File.Exists(tempCopyPath)) File.Delete(tempCopyPath);
-                    if (File.Exists($"{tempCopyPath}-wal")) File.Delete($"{tempCopyPath}-wal");
-                    if (File.Exists($"{tempCopyPath}-shm")) File.Delete($"{tempCopyPath}-shm");
                     if (decryptedPath != null && File.Exists(decryptedPath)) File.Delete(decryptedPath);
                     return;
                 }
@@ -1067,11 +1039,6 @@
                 // Stage decrypted database for restart (same pattern as restore operations)
                 var stagedRestorePath = $"{dbPath}.restore_pending";
                 File.Move(decryptedPath, stagedRestorePath, overwrite: true);
-                
-                // Cleanup temp copy and SQLite auxiliary files
-                if (File.Exists(tempCopyPath)) File.Delete(tempCopyPath);
-                if (File.Exists($"{tempCopyPath}-wal")) File.Delete($"{tempCopyPath}-wal");
-                if (File.Exists($"{tempCopyPath}-shm")) File.Delete($"{tempCopyPath}-shm");
                 
                 successMessage = "✅ Database decrypted successfully! Application will restart...";
                 StateHasChanged();
@@ -1093,9 +1060,6 @@
                 errorMessage = $"Decryption error: {ex.Message}";
                 isEncryptionEnabled = true;
                 StateHasChanged();
-                
-                // Cleanup on error
-                if (File.Exists(tempCopyPath)) File.Delete(tempCopyPath);
             }
         }
         catch (Exception ex)

@@ -1,6 +1,6 @@
+using Aquiis.Infrastructure.Interfaces;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
-using Aquiis.Infrastructure.Services;
 
 namespace Aquiis.Application.Services;
 
@@ -10,11 +10,11 @@ namespace Aquiis.Application.Services;
 /// </summary>
 public class DatabaseUnlockService
 {
-    private readonly LinuxKeychainService _keychain;
+    private readonly IKeychainService _keychain;
     private readonly ILogger<DatabaseUnlockService> _logger;
     
     public DatabaseUnlockService(
-        LinuxKeychainService keychain,
+        IKeychainService keychain,
         ILogger<DatabaseUnlockService> logger)
     {
         _keychain = keychain;
