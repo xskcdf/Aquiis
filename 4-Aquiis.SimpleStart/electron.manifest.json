@@ -8,7 +8,7 @@
     "--disable-dev-shm-usage"
   ],
   "name": "aquiis",
-  "description": "Desktop property management application for landlords managing up to 9 residential properties",
+  "description": "Aquiis Property Management",
   "author": "Aquiis",
   "singleInstance": false,
   "environment": "Production",

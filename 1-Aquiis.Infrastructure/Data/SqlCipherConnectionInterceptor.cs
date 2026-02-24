@@ -58,6 +58,19 @@ public class SqlCipherConnectionInterceptor : DbConnectionInterceptor
         {
             Console.WriteLine("[SqlCipherConnectionInterceptor] No password provided, skipping encryption");
         }
+
+        // Enable WAL mode for all connections (encrypted or not).
+        // WAL mode is persistent in the database file — this is a no-op for databases
+        // already in WAL mode, and upgrades fresh databases from the default DELETE journal.
+        // NORMAL synchronous is safe with WAL and gives a meaningful performance boost.
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = "PRAGMA journal_mode = WAL;";
+            cmd.ExecuteNonQuery();
+            cmd.CommandText = "PRAGMA synchronous = NORMAL;";
+            cmd.ExecuteNonQuery();
+        }
+
         base.ConnectionOpened(connection, eventData);
     }
 
@@ -99,6 +112,19 @@ public class SqlCipherConnectionInterceptor : DbConnectionInterceptor
         {
             Console.WriteLine("[SqlCipherConnectionInterceptor] No password provided, skipping encryption (async)");
         }
+
+        // Enable WAL mode for all connections (encrypted or not).
+        // WAL mode is persistent in the database file — this is a no-op for databases
+        // already in WAL mode, and upgrades fresh databases from the default DELETE journal.
+        // NORMAL synchronous is safe with WAL and gives a meaningful performance boost.
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = "PRAGMA journal_mode = WAL;";
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
+            cmd.CommandText = "PRAGMA synchronous = NORMAL;";
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
+        }
+
         await base.ConnectionOpenedAsync(connection, eventData, cancellationToken);
     }
 }

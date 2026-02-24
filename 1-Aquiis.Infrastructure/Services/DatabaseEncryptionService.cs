@@ -186,12 +186,32 @@ public class DatabaseEncryptionService
                 await encryptedConn.OpenAsync();
                 _logger.LogInformation("✅ Encrypted database opened successfully");
                 
-                // Set password using PRAGMA
+                // Set password using PRAGMA — must be first operation on the connection
                 using (var cmd = encryptedConn.CreateCommand())
                 {
                     cmd.CommandText = $"PRAGMA key = '{password}';";
                     await cmd.ExecuteNonQueryAsync();
                     _logger.LogInformation("Encryption key set with PRAGMA");
+                }
+
+                // Explicitly set SQLCipher 4 parameters to match how the database was created.
+                // On Windows the native library does not always auto-detect these from the file
+                // header, causing decryption to silently fail with wrong defaults.
+                using (var cmd = encryptedConn.CreateCommand())
+                {
+                    cmd.CommandText = "PRAGMA cipher_page_size = 4096;";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "PRAGMA kdf_iter = 256000;";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "PRAGMA cipher_hmac_algorithm = HMAC_SHA512;";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512;";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    _logger.LogInformation("SQLCipher 4 cipher parameters set explicitly");
                 }
                 
                 // Attach unencrypted database
@@ -261,10 +281,22 @@ public class DatabaseEncryptionService
             {
                 await conn.OpenAsync();
                 
-                // Set the password using PRAGMA
+                // Set password then explicit SQLCipher 4 params — mirrors DecryptDatabaseAsync
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = $"PRAGMA key = '{password}';";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "PRAGMA cipher_page_size = 4096;";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "PRAGMA kdf_iter = 256000;";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "PRAGMA cipher_hmac_algorithm = HMAC_SHA512;";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512;";
                     await cmd.ExecuteNonQueryAsync();
                 }
                 
