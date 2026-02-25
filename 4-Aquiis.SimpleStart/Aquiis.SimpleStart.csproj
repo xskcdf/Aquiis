@@ -73,6 +73,8 @@
       <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
       <!-- Pre-compile IL to native code at publish time to reduce JIT overhead on startup -->
       <PublishReadyToRun>true</PublishReadyToRun>
+      <!-- Further optimize hot paths after ReadyToRun compilation -->
+      <TieredPGO>true</TieredPGO>
     </PropertyGroup>
   </Target>
 

@@ -1,0 +1,20 @@
+[
+  {
+    "appId": "15266c2b-5c80-58b4-9014-e379c3497d2a",
+    "installSource": "External MSI",
+    "appName": "Aquiis 1.1.0",
+    "action": "0",
+    "lightIconAssetId": "Lle/1qQfan2LahFQftmtvg4L2lR/1vSTTvdtjAs/iSw=",
+    "darkIconAssetId": "Lle/1qQfan2LahFQftmtvg4L2lR/1vSTTvdtjAs/iSw=",
+    "publisher": "Aquiis",
+    "lastLaunchTime": "0",
+    "appVersion": "1.1.0",
+    "appLanguage": "0",
+    "appArch": "",
+    "reinstallId": "https://github.com/ElectronNET/Electron.NET#readme",
+    "productUrl": "https://github.com/ElectronNET/Electron.NET#readme",
+    "isPinned": "False",
+    "wingetId": "ARP\\User\\X64\\15266c2b-5c80-58b4-9014-e379c3497d2a",
+    "wingetSource": "NoReliableInfo"
+  }
+]

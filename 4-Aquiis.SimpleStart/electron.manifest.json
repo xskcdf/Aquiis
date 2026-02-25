@@ -43,10 +43,17 @@
       "category": "public.app-category.business"
     },
     "win": {
-      "target": "portable",
-      "icon": "Assets/icon.ico",
-      "signAndEditExecutable": false,
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "target": "nsis",
+      "icon": "bin/Assets/icon.ico",
+      "artifactName": "${productName}-${version}-${arch}-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Aquiis"
     },
     "linux": {
       "target": "AppImage",
