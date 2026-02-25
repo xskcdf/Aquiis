@@ -16,6 +16,7 @@
 6. [Database Health Checks](#database-health-checks)
 7. [Troubleshooting](#troubleshooting)
 8. [Advanced Topics](#advanced-topics)
+   - [Schema Migrations & Model Optimization](#schema-migrations--model-optimization)
 9. [Best Practices](#best-practices)
 10. [FAQ](#faq)
 
@@ -958,6 +959,57 @@ Aquiis SimpleStart is designed as single-computer desktop application. Multi-com
 - Poor performance over network
 
 **Recommendation:** Use one computer as primary. For multi-computer access, wait for Aquiis Professional (web-based, v2.0.0).
+
+### Schema Migrations & Model Optimization
+
+Aquiis uses **EF Core migrations** to manage schema changes and a **compiled model** to eliminate EF's runtime model-build cost.
+
+#### EF Core Compiled Model
+
+On first startup, EF Core normally reflects over all 40+ entity classes to build its internal model — this adds several seconds to every app launch. A **compiled model** pre-builds this at publish time instead, reducing startup time significantly.
+
+The compiled model lives in `1-Aquiis.Infrastructure/Data/CompiledModels/` and is auto-discovered via an assembly attribute — no code wiring is needed.
+
+**When to regenerate the compiled model:**
+
+| Change | Re-run optimize? |
+|---|---|
+| Add / remove entity or property | ✅ Yes |
+| Add / modify relationship or index | ✅ Yes |
+| Rename entity or property | ✅ Yes |
+| Data-only migration (seed data, no schema change) | ❌ No |
+| Bug fix with no model changes | ❌ No |
+
+> **Note:** If the compiled model is stale, EF Core throws an `InvalidOperationException` at startup — the app will not silently use wrong metadata.
+
+#### Migration Workflow
+
+Whenever the entity model changes, run both commands from the solution root:
+
+```bash
+# 1. Add the migration
+dotnet ef migrations add <MigrationName> \
+  --project 1-Aquiis.Infrastructure \
+  --startup-project 4-Aquiis.SimpleStart
+
+# 2. Regenerate the compiled model
+dotnet ef dbcontext optimize \
+  --project 1-Aquiis.Infrastructure \
+  --startup-project 4-Aquiis.SimpleStart \
+  --context ApplicationDbContext \
+  --output-dir Data/CompiledModels \
+  --namespace Aquiis.Infrastructure.Data.CompiledModels
+```
+
+Check in both the migration files and the updated `CompiledModels/` folder together in the same commit.
+
+#### EF Tools Version
+
+Keep the EF CLI tool current with the runtime version:
+
+```bash
+dotnet tool update dotnet-ef -g
+```
 
 ---
 

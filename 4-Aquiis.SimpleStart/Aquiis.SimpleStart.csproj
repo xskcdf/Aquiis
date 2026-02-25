@@ -71,6 +71,8 @@
     <PropertyGroup>
       <PublishSingleFile>false</PublishSingleFile>
       <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
+      <!-- Pre-compile IL to native code at publish time to reduce JIT overhead on startup -->
+      <PublishReadyToRun>true</PublishReadyToRun>
     </PropertyGroup>
   </Target>
 

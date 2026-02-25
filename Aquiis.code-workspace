@@ -7,5 +7,7 @@
 			"path": "../../Documents/Orion II/Projects/Aquiis"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"powershell.cwd": "Aquiis"
+	}
 }
