@@ -114,9 +114,14 @@ When you upgrade Aquiis SimpleStart to a new version:
 
 **No manual intervention required** - migrations are automatic and seamless!
 
+**Version Upgrade Compatibility:**  
+Not all version upgrades are supported automatically. Check the **[Compatibility Matrix](Compatibility-Matrix.md)** before upgrading to see if your current version can auto-migrate to the target version, or if manual steps are required.
+
 #### Migration to v1.1.0
 
 When upgrading from v1.0.0 to v1.1.0, the following schema changes are automatically applied:
+
+> **Note:** For complete version compatibility information and upgrade paths, see the **[Compatibility Matrix](Compatibility-Matrix.md)**.
 
 **New Tables:**
 
@@ -149,6 +154,9 @@ When upgrading from v1.0.0 to v1.1.0, the following schema changes are automatic
 - Typical migration time: 5-15 seconds
 
 **Important:** v1.1.0 application **requires** v1.1.0 database schema - the DatabaseSettings table is queried on startup. Running v1.1.0 app with v1.0.0 database will result in an error.
+
+**Version Compatibility:**  
+See the **[Compatibility Matrix](Compatibility-Matrix.md)** for detailed information about which app versions work with which database versions, and whether automatic migration is available.
 
 ---
 
@@ -972,13 +980,13 @@ The compiled model lives in `1-Aquiis.Infrastructure/Data/CompiledModels/` and i
 
 **When to regenerate the compiled model:**
 
-| Change | Re-run optimize? |
-|---|---|
-| Add / remove entity or property | ✅ Yes |
-| Add / modify relationship or index | ✅ Yes |
-| Rename entity or property | ✅ Yes |
-| Data-only migration (seed data, no schema change) | ❌ No |
-| Bug fix with no model changes | ❌ No |
+| Change                                            | Re-run optimize? |
+| ------------------------------------------------- | ---------------- |
+| Add / remove entity or property                   | ✅ Yes           |
+| Add / modify relationship or index                | ✅ Yes           |
+| Rename entity or property                         | ✅ Yes           |
+| Data-only migration (seed data, no schema change) | ❌ No            |
+| Bug fix with no model changes                     | ❌ No            |
 
 > **Note:** If the compiled model is stale, EF Core throws an `InvalidOperationException` at startup — the app will not silently use wrong metadata.
 

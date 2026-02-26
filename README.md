@@ -144,6 +144,8 @@ Get-FileHash "Aquiis-1.1.0-x64-Setup.exe" -Algorithm SHA256
 3. Register your **first user account**
 4. Start managing properties!
 
+**New to Aquiis?** Follow our **[Quick Start Guide](Documentation/Quick-Start-Guide.md)** for a 15-minute tutorial.
+
 ### 15-Minute Tutorial
 
 Follow our [Quick Start Guide](Documentation/Quick-Start-Guide.md) to:
@@ -185,6 +187,12 @@ Aquiis is available as a portable Windows executable (.exe). No installation req
 
 - All dependencies bundled (no installation required)
 - Optional: SendGrid (email) and Twilio (SMS) for notifications
+
+### Data & Backups
+
+- SQLite database stored locally in application data folder
+- Regular backups recommended (manual or scheduled)
+- See **[Database Management Guide](Documentation/Database-Management-Guide.md)** for backup/restore procedures
 
 ---
 
