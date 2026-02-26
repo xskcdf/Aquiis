@@ -8,6 +8,7 @@ using Aquiis.Core.Interfaces;
 using Aquiis.Core.Interfaces.Services;
 using Aquiis.SimpleStart.Extensions;
 using Aquiis.Infrastructure.Services;
+using Aquiis.Infrastructure.Interfaces;
 using Aquiis.SimpleStart.Shared.Services;
 using Aquiis.SimpleStart.Shared.Authorization;
 using Aquiis.Application.Services;
@@ -25,12 +26,13 @@ SQLitePCL.raw.sqlite3_initialize();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// CRITICAL: Handle .restore_pending BEFORE any DbContext registration
-// This ensures encrypted database detection happens on the correct file
-HandlePendingRestore(builder.Configuration);
-
-// Configure for Electron
+// Configure for Electron FIRST — this sets HybridSupport.IsElectronActive, which
+// HandlePendingRestore depends on to compute the correct Electron user-data DB path.
 builder.WebHost.UseElectron(args);
+
+// CRITICAL: Handle .restore_pending BEFORE any DbContext registration.
+// Must run AFTER UseElectron so HybridSupport.IsElectronActive is true.
+HandlePendingRestore(builder.Configuration);
 
 // Configure URLs - use specific port for Electron
 if (HybridSupport.IsElectronActive)
@@ -183,10 +185,12 @@ builder.Services.AddScoped<LeaseWorkflowService>();
 
 // Database encryption services
 builder.Services.AddScoped<PasswordDerivationService>();
-builder.Services.AddScoped<LinuxKeychainService>(sp =>
+builder.Services.AddScoped<IKeychainService>(sp =>
 {
     // Pass app name to prevent keychain conflicts between different apps and modes
     var appName = HybridSupport.IsElectronActive ? "SimpleStart-Electron" : "SimpleStart-Web";
+    if (OperatingSystem.IsWindows())
+        return new WindowsKeychainService(appName);
     return new LinuxKeychainService(appName);
 });
 builder.Services.AddScoped<DatabaseEncryptionService>();
@@ -300,6 +304,7 @@ using (var scope = app.Services.CreateScope())
             }
             
             var stagedRestorePath = $"{dbPath}.restore_pending";
+            bool restoredFromPending = false;
             
             // Check if there's a staged restore waiting
             if (File.Exists(stagedRestorePath))
@@ -307,9 +312,19 @@ using (var scope = app.Services.CreateScope())
                 app.Logger.LogInformation("Found staged restore file, applying it now");
                 Console.WriteLine($"[Program] Staged restore found, {stagedRestorePath}");
                 
+                // Clear connection pools to release handles opened during startup (e.g. encryption detection)
+                Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+                await Task.Delay(500);
+                
                 // Backup current database if it exists
                 if (File.Exists(dbPath))
                 {
+                    // Remove WAL/SHM files - they belong to the old session
+                    var walPath = $"{dbPath}-wal";
+                    var shmPath = $"{dbPath}-shm";
+                    if (File.Exists(walPath)) File.Delete(walPath);
+                    if (File.Exists(shmPath)) File.Delete(shmPath);
+                    
                     var timestamp = DateTime.Now.ToString("yyyyMMddHHmmssfff");
                     var beforeRestorePath = $"{dbPath}.beforeRestore.{timestamp}";
                     File.Move(dbPath, beforeRestorePath);
@@ -319,12 +334,16 @@ using (var scope = app.Services.CreateScope())
                 // Move staged restore into place
                 File.Move(stagedRestorePath, dbPath);
                 app.Logger.LogInformation("Staged restore applied successfully");
+                restoredFromPending = true;
             }
             
             var dbExists = File.Exists(dbPath);
             
             // Check database health if it exists
-            if (dbExists)
+            // On Windows, skip the health check after a restore swap — the DbContext interceptor
+            // may not yet match the new encryption state, causing a false corruption diagnosis.
+            // On Linux this is not an issue as the interceptor is configured before the swap.
+            if (dbExists && !(OperatingSystem.IsWindows() && restoredFromPending))
             {
                 var (isHealthy, healthMessage) = await backupService.ValidateDatabaseHealthAsync();
                 if (!isHealthy)
@@ -759,53 +778,137 @@ await app.WaitForShutdownAsync();
 // Local function to handle .restore_pending before service registration
 static void HandlePendingRestore(IConfiguration configuration)
 {
-    var connectionString = configuration.GetConnectionString("DefaultConnection");
-    Console.WriteLine($"[Program.HandlePendingRestore] Checking for staged restore on database connection string: {connectionString}");
-    if (string.IsNullOrEmpty(connectionString))
+    // CRITICAL: This runs before ANY service registration or DbContext creation.
+    // It must compute the correct database path independently of the DI container.
+    //
+    // BUG FIXED: Previously this read the path from appsettings.json DefaultConnection,
+    // which is a fallback path (e.g. Infrastructure/Data/app_v0.0.0.db) that is NEVER
+    // used by the Electron app. The Electron app stores its database in the OS user-data
+    // directory (e.g. %APPDATA%\Aquiis\app_v1.1.0.db on Windows). This mismatch meant
+    // the staged restore was never found and never applied, leaving the app in a broken
+    // state after an encrypt→decrypt cycle (the DPAPI key is deleted on successful
+    // decryption, so on the next startup the app saw an encrypted DB with no key and
+    // displayed the unlock screen indefinitely).
+
+    string dbPath;
+
+    if (HybridSupport.IsElectronActive)
     {
-        // Can't proceed without connection string
+        // Replicate ElectronPathService.GetDatabasePathSync() without needing DI.
+        var dbFileName = configuration["ApplicationSettings:DatabaseFileName"] ?? "app.db";
+
+        string basePath;
+        if (OperatingSystem.IsWindows())
+            basePath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Aquiis");
+        else if (OperatingSystem.IsMacOS())
+            basePath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                "Library", "Application Support", "Aquiis");
+        else // Linux
+            basePath = Path.Combine(
+                Environment.GetEnvironmentVariable("XDG_CONFIG_HOME")
+                    ?? Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config"),
+                "Aquiis");
+
+        Directory.CreateDirectory(basePath);
+        dbPath = Path.Combine(basePath, dbFileName);
+        Console.WriteLine($"[Program.HandlePendingRestore] Electron mode — DB path: {dbPath}");
+    }
+    else
+    {
+        // Web / non-Electron: derive path from appsettings.json connection string.
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        Console.WriteLine($"[Program.HandlePendingRestore] Web mode — connection string: {connectionString}");
+
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            Console.WriteLine("[Program.HandlePendingRestore] No connection string found, skipping");
+            return;
+        }
+
+        var csBuilder = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder(connectionString);
+        dbPath = csBuilder.DataSource;
+
+        if (!Path.IsPathRooted(dbPath))
+            dbPath = Path.Combine(Directory.GetCurrentDirectory(), dbPath);
+
+        Console.WriteLine($"[Program.HandlePendingRestore] Web mode — DB path: {dbPath}");
+    }
+
+    var stagedRestorePath = $"{dbPath}.restore_pending";
+
+    if (!File.Exists(stagedRestorePath))
+    {
+        Console.WriteLine($"[Program.HandlePendingRestore] No staged restore pending at: {stagedRestorePath}");
         return;
     }
-    
-    // Extract database path
-    var builder = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder(connectionString);
-    var dbPath = builder.DataSource;
-    
-    if (!Path.IsPathRooted(dbPath))
+
+    var pendingSize = new FileInfo(stagedRestorePath).Length;
+    Console.WriteLine($"[Program.HandlePendingRestore] Staged restore found: {stagedRestorePath} ({pendingSize:N0} bytes)");
+
+    // At this point in startup no connections have been opened, but clear pools
+    // as a safety measure and force a GC pass on Windows to release any lingering
+    // SQLite native file handles from a previous process that didn't exit cleanly.
+    Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+
+    if (OperatingSystem.IsWindows())
     {
-        dbPath = Path.Combine(Directory.GetCurrentDirectory(), dbPath);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        Console.WriteLine("[Program.HandlePendingRestore] GC collection complete (Windows handle safety)");
     }
-    
-    var stagedRestorePath = $"{dbPath}.restore_pending";
-    
-    // Check if there's a staged restore waiting
-    if (File.Exists(stagedRestorePath))
+
+    Thread.Sleep(300);
+
+    if (File.Exists(dbPath))
     {
-        Console.WriteLine($"[Program.HandlePendingRestore] Found staged restore file, applying it now: {stagedRestorePath}");
-        
-        // Clear SQLite connection pool
-        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-        
-        // Wait for connections to close
-        Thread.Sleep(500);
-        
-        // Backup current database if it exists
-        if (File.Exists(dbPath))
-        {
-            var timestamp = DateTime.Now.ToString("yyyyMMddHHmmssfff");
-            var beforeRestorePath = $"{dbPath}.beforeRestore.{timestamp}";
-            File.Move(dbPath, beforeRestorePath);
-            Console.WriteLine($"Current database backed up to: {beforeRestorePath}");
-        }
-        
-        // Move staged restore into place
-        File.Move(stagedRestorePath, dbPath);
-        Console.WriteLine("Staged restore applied successfully");
-        
-        // Delete orphaned WAL/SHM files if they exist
+        var currentSize = new FileInfo(dbPath).Length;
+        Console.WriteLine($"[Program.HandlePendingRestore] Current DB: {dbPath} ({currentSize:N0} bytes) — backing up before replace");
+
+        // Remove WAL/SHM files — they belong to the outgoing session
         var walPath = $"{dbPath}-wal";
         var shmPath = $"{dbPath}-shm";
-        if (File.Exists(walPath)) File.Delete(walPath);
-        if (File.Exists(shmPath)) File.Delete(shmPath);
+        if (File.Exists(walPath)) { File.Delete(walPath); Console.WriteLine("[Program.HandlePendingRestore] Deleted WAL file"); }
+        if (File.Exists(shmPath)) { File.Delete(shmPath); Console.WriteLine("[Program.HandlePendingRestore] Deleted SHM file"); }
+
+        var timestamp = DateTime.Now.ToString("yyyyMMddHHmmssfff");
+        var beforeRestorePath = $"{dbPath}.beforeRestore.{timestamp}";
+
+        try
+        {
+            File.Move(dbPath, beforeRestorePath);
+            Console.WriteLine($"[Program.HandlePendingRestore] Current DB backed up to: {beforeRestorePath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Program.HandlePendingRestore] ERROR: Cannot back up current DB — restore aborted.");
+            Console.WriteLine($"[Program.HandlePendingRestore]   {ex.GetType().Name}: {ex.Message}");
+            if (OperatingSystem.IsWindows())
+                Console.WriteLine($"[Program.HandlePendingRestore]   HResult: 0x{ex.HResult:X8}  " +
+                                  "(0x80070020 = sharing violation / file locked by another process)");
+            Console.WriteLine("[Program.HandlePendingRestore]   Staged file preserved for next startup attempt.");
+            return;
+        }
+    }
+    else
+    {
+        Console.WriteLine($"[Program.HandlePendingRestore] No existing DB at {dbPath} — placing staged restore directly");
+    }
+
+    try
+    {
+        File.Move(stagedRestorePath, dbPath);
+        Console.WriteLine($"[Program.HandlePendingRestore] ✅ Staged restore applied successfully.");
+        Console.WriteLine($"[Program.HandlePendingRestore]   New DB: {dbPath} ({new FileInfo(dbPath).Length:N0} bytes)");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Program.HandlePendingRestore] ERROR: Failed to move staged restore into place.");
+        Console.WriteLine($"[Program.HandlePendingRestore]   {ex.GetType().Name}: {ex.Message}");
+        if (OperatingSystem.IsWindows())
+            Console.WriteLine($"[Program.HandlePendingRestore]   HResult: 0x{ex.HResult:X8}");
     }
 }

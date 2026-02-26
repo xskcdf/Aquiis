@@ -142,13 +142,6 @@ namespace Aquiis.SimpleStart.Shared.Services
                 // Try to open connection
                 await _dbContext.Database.OpenConnectionAsync();
 
-                // Try a simple query
-                var canQuery = await _dbContext.Database.CanConnectAsync();
-                if (!canQuery)
-                {
-                    return (false, "Cannot connect to database");
-                }
-
                 // SQLite-specific integrity check
                 var connection = _dbContext.Database.GetDbConnection();
                 using var command = connection.CreateCommand();
