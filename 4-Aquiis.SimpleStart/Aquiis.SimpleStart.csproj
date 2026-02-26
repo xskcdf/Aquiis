@@ -5,7 +5,6 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-Aquiis.SimpleStart-c69b6efe-bb20-41de-8cba-044207ebdce1</UserSecretsId>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <MigrationsDirectory>Data/Migrations</MigrationsDirectory>
     
     <!-- Semantic Versioning -->
@@ -59,5 +58,24 @@
     <PackageReference Include="QuestPDF" Version="2025.12.1" />
     <PackageReference Include="Twilio" Version="7.14.0" />
   </ItemGroup>
+
+  <!--
+    Force multi-file publish to eliminate the 30+ second startup extraction delay.
+    electronize start/build passes /p:PublishSingleFile=true on the command line, which
+    overrides project PropertyGroup values. A Target-level PropertyGroup assignment runs
+    AFTER command-line properties are evaluated but BEFORE the publish bundling targets,
+    so it reliably wins. With PublishSingleFile=false, native libraries (SQLCipher etc.)
+    are published as separate files alongside the exe — no extraction, near-instant load.
+  -->
+  <Target Name="DisableSingleFilePublish" BeforeTargets="PrepareForPublish">
+    <PropertyGroup>
+      <PublishSingleFile>false</PublishSingleFile>
+      <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
+      <!-- Pre-compile IL to native code at publish time to reduce JIT overhead on startup -->
+      <PublishReadyToRun>true</PublishReadyToRun>
+      <!-- Further optimize hot paths after ReadyToRun compilation -->
+      <TieredPGO>true</TieredPGO>
+    </PropertyGroup>
+  </Target>
 
 </Project>

@@ -1,7 +1,7 @@
 using Aquiis.Application.Models.DTOs;
 using Aquiis.Core.Entities;
 using Aquiis.Infrastructure.Data;
-using Aquiis.Infrastructure.Services;
+using Aquiis.Infrastructure.Interfaces;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -14,12 +14,12 @@ namespace Aquiis.Application.Services;
 /// </summary>
 public class DatabasePreviewService
 {
-    private readonly LinuxKeychainService _keychain;
+    private readonly IKeychainService _keychain;
     private readonly ILogger<DatabasePreviewService> _logger;
     private readonly string _backupDirectory;
 
     public DatabasePreviewService(
-        LinuxKeychainService keychain,
+        IKeychainService keychain,
         ILogger<DatabasePreviewService> logger)
     {
         _keychain = keychain;
@@ -75,10 +75,7 @@ public class DatabasePreviewService
     /// </summary>
     public async Task<string?> TryGetKeychainPasswordAsync()
     {
-        if (!OperatingSystem.IsLinux())
-            return null;
-
-        await Task.CompletedTask; // Make method async
+        await Task.CompletedTask; // Keep method async
         var key = _keychain.RetrieveKey();
         if (key != null)
         {

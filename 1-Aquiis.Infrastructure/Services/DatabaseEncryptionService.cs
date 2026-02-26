@@ -1,3 +1,4 @@
+using Aquiis.Infrastructure.Interfaces;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using System.Text;
@@ -11,12 +12,12 @@ namespace Aquiis.Infrastructure.Services;
 public class DatabaseEncryptionService
 {
     private readonly PasswordDerivationService _passwordDerivation;
-    private readonly LinuxKeychainService _keychain;
+    private readonly IKeychainService _keychain;
     private readonly ILogger<DatabaseEncryptionService> _logger;
     
     public DatabaseEncryptionService(
         PasswordDerivationService passwordDerivation,
-        LinuxKeychainService keychain,
+        IKeychainService keychain,
         ILogger<DatabaseEncryptionService> logger)
     {
         _passwordDerivation = passwordDerivation;
@@ -118,18 +119,19 @@ public class DatabaseEncryptionService
                 return (false, null, "Failed to verify encrypted database");
             }
             
+            // Clear pools so Windows releases the verified file handle before the caller moves the file
+            SqliteConnection.ClearAllPools();
+            await Task.Delay(200);
+
             // Store password in keychain (best effort - don't fail if keychain unavailable)
-            if (OperatingSystem.IsLinux())
+            var stored = _keychain.StoreKey(password, "Aquiis Database Encryption Password");
+            if (!stored)
             {
-                var stored = _keychain.StoreKey(password, "Aquiis Database Encryption Password");
-                if (!stored)
-                {
-                    _logger.LogWarning("Failed to store password in keychain - you'll need to enter it manually on next startup");
-                }
-                else
-                {
-                    _logger.LogInformation("Password stored in keychain successfully");
-                }
+                _logger.LogWarning("Failed to store password in keychain - you'll need to enter it manually on next startup");
+            }
+            else
+            {
+                _logger.LogInformation("Password stored in keychain successfully");
             }
             
             _logger.LogInformation("Database encryption completed successfully");
@@ -184,12 +186,32 @@ public class DatabaseEncryptionService
                 await encryptedConn.OpenAsync();
                 _logger.LogInformation("✅ Encrypted database opened successfully");
                 
-                // Set password using PRAGMA
+                // Set password using PRAGMA — must be first operation on the connection
                 using (var cmd = encryptedConn.CreateCommand())
                 {
                     cmd.CommandText = $"PRAGMA key = '{password}';";
                     await cmd.ExecuteNonQueryAsync();
                     _logger.LogInformation("Encryption key set with PRAGMA");
+                }
+
+                // Explicitly set SQLCipher 4 parameters to match how the database was created.
+                // On Windows the native library does not always auto-detect these from the file
+                // header, causing decryption to silently fail with wrong defaults.
+                using (var cmd = encryptedConn.CreateCommand())
+                {
+                    cmd.CommandText = "PRAGMA cipher_page_size = 4096;";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "PRAGMA kdf_iter = 256000;";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "PRAGMA cipher_hmac_algorithm = HMAC_SHA512;";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512;";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    _logger.LogInformation("SQLCipher 4 cipher parameters set explicitly");
                 }
                 
                 // Attach unencrypted database
@@ -230,11 +252,12 @@ public class DatabaseEncryptionService
                 return (false, null, "Failed to verify decrypted database");
             }
             
+            // Clear pools so Windows releases the verified file handle before the caller moves the file
+            SqliteConnection.ClearAllPools();
+            await Task.Delay(200);
+
             // Remove password from keychain
-            if (OperatingSystem.IsLinux())
-            {
-                _keychain.RemoveKey();
-            }
+            _keychain.RemoveKey();
             
             _logger.LogInformation("Database decryption completed successfully");
             return (true, decryptedPath, null);
@@ -258,10 +281,22 @@ public class DatabaseEncryptionService
             {
                 await conn.OpenAsync();
                 
-                // Set the password using PRAGMA
+                // Set password then explicit SQLCipher 4 params — mirrors DecryptDatabaseAsync
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = $"PRAGMA key = '{password}';";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "PRAGMA cipher_page_size = 4096;";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "PRAGMA kdf_iter = 256000;";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "PRAGMA cipher_hmac_algorithm = HMAC_SHA512;";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512;";
                     await cmd.ExecuteNonQueryAsync();
                 }
                 
@@ -310,22 +345,10 @@ public class DatabaseEncryptionService
     /// <summary>
     /// Try to retrieve encryption key from keychain
     /// </summary>
-    public string? TryGetKeyFromKeychain()
-    {
-        if (!OperatingSystem.IsLinux())
-            return null;
-        
-        return _keychain.RetrieveKey();
-    }
+    public string? TryGetKeyFromKeychain() => _keychain.RetrieveKey();
     
     /// <summary>
     /// Check if keychain service is available
     /// </summary>
-    public bool IsKeychainAvailable()
-    {
-        if (!OperatingSystem.IsLinux())
-            return false;
-        
-        return _keychain.IsAvailable();
-    }
+    public bool IsKeychainAvailable() => _keychain.IsAvailable();
 }

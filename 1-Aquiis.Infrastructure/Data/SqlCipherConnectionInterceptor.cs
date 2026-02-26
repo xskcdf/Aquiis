@@ -4,101 +4,107 @@ using System.Data.Common;
 namespace Aquiis.Infrastructure.Data;
 
 /// <summary>
-/// EF Core connection interceptor that sets SQLCipher encryption password after opening connections
+/// EF Core connection interceptor that sets the SQLCipher encryption key on every connection open.
+///
+/// Performance note: accepts either a plaintext passphrase or a pre-derived raw key in SQLCipher's
+/// "x'hexbytes'" format. Raw keys skip the per-connection PBKDF2 derivation entirely, which
+/// eliminates 20–50 ms of CPU work per connection. Use SqlCipherKeyDerivation.DeriveRawKey()
+/// at startup to produce the raw key from the user's passphrase, then pass it here.
 /// </summary>
 public class SqlCipherConnectionInterceptor : DbConnectionInterceptor
 {
-    private readonly string? _encryptionPassword;
-    
-    // Toggle for verbose logging (useful for troubleshooting encryption issues)
-    private const bool EnableVerboseLogging = true;
+    private readonly string? _encryptionKey;
 
-    public SqlCipherConnectionInterceptor(string? encryptionPassword)
+    /// <param name="encryptionKey">
+    /// Either a plaintext passphrase (SQLCipher runs PBKDF2 internally, slow)
+    /// or a pre-derived raw key in x'hexbytes' format (no PBKDF2, fast).
+    /// </param>
+    public SqlCipherConnectionInterceptor(string? encryptionKey)
     {
-        _encryptionPassword = encryptionPassword;
-        if (EnableVerboseLogging)
-            Console.WriteLine($"[SqlCipherConnectionInterceptor] Initialized with password: {(_encryptionPassword != null ? $"YES (length: {_encryptionPassword.Length})" : "NO")}");
+        _encryptionKey = encryptionKey;
     }
 
     public override void ConnectionOpened(DbConnection connection, ConnectionEndEventData eventData)
     {
-        if (EnableVerboseLogging)
-            Console.WriteLine($"[SqlCipherConnectionInterceptor] ConnectionOpened called - Database: {connection.Database}");
-        
-        if (!string.IsNullOrEmpty(_encryptionPassword))
+        if (!string.IsNullOrEmpty(_encryptionKey))
         {
-            using (var cmd = connection.CreateCommand())
+            using var cmd = connection.CreateCommand();
+
+            if (_encryptionKey.StartsWith("x'", StringComparison.OrdinalIgnoreCase))
             {
-                // CRITICAL: Set key FIRST, before any other PRAGMA commands
-                if (EnableVerboseLogging)
-                    Console.WriteLine("[SqlCipherConnectionInterceptor] Setting encryption key...");
-                cmd.CommandText = $"PRAGMA key = '{_encryptionPassword}';";
+                // Pre-derived raw key — SQLCipher loads it directly, no PBKDF2 (~0 ms)
+                cmd.CommandText = $"PRAGMA key = \"{_encryptionKey}\";";
                 cmd.ExecuteNonQuery();
-                
-                // Now set SQLCipher 4 parameters
-                if (EnableVerboseLogging)
-                    Console.WriteLine("[SqlCipherConnectionInterceptor] Setting SQLCipher 4 parameters...");
+            }
+            else
+            {
+                // Passphrase fallback — SQLCipher runs PBKDF2(256000) internally (~20–50 ms)
+                cmd.CommandText = $"PRAGMA key = '{_encryptionKey}';";
+                cmd.ExecuteNonQuery();
+
                 cmd.CommandText = "PRAGMA cipher_page_size = 4096;";
                 cmd.ExecuteNonQuery();
-                
                 cmd.CommandText = "PRAGMA kdf_iter = 256000;";
                 cmd.ExecuteNonQuery();
-                
                 cmd.CommandText = "PRAGMA cipher_hmac_algorithm = HMAC_SHA512;";
                 cmd.ExecuteNonQuery();
-                
                 cmd.CommandText = "PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512;";
                 cmd.ExecuteNonQuery();
-                
-                if (EnableVerboseLogging)
-                    Console.WriteLine("[SqlCipherConnectionInterceptor] Encryption configured successfully");
             }
         }
-        else if (EnableVerboseLogging)
+
+        // WAL mode is persistent in the database file — no-op if already set, upgrades fresh DBs.
+        // NORMAL synchronous is safe with WAL and reduces flush overhead on every commit.
+        using (var cmd = connection.CreateCommand())
         {
-            Console.WriteLine("[SqlCipherConnectionInterceptor] No password provided, skipping encryption");
+            cmd.CommandText = "PRAGMA journal_mode = WAL;";
+            cmd.ExecuteNonQuery();
+            cmd.CommandText = "PRAGMA synchronous = NORMAL;";
+            cmd.ExecuteNonQuery();
         }
+
         base.ConnectionOpened(connection, eventData);
     }
 
     public override async Task ConnectionOpenedAsync(DbConnection connection, ConnectionEndEventData eventData, CancellationToken cancellationToken = default)
     {
-        if (EnableVerboseLogging)
-            Console.WriteLine($"[SqlCipherConnectionInterceptor] ConnectionOpenedAsync called - Database: {connection.Database}");
-        
-        if (!string.IsNullOrEmpty(_encryptionPassword))
+        if (!string.IsNullOrEmpty(_encryptionKey))
         {
-            using (var cmd = connection.CreateCommand())
+            using var cmd = connection.CreateCommand();
+
+            if (_encryptionKey.StartsWith("x'", StringComparison.OrdinalIgnoreCase))
             {
-                // CRITICAL: Set key FIRST, before any other PRAGMA commands
-                if (EnableVerboseLogging)
-                    Console.WriteLine("[SqlCipherConnectionInterceptor] Setting encryption key (async)...");
-                cmd.CommandText = $"PRAGMA key = '{_encryptionPassword}';";
+                // Pre-derived raw key — SQLCipher loads it directly, no PBKDF2 (~0 ms)
+                cmd.CommandText = $"PRAGMA key = \"{_encryptionKey}\";";
                 await cmd.ExecuteNonQueryAsync(cancellationToken);
-                
-                // Now set SQLCipher 4 parameters
-                if (EnableVerboseLogging)
-                    Console.WriteLine("[SqlCipherConnectionInterceptor] Setting SQLCipher 4 parameters (async)...");
+            }
+            else
+            {
+                // Passphrase fallback — SQLCipher runs PBKDF2(256000) internally (~20–50 ms)
+                cmd.CommandText = $"PRAGMA key = '{_encryptionKey}';";
+                await cmd.ExecuteNonQueryAsync(cancellationToken);
+
                 cmd.CommandText = "PRAGMA cipher_page_size = 4096;";
                 await cmd.ExecuteNonQueryAsync(cancellationToken);
-                
                 cmd.CommandText = "PRAGMA kdf_iter = 256000;";
                 await cmd.ExecuteNonQueryAsync(cancellationToken);
-                
                 cmd.CommandText = "PRAGMA cipher_hmac_algorithm = HMAC_SHA512;";
                 await cmd.ExecuteNonQueryAsync(cancellationToken);
-                
                 cmd.CommandText = "PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512;";
                 await cmd.ExecuteNonQueryAsync(cancellationToken);
-                
-                if (EnableVerboseLogging)
-                    Console.WriteLine("[SqlCipherConnectionInterceptor] Encryption configured successfully (async)");
             }
         }
-        else if (EnableVerboseLogging)
+
+        // WAL mode is persistent in the database file — no-op if already set, upgrades fresh DBs.
+        // NORMAL synchronous is safe with WAL and reduces flush overhead on every commit.
+        using (var cmd = connection.CreateCommand())
         {
-            Console.WriteLine("[SqlCipherConnectionInterceptor] No password provided, skipping encryption (async)");
+            cmd.CommandText = "PRAGMA journal_mode = WAL;";
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
+            cmd.CommandText = "PRAGMA synchronous = NORMAL;";
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
+
         await base.ConnectionOpenedAsync(connection, eventData, cancellationToken);
     }
 }

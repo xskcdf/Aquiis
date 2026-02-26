@@ -1,5 +1,5 @@
 using Aquiis.Core.Interfaces;
-using Aquiis.Infrastructure.Services;
+using Aquiis.Infrastructure.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace Aquiis.Application.Services;
@@ -10,11 +10,11 @@ namespace Aquiis.Application.Services;
 /// </summary>
 public class DatabasePasswordService
 {
-    private readonly LinuxKeychainService _keychain;
+    private readonly IKeychainService _keychain;
     private readonly ILogger<DatabasePasswordService> _logger;
     
     public DatabasePasswordService(
-        LinuxKeychainService keychain,
+        IKeychainService keychain,
         ILogger<DatabasePasswordService> logger)
     {
         _keychain = keychain;
@@ -64,9 +64,6 @@ public class DatabasePasswordService
     /// </summary>
     public string? TryGetPasswordFromKeychain()
     {
-        if (!OperatingSystem.IsLinux())
-            return null;
-        
         var key = _keychain.RetrieveKey();
         if (key != null)
         {

@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
+using Aquiis.Infrastructure.Interfaces;
 
 namespace Aquiis.Infrastructure.Services;
 
@@ -7,7 +8,7 @@ namespace Aquiis.Infrastructure.Services;
 /// Service for storing and retrieving encryption keys from Linux Secret Service (libsecret).
 /// Provides convenient auto-decryption on trusted devices.
 /// </summary>
-public class LinuxKeychainService
+public class LinuxKeychainService : IKeychainService
 {
     private const string Schema = "org.aquiis.database";
     private const string KeyAttribute = "key-type";

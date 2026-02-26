@@ -12,6 +12,7 @@ using Aquiis.SimpleStart.Data;
 using Aquiis.SimpleStart.Entities;
 using Aquiis.SimpleStart.Services;  // For ElectronPathService, WebPathService
 using Aquiis.Infrastructure.Services;  // For DatabaseUnlockState
+using Aquiis.Infrastructure.Interfaces;  // For IKeychainService
 using Microsoft.Data.Sqlite;
 
 namespace Aquiis.SimpleStart.Extensions;
@@ -22,7 +23,7 @@ namespace Aquiis.SimpleStart.Extensions;
 public static class ElectronServiceExtensions
 {
     // Toggle for verbose logging (useful for troubleshooting encryption setup)
-    private const bool EnableVerboseLogging = true;
+    private const bool EnableVerboseLogging = false;
     
     /// <summary>
     /// Adds all Electron-specific infrastructure services including database, identity, and path services.
@@ -43,12 +44,11 @@ public static class ElectronServiceExtensions
         // Check if database is encrypted and retrieve password if needed
         var encryptionPassword = GetEncryptionPasswordIfNeeded(connectionString);
 
-        if(EnableVerboseLogging)
-        {
-            Console.WriteLine("[ElectronServiceExtensions] Connection string obtained. Encryption needed: " + 
-                (!string.IsNullOrEmpty(encryptionPassword)).ToString() + $", Password: {encryptionPassword}");
-        }
-        
+        // Pre-derive raw AES key from passphrase (once at startup) so each connection open
+        // uses PRAGMA key = "x'hex'" and skips PBKDF2(256000), saving ~20–50 ms per connection.
+        if (!string.IsNullOrEmpty(encryptionPassword))
+            encryptionPassword = PrepareEncryptionKey(encryptionPassword, connectionString);
+
         // Register unlock state before any DbContext registration
         var unlockState = new DatabaseUnlockState
         {
@@ -77,11 +77,9 @@ public static class ElectronServiceExtensions
         if (!string.IsNullOrEmpty(encryptionPassword))
         {
             interceptor = new SqlCipherConnectionInterceptor(encryptionPassword);
-            
+
             // Clear connection pools to ensure no connections bypass the interceptor
             SqliteConnection.ClearAllPools();
-            if (EnableVerboseLogging)
-                Console.WriteLine("[ElectronServiceExtensions] Encryption interceptor created and connection pools cleared");
         }
 
         // ✅ Register Application layer (includes Infrastructure internally) with encryption interceptor
@@ -101,8 +99,6 @@ public static class ElectronServiceExtensions
         if (!string.IsNullOrEmpty(encryptionPassword))
         {
             SqliteConnection.ClearAllPools();
-            if (EnableVerboseLogging)
-                Console.WriteLine("[ElectronServiceExtensions] Connection pools cleared after DbContext registration");
         }
 
         // Register DatabaseService now that both contexts are available
@@ -189,9 +185,9 @@ public static class ElectronServiceExtensions
             catch (SqliteException ex) when (ex.SqliteErrorCode == 26) // "file is not a database"
             {
                 // Database is encrypted - try to get password from keychain
-                if (EnableVerboseLogging)
-                    Console.WriteLine("Detected encrypted database, retrieving password from keychain...");
-                var keychain = new LinuxKeychainService("SimpleStart-Electron"); // Pass app name to prevent keychain conflicts
+                var keychain = OperatingSystem.IsWindows()
+                    ? (IKeychainService)new WindowsKeychainService("SimpleStart-Electron")
+                    : new LinuxKeychainService("SimpleStart-Electron"); // Pass app name to prevent keychain conflicts
                 
                 Console.WriteLine("Attempting to retrieve encryption password from keychain...");
                 var password = keychain.RetrieveKey();
@@ -201,14 +197,9 @@ public static class ElectronServiceExtensions
                     Console.WriteLine("Database is encrypted but password not in keychain - will prompt user");
                     return null; // Signal that unlock is needed
                 }
-
-                if (EnableVerboseLogging)
-                    Console.WriteLine($"Encryption password retrieved successfully (length: {password.Length} chars)");
                 
                 // CRITICAL: Clear connection pool to prevent reuse of unencrypted connections
                 SqliteConnection.ClearAllPools();
-                if (EnableVerboseLogging)
-                    Console.WriteLine("Connection pool cleared to force encryption on all new connections");
                 
                 return password;
             }
@@ -272,5 +263,48 @@ public static class ElectronServiceExtensions
     {
         var builder = new SqliteConnectionStringBuilder(connectionString);
         return builder.DataSource;
+    }
+
+    /// <summary>
+    /// Pre-derives the AES-256 key from <paramref name="password"/> using SQLCipher 4's PBKDF2
+    /// parameters (HMAC-SHA512, 256 000 iterations, 32-byte output).  The salt is read from the
+    /// first 16 bytes of the database file — the same salt SQLCipher embedded when the database
+    /// was originally encrypted.  The returned value is in SQLCipher's raw-key format
+    /// <c>x'hexbytes'</c>, which the interceptor passes directly as <c>PRAGMA key</c>,
+    /// skipping all PBKDF2 work on every subsequent connection open.
+    ///
+    /// Falls back to the original passphrase string if the file cannot be read or is too small
+    /// (e.g. first-run before the database exists), in which case the interceptor's passphrase
+    /// path handles key derivation as usual.
+    /// </summary>
+    private static string PrepareEncryptionKey(string password, string connectionString)
+    {
+        try
+        {
+            var dbPath = ExtractDatabasePath(connectionString);
+
+            if (!File.Exists(dbPath) || new FileInfo(dbPath).Length < 16)
+                return password; // DB not yet created — passphrase path is fine
+
+            // SQLCipher stores its PBKDF2 salt in the first 16 bytes of the database file
+            var salt = new byte[16];
+            using (var fs = new FileStream(dbPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                if (fs.Read(salt, 0, 16) < 16) return password;
+            }
+
+            // Derive using the same parameters SQLCipher 4 uses by default
+            var keyBytes = System.Security.Cryptography.Rfc2898DeriveBytes.Pbkdf2(
+                System.Text.Encoding.UTF8.GetBytes(password),
+                salt,
+                256000,
+                System.Security.Cryptography.HashAlgorithmName.SHA512,
+                32); // 256-bit AES key
+            return "x'" + Convert.ToHexString(keyBytes) + "'";
+        }
+        catch
+        {
+            return password; // Any I/O or crypto error — fall back to passphrase
+        }
     }
 }
