@@ -3,7 +3,9 @@
 # Aquiis Desktop Integration Installer
 # Automatically creates desktop entry for Aquiis Property Management AppImage
 #
-# Usage: ./install-desktop-integration.sh /path/to/AquiisPropertyManagement.AppImage
+# Usage: 
+#   First make this script executable: chmod +x install-desktop-integration.sh
+#   Then run: ./install-desktop-integration.sh /path/to/Aquiis-1.1.0-x86_64.AppImage
 #
 
 set -e
@@ -37,6 +39,15 @@ APPIMAGE_NAME="$(basename "$APPIMAGE_PATH")"
 echo -e "${GREEN}Aquiis Desktop Integration Installer${NC}"
 echo "========================================"
 echo ""
+
+# Check if this script itself is executable (helpful reminder)
+SCRIPT_PATH="$(readlink -f "$0")"
+if [ ! -x "$SCRIPT_PATH" ]; then
+    echo -e "${YELLOW}Note: This script should be made executable for convenience:${NC}"
+    echo "  chmod +x $(basename "$SCRIPT_PATH")"
+    echo ""
+fi
+
 echo "AppImage: $APPIMAGE_NAME"
 echo "Location: $APPIMAGE_DIR"
 echo ""
@@ -54,6 +65,10 @@ if [[ "$APPIMAGE_DIR" != "$HOME/Applications" ]]; then
 else
     echo "✓ AppImage already in ~/Applications/"
 fi
+
+# Make AppImage executable
+chmod +x "$APPIMAGE_PATH"
+echo "✓ Made AppImage executable"
 
 echo ""
 
@@ -87,14 +102,14 @@ fi
 cat > ~/.local/share/applications/aquiis.desktop << EOF
 [Desktop Entry]
 Name=Aquiis Property Management
-Comment=Multi-tenant property management system for small landlords
+Comment=Multi-tenant property management system for DIY landlords and property managers
 Exec=${APPIMAGE_PATH}
 Icon=${ICON_PATH}
 Type=Application
 Categories=Office;Finance;
 Terminal=false
 StartupWMClass=Aquiis Property Management
-X-AppImage-Version=1.0.0
+X-AppImage-Version=1.1.0
 Keywords=property;management;landlord;rental;lease;tenant;invoice;
 EOF
 
@@ -122,6 +137,10 @@ echo ""
 echo -e "${GREEN}Installation complete!${NC}"
 echo ""
 echo "AppImage location: $APPIMAGE_PATH"
+echo "✓ AppImage is executable and ready to use"
+echo "✓ Desktop integration installed"
+echo "✓ Icons and application launcher updated"
+echo ""
 echo "Aquiis Property Management should now appear in your application launcher."
 echo "You can search for 'Aquiis' or find it in Office/Finance categories."
 echo ""
