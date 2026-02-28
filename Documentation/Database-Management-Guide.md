@@ -1,7 +1,7 @@
 # Aquiis SimpleStart - Database Management Guide
 
-**Version:** 1.1.0  
-**Last Updated:** February 18, 2026  
+**Version:** 1.1.1  
+**Last Updated:** February 28, 2026  
 **Audience:** Administrators and Power Users
 
 ---

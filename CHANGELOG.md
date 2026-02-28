@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.1] - 2026-02-28
+
+### 🐛 Bug Fix & Enhancement Release
+
+**Aquiis SimpleStart v1.1.1** addresses critical UI bugs and completes Windows database encryption support. This is a patch release with no database schema changes.
+
+### Added
+
+#### Windows Enhancements
+
+- **Windows database encryption implementation** using DPAPI (Data Protection API) for secure key storage
+- **Windows installer deployment** - switched from portable executable to proper installer with uninstall support, start menu shortcuts, and desktop icon
+
+#### UI Improvements
+
+- **Visual feedback during login** - spinner and "Logging in..." text displayed during authentication
+- **Login button disabled during authentication** to prevent double-submission
+- **Hidden Electron menu bar** - Auto-hide menu bar for cleaner, more native desktop experience
+
+### Changed
+
+#### Theme System Optimization
+
+- **Optimized MutationObserver** to only watch theme attributes on `documentElement` instead of entire `document.body`
+  - **Previous behavior:** Watched entire body with `childList: true, subtree: true` (triggered on every Blazor render)
+  - **Current behavior:** Only watches `data-bs-theme` and `data-brand-theme` attributes
+  - **Impact:** Prevents unnecessary reflow operations during navigation
+
+#### Navigation Improvements
+
+- **Added guard in OnLocationChanged** to skip processing when URL unchanged
+- **Prevents redundant theme re-application** on repeated same-link clicks
+
+### Fixed
+
+#### Theme Issues
+
+- **Fixed brand theme flicker** when clicking same NavLink repeatedly
+  - **Issue:** Clicking Dashboard (or any nav item) multiple times switched brand theme from Obsidian/Teal to Bootstrap light theme
+  - **Root cause:** MutationObserver firing on every NavLink re-render, triggering DOM reflow operations (`document.documentElement.style.display = "none"`) that briefly reset CSS
+  - **Solution:** Optimized observer scope to only watch specific theme attributes + added OnLocationChanged guard to prevent redundant processing
+
+#### Authentication Issues
+
+- **Fixed login double-submit** causing blank page redirect
+  - **Issue:** Rapid login button clicks caused concurrent authentication attempts, resulting in navigation to blank page
+  - **Root cause:** No submission guard preventing multiple `PasswordSignInAsync` calls
+  - **Solution:** Added `isSubmitting` flag with early return guard, button disabled during login, `finally` block ensures flag reset even on exceptions
+
+### Documentation
+
+#### Cross-References
+
+- Added cross-references between README and Quick Start Guide
+- Added cross-references between README and Database Management Guide
+- Added cross-references between Database Management Guide and Compatibility Matrix
+- Improved documentation navigation flow for new users
+
+#### Table Formatting
+
+- Fixed markdown table alignment in Database-Management-Guide.md for better readability
+
+### Technical Details
+
+- **Application Version:** 1.1.1
+- **Database Schema Version:** 1.1.0 (unchanged from v1.1.0)
+- **Assembly Version:** 1.1.1.0
+- **Electron Package:** 1.1.1
+- **Files Changed:** 5 (theme.js, Login.razor, NavMenu.razor, Database-Management-Guide.md, README.md)
+- **Lines Changed:** 79 insertions(+), 32 deletions(-)
+
+### Upgrade Notes
+
+- **From v1.1.0:** No database migration required (schema unchanged). Simply install new version.
+- **From v1.0.0:** Automatic migration to v1.1.0 schema will run first, then v1.1.1 application starts.
+- **Windows Users:** Uninstall portable version if present, then install new installer version.
+- **Database Location:** Unchanged - schema version remains 1.1.0.
+
+### Compatibility
+
+- **Compatible with:** Database schema v1.1.0
+- **Upgrade path:** v1.0.0 → v1.1.0 (auto-migration) → v1.1.1 (no migration)
+- **Downgrade:** Not recommended - use backup/restore instead
+
+---
+
 ## [1.0.0] - 2026-01-29
 
 ### 🎉 Initial Production Release

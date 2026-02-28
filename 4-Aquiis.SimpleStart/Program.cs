@@ -745,9 +745,10 @@ if (HybridSupport.IsElectronActive)
         Height = 900,
         MinWidth = 800,
         MinHeight = 600,
-        Show = false
+        Show = false,
+        AutoHideMenuBar = true
     });
-
+    window.RemoveMenu();
     window.OnReadyToShow += () => window.Show();
     window.SetTitle("Aquiis Property Management");
     

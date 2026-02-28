@@ -1,6 +1,6 @@
 {
   "name": "aquiis-simplestart-electron",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "Aquiis SimpleStart Electron Host",
   "main": "main.js",
   "dependencies": {
