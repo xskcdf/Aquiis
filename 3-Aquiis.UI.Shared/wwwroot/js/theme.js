@@ -115,9 +115,9 @@ if (typeof localStorage !== "undefined") {
 
   // Start observing after a short delay to let Blazor initialize
   setTimeout(() => {
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-bs-theme", "data-brand-theme"],
     });
   }, 1000);
 

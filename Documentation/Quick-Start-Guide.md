@@ -1,7 +1,7 @@
 # Aquiis SimpleStart - Quick Start Guide
 
-**Version:** 1.1.0  
-**Last Updated:** February 18, 2026  
+**Version:** 1.1.1  
+**Last Updated:** February 28, 2026  
 **Estimated Time:** 15 minutes
 
 ---
@@ -33,7 +33,7 @@ Before you begin, ensure you have:
 - **Hardware:**
   - 2 GB RAM minimum (4 GB recommended)
   - 500 MB disk space
-- **Downloaded:** Aquiis SimpleStart v1.1.0 installer for your platform
+- **Downloaded:** Aquiis SimpleStart v1.1.1 installer for your platform
 
 ### Universal Linux Support:
 

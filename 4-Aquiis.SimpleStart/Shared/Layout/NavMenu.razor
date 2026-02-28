@@ -19,7 +19,7 @@
 
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+<div class="nav-scrollable">
     <nav class="nav flex-column">
         
         <OrganizationAuthorizeView Roles="Owner,Administrator">
@@ -336,7 +336,13 @@
 
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        var newUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        
+        // Only update if URL actually changed (prevents visual glitch on same-link clicks)
+        if (newUrl == currentUrl)
+            return;
+            
+        currentUrl = newUrl;
         
         // Re-apply current theme and brand theme after navigation
         try

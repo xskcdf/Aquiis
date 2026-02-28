@@ -1,16 +1,16 @@
 # Aquiis - Property Management System
 
-![.NET 9.0](https://img.shields.io/badge/.NET-9.0-blue)
-![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-9.0-blueviolet)
+![.NET 10.0](https://img.shields.io/badge/.NET-10.0-blue)
+![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-10.0-blueviolet)
 ![Blazor Server](https://img.shields.io/badge/Blazor-Server-orange)
-![Entity Framework](https://img.shields.io/badge/Entity%20Framework-9.0-green)
+![Entity Framework](https://img.shields.io/badge/Entity%20Framework-10.0-green)
 ![SQLite](https://img.shields.io/badge/Database-SQLite-lightblue)
 
-A comprehensive web-based property management system built with ASP.NET Core 9.0 and Blazor Server. Aquiis streamlines rental property management for property owners, managers, and tenants with an intuitive interface and robust feature set.
+A comprehensive web-based property management system built with ASP.NET Core 10.0 and Blazor Server. Aquiis streamlines rental property management for property owners and managers with an intuitive interface and robust feature set.
 
 ## 🏢 Overview
 
-Aquiis is designed to simplify property management operations through a centralized platform that handles everything from property listings and tenant management to lease tracking and document storage. Built with modern web technologies, it provides a responsive, secure, and scalable solution for property management professionals.
+Aquiis is designed to simplify property management operations through a centralized platform that handles everything from property, tenant, and lease tracking to document storage and rental invoice and expense tracking. Built with modern web technologies including AI (GitHub Copilot and Claude Sonnet), it provides a responsive, secure, and scalable solution for DIY landlords and property managers.
 
 ## ✨ Key Features
 
@@ -28,9 +28,7 @@ Aquiis is designed to simplify property management operations through a centrali
 - **Tenant Profiles** - Complete tenant information management
 - **Contact Management** - Phone, email, emergency contacts
 - **Tenant History** - Track tenant interactions and lease history
-- **Tenant Portal** - Dedicated tenant dashboard and self-service features
 - **Communication Tools** - Built-in messaging and notification system
-- **Tenant Screening** - Application and background check workflow
 
 ### 📄 Lease Management
 
@@ -38,7 +36,7 @@ Aquiis is designed to simplify property management operations through a centrali
 - **Lease Tracking** - Active, pending, expired, and terminated lease monitoring
 - **Rent Tracking** - Monthly rent amounts and payment schedules
 - **Security Deposits** - Deposit tracking and management
-- **Lease Renewals** - Automated renewal notifications and processing
+- **Lease Renewals** - Manual lease renewal tracking
 - **Terms Management** - Flexible lease terms and conditions
 
 ### 💰 Financial Management
@@ -54,14 +52,10 @@ Aquiis is designed to simplify property management operations through a centrali
 
 - **File Storage** - Secure document upload and storage
 - **Document Categories** - Organized by type (leases, receipts, photos, etc.)
-- **Version Control** - Document revision tracking
-- **Digital Signatures** - Electronic signature support
-- **Document Sharing** - Secure document sharing with tenants
-- **Bulk Operations** - Mass document upload and organization
 
 ### 🔐 User Management & Security
 
-- **Role-Based Access** - Administrator, Property Manager, and Tenant roles
+- **Role-Based Access** - Administrator and Property Manager roles
 - **Authentication** - Secure login with ASP.NET Core Identity
 - **User Profiles** - Comprehensive user account management
 - **Permission Management** - Granular access control
@@ -80,9 +74,9 @@ Aquiis is designed to simplify property management operations through a centrali
 
 ### Backend
 
-- **Backend**: ASP.NET Core 9.0
+- **Backend**: ASP.NET Core 10.0
 - **UI Framework**: Blazor Server
-- **Database**: SQLite with Entity Framework Core 9.0
+- **Database**: SQLite with Entity Framework Core 10.0
 - **Authentication**: ASP.NET Core Identity
 - **Architecture**: Clean Architecture with vertical slice organization
 
@@ -101,10 +95,11 @@ Aquiis is designed to simplify property management operations through a centrali
 - **Version Control**: Git with GitHub integration
 - **Package Management**: NuGet
 - **Build System**: .NET SDK build system
+- **AI Assisted Coding**: GitHub Copilot, Claude Sonnet, GPT
 
 ## 📋 Prerequisites
 
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - [Git](https://git-scm.com/)
 - [Visual Studio Code](https://code.visualstudio.com/) (recommended) or Visual Studio 2022
 - [C# Dev Kit Extension](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit) for VS Code
@@ -318,7 +313,7 @@ Shared → Core
 
 ## 🔑 Default User Roles
 
-The system includes three primary user roles:
+The system includes two primary user roles:
 
 ### Administrator
 
@@ -334,14 +329,6 @@ The system includes three primary user roles:
 - Lease administration
 - Financial tracking
 - Document management
-
-### Tenant
-
-- Personal dashboard
-- Lease information access
-- Payment history
-- Maintenance requests
-- Document viewing
 
 ## 🎯 Key Components
 
@@ -391,14 +378,6 @@ Core business logic service in the Application layer:
 - Administrative quick actions
 - Recent system activity
 
-### Tenant Dashboard
-
-- Personal lease information
-- Payment history
-- Maintenance requests
-- Document access
-- Communication center
-
 ## 🔧 Configuration
 
 ### Application Settings
@@ -422,7 +401,7 @@ Configuration is managed through:
 
 ### Prerequisites for Production
 
-- Windows/Linux server with .NET 9.0 runtime
+- Windows/Linux server with .NET 10.0 runtime
 - IIS or reverse proxy (nginx/Apache)
 - SSL certificate for HTTPS
 - Database server (or SQLite for smaller deployments)
@@ -474,7 +453,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Common Issues
 
 1. **Database Connection Issues**: Verify SQLite file permissions and path
-2. **Build Errors**: Ensure .NET 9.0 SDK is installed
+2. **Build Errors**: Ensure .NET 10.0 SDK is installed
 3. **Authentication Problems**: Check Identity configuration and user roles
 4. **Performance Issues**: Review database indexing and query optimization
 
@@ -487,14 +466,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🏗️ Roadmap
 
-### Upcoming Features
+### Upcoming Features via Aquiis Professional
 
 - Mobile application support
 - Advanced reporting and analytics
 - Integration with accounting software
 - Automated rent collection
 - Multi-language support
-- Advanced tenant screening
 - IoT device integration
 - API for third-party integrations
 
@@ -510,4 +488,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Aquiis** - Streamlining Property Management for the Modern World
 
-Built with ❤️ using ASP.NET Core 9.0 and Blazor Server
+Built with ❤️ using ASP.NET Core 10.0, Blazor Server, and AI Tools (GitHub Copilot and Claude Sonnet)
