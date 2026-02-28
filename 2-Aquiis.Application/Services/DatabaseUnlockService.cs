@@ -71,7 +71,7 @@ public class DatabaseUnlockService
     }
     
     /// <summary>
-    /// Archive encrypted database and create fresh database when password forgotten
+    /// Archive encrypted database and create fresh database when password forgotten.
     /// </summary>
     /// <param name="databasePath">Path to encrypted database</param>
     /// <returns>(Success, ArchivedPath, ErrorMessage)</returns>
@@ -92,12 +92,54 @@ public class DatabaseUnlockService
             var timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
             var archivedPath = Path.Combine(backupsDir, $"{dbFileNameWithoutExt}.{timestamp}.encrypted.db");
 
-            // Move encrypted database to backups
-            File.Move(databasePath, archivedPath);
+            // On Windows the OS enforces mandatory file locks. Even after SqliteConnection is
+            // disposed, the connection pool keeps the Win32 file handle open until explicitly
+            // cleared. Clear all pools and give the GC a chance to release any lingering
+            // handles before we attempt the file move.
+            SqliteConnection.ClearAllPools();
+            if (OperatingSystem.IsWindows())
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+            }
+
+            // Move the main database file. Retry once on Windows in case a finalizer
+            // hadn't yet released its handle on the first attempt.
+            try
+            {
+                File.Move(databasePath, archivedPath);
+            }
+            catch (IOException) when (OperatingSystem.IsWindows())
+            {
+                _logger.LogWarning("File move failed on first attempt (Windows lock), retrying after 500 ms");
+                await Task.Delay(500);
+                File.Move(databasePath, archivedPath);
+            }
+
+            // Remove WAL companion files if present. These are created when WAL mode is active
+            // and must be cleaned up so the fresh database starts without a stale journal.
+            // On Windows these files may also be locked; delete rather than move since the
+            // archived backup doesn't need them.
+            foreach (var sidecar in new[] { databasePath + "-wal", databasePath + "-shm" })
+            {
+                if (!File.Exists(sidecar)) continue;
+                try
+                {
+                    File.Delete(sidecar);
+                    _logger.LogInformation("Removed WAL companion file: {Sidecar}", sidecar);
+                }
+                catch (Exception ex)
+                {
+                    // Non-fatal: a stale WAL without its main database is harmless.
+                    _logger.LogWarning("Could not remove WAL companion file {Sidecar}: {Message}", sidecar, ex.Message);
+                }
+            }
+
             _logger.LogInformation("Encrypted database archived to: {ArchivedPath}", archivedPath);
 
-            // New unencrypted database will be created automatically on app restart
-            // The app will detect no database exists and go through first-time setup
+            // New database will be created automatically on app restart — the app detects
+            // no database exists and runs through first-time setup / migrations.
             return (true, archivedPath, null);
         }
         catch (Exception ex)
