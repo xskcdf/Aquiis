@@ -59,7 +59,13 @@
       "target": "AppImage",
       "icon": "bin/Assets/icon.png",
       "category": "Office",
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "extraFiles": [
+        {
+          "from": "Assets/com.aquiis.propertymanagement.appdata.xml",
+          "to": "usr/share/metainfo/com.aquiis.propertymanagement.appdata.xml"
+        }
+      ]
     }
   }
 }
