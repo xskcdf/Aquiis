@@ -35,11 +35,19 @@ public class SqlCipherConnectionInterceptor : DbConnectionInterceptor
                 // Pre-derived raw key — SQLCipher loads it directly, no PBKDF2 (~0 ms)
                 cmd.CommandText = $"PRAGMA key = \"{_encryptionKey}\";";
                 cmd.ExecuteNonQuery();
+
+                // Raw key still needs cipher params to match how the DB was encrypted
+                cmd.CommandText = "PRAGMA cipher_page_size = 4096;";
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = "PRAGMA cipher_hmac_algorithm = HMAC_SHA512;";
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = "PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512;";
+                cmd.ExecuteNonQuery();
             }
             else
             {
                 // Passphrase fallback — SQLCipher runs PBKDF2(256000) internally (~20–50 ms)
-                cmd.CommandText = $"PRAGMA key = '{_encryptionKey}';";
+                cmd.CommandText = $"PRAGMA key = '{_encryptionKey}';"; 
                 cmd.ExecuteNonQuery();
 
                 cmd.CommandText = "PRAGMA cipher_page_size = 4096;";
@@ -51,16 +59,6 @@ public class SqlCipherConnectionInterceptor : DbConnectionInterceptor
                 cmd.CommandText = "PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512;";
                 cmd.ExecuteNonQuery();
             }
-        }
-
-        // WAL mode is persistent in the database file — no-op if already set, upgrades fresh DBs.
-        // NORMAL synchronous is safe with WAL and reduces flush overhead on every commit.
-        using (var cmd = connection.CreateCommand())
-        {
-            cmd.CommandText = "PRAGMA journal_mode = WAL;";
-            cmd.ExecuteNonQuery();
-            cmd.CommandText = "PRAGMA synchronous = NORMAL;";
-            cmd.ExecuteNonQuery();
         }
 
         base.ConnectionOpened(connection, eventData);
@@ -77,6 +75,14 @@ public class SqlCipherConnectionInterceptor : DbConnectionInterceptor
                 // Pre-derived raw key — SQLCipher loads it directly, no PBKDF2 (~0 ms)
                 cmd.CommandText = $"PRAGMA key = \"{_encryptionKey}\";";
                 await cmd.ExecuteNonQueryAsync(cancellationToken);
+
+                // Raw key still needs cipher params to match how the DB was encrypted
+                cmd.CommandText = "PRAGMA cipher_page_size = 4096;";
+                await cmd.ExecuteNonQueryAsync(cancellationToken);
+                cmd.CommandText = "PRAGMA cipher_hmac_algorithm = HMAC_SHA512;";
+                await cmd.ExecuteNonQueryAsync(cancellationToken);
+                cmd.CommandText = "PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512;";
+                await cmd.ExecuteNonQueryAsync(cancellationToken);
             }
             else
             {
@@ -93,16 +99,6 @@ public class SqlCipherConnectionInterceptor : DbConnectionInterceptor
                 cmd.CommandText = "PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA512;";
                 await cmd.ExecuteNonQueryAsync(cancellationToken);
             }
-        }
-
-        // WAL mode is persistent in the database file — no-op if already set, upgrades fresh DBs.
-        // NORMAL synchronous is safe with WAL and reduces flush overhead on every commit.
-        using (var cmd = connection.CreateCommand())
-        {
-            cmd.CommandText = "PRAGMA journal_mode = WAL;";
-            await cmd.ExecuteNonQueryAsync(cancellationToken);
-            cmd.CommandText = "PRAGMA synchronous = NORMAL;";
-            await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
         await base.ConnectionOpenedAsync(connection, eventData, cancellationToken);

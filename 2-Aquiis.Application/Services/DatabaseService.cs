@@ -77,12 +77,14 @@ public class DatabaseService : IDatabaseService
     public async Task<int> GetPendingMigrationsCountAsync()
     {
         var pending = await _businessContext.Database.GetPendingMigrationsAsync();
+        _logger.LogInformation($"Business context has {pending.Count()} pending migrations.");
         return pending.Count();
     }
 
     public async Task<int> GetIdentityPendingMigrationsCountAsync()
     {
         var pending = await _identityContext.Database.GetPendingMigrationsAsync();
+        _logger.LogInformation($"Identity context has {pending.Count()} pending migrations.");
         return pending.Count();
     }
 
