@@ -59,9 +59,12 @@ public static class WebServiceExtensions
         {
             NeedsUnlock = encryptionPassword == null && IsDatabaseEncrypted(connectionString),
             DatabasePath = ExtractDatabasePath(connectionString),
+            
             ConnectionString = connectionString
         };
         services.AddSingleton(unlockState);
+
+        Console.WriteLine($"Database unlock state: NeedsUnlock={unlockState.NeedsUnlock}, DatabasePath={unlockState.DatabasePath}");
 
         // Register encryption status as singleton for use during startup
         services.AddSingleton(new EncryptionDetectionResult
@@ -84,6 +87,24 @@ public static class WebServiceExtensions
             interceptor = new SqlCipherConnectionInterceptor(encryptionPassword);
 
             // Clear connection pools to ensure no connections bypass the interceptor
+            SqliteConnection.ClearAllPools();
+
+            // Set WAL mode and synchronous=NORMAL once on a writable connection.
+            // These are persistent database settings — no need to repeat on every connection open.
+            // This MUST happen here (not in the interceptor) because EF Core also opens read-only
+            // connections (e.g. SqliteDatabaseCreator.Exists()), and PRAGMA journal_mode = WAL
+            // returns SQLITE_READONLY (8) on a read-only connection.
+            using var setupConn = new SqliteConnection(connectionString);
+            setupConn.Open();
+            using var setupCmd = setupConn.CreateCommand();
+            setupCmd.CommandText = $"PRAGMA key = \"{encryptionPassword}\";";
+            setupCmd.ExecuteNonQuery();
+            setupCmd.CommandText = "PRAGMA journal_mode = WAL;";
+            setupCmd.ExecuteNonQuery();
+            setupCmd.CommandText = "PRAGMA synchronous = NORMAL;";
+            setupCmd.ExecuteNonQuery();
+            setupConn.Close();
+
             SqliteConnection.ClearAllPools();
         }
 
