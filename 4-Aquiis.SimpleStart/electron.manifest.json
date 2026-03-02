@@ -60,6 +60,9 @@
       "icon": "bin/Assets/icon.png",
       "category": "Office",
       "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "desktop": {
+        "X-AppImage-Payload-License": "MIT"
+      },
       "extraFiles": [
         {
           "from": "Assets/com.aquiis.propertymanagement.appdata.xml",
