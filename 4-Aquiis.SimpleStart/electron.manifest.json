@@ -17,7 +17,7 @@
     "appId": "com.aquiis.propertymanagement",
     "productName": "Aquiis",
     "copyright": "Copyright © 2026",
-    "buildVersion": "1.1.1",
+    "buildVersion": "1.1.2",
     "compression": "normal",
     "directories": {
       "output": "../../../bin/Desktop"
@@ -61,7 +61,9 @@
       "category": "Office",
       "artifactName": "${productName}-${version}-${arch}.${ext}",
       "desktop": {
-        "X-AppImage-Payload-License": "MIT"
+        "entry": {
+          "X-AppImage-Payload-License": "MIT"
+        }
       },
       "extraFiles": [
         {

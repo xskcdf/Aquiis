@@ -63,6 +63,17 @@
   </provides>
   
   <releases>
+    <release version="1.1.2" date="2026-03-01">
+      <description>
+        <p>AppImageHub Compliance Release</p>
+        <ul>
+          <li>Embedded MIT license metadata in AppImage desktop file for catalog integration</li>
+          <li>Configured electron.manifest.json with desktop.entry for automated CI detection</li>
+          <li>No functional changes - metadata enhancement only</li>
+          <li>Database schema v1.1.0 unchanged</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.1.1" date="2026-02-28">
       <description>
         <p>Bug Fix and Enhancement Release</p>

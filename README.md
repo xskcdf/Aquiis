@@ -2,7 +2,7 @@
 
 **Modern Property Management for Landlords**
 
-[![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)](https://github.com/xnodeoncode/Aquiis/releases)
+[![Version](https://img.shields.io/badge/version-1.1.2-blue.svg)](https://github.com/xnodeoncode/Aquiis/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey.svg)](#installation)
@@ -76,12 +76,12 @@
 
 ## � Download
 
-**Latest Release: v1.1.1**
+**Latest Release: v1.1.2**
 
-[![Download for Linux](https://img.shields.io/badge/Download-Linux%20AppImage-blue.svg?style=for-the-badge&logo=linux)](https://github.com/xnodeoncode/Aquiis/releases/download/v1.1.1/Aquiis-1.1.1-x86_64.AppImage)
-[![Download for Windows](https://img.shields.io/badge/Download-Windows%20Setup-blue.svg?style=for-the-badge&logo=windows)](https://github.com/xnodeoncode/Aquiis/releases/download/v1.1.1/Aquiis-1.1.1-x64-Setup.exe)
+[![Download for Linux](https://img.shields.io/badge/Download-Linux%20AppImage-blue.svg?style=for-the-badge&logo=linux)](https://github.com/xnodeoncode/Aquiis/releases/download/v1.1.2/Aquiis-1.1.2-x86_64.AppImage)
+[![Download for Windows](https://img.shields.io/badge/Download-Windows%20Setup-blue.svg?style=for-the-badge&logo=windows)](https://github.com/xnodeoncode/Aquiis/releases/download/v1.1.2/Aquiis-1.1.2-x64-Setup.exe)
 
-**All Downloads:** [View v1.1.1 Release](https://github.com/xnodeoncode/Aquiis/releases/tag/v1.1.1)
+**All Downloads:** [View v1.1.2 Release](https://github.com/xnodeoncode/Aquiis/releases/tag/v1.1.2)
 
 ---
 
@@ -93,31 +93,31 @@
 
 ```bash
 # Download from releases page or use wget
-wget https://github.com/xnodeoncode/Aquiis/releases/download/v1.1.1/Aquiis-1.1.1-x86_64.AppImage
+wget https://github.com/xnodeoncode/Aquiis/releases/download/v1.1.2/Aquiis-1.1.2-x86_64.AppImage
 
 # Make executable
-chmod +x Aquiis-1.1.1-x86_64.AppImage
+chmod +x Aquiis-1.1.2-x86_64.AppImage
 
 # Option 1: Desktop integration (recommended)
-wget https://github.com/xnodeoncode/Aquiis/releases/download/v1.1.1/install-desktop-integration.sh
+wget https://github.com/xnodeoncode/Aquiis/releases/download/v1.1.2/install-desktop-integration.sh
 chmod +x install-desktop-integration.sh
-./install-desktop-integration.sh Aquiis-1.1.1-x86_64.AppImage
+./install-desktop-integration.sh Aquiis-1.1.2-x86_64.AppImage
 
 # Option 2: Run directly
-./Aquiis-1.1.1-x86_64.AppImage
+./Aquiis-1.1.2-x86_64.AppImage
 ```
 
 #### Windows (Installer or Portable)
 
 **Option A: Installer (Recommended)**
 
-1. **Download** `Aquiis-1.1.1-x64-Setup.exe` from [releases page](https://github.com/xnodeoncode/Aquiis/releases/tag/v1.1.1)
+1. **Download** `Aquiis-1.1.2-x64-Setup.exe` from [releases page](https://github.com/xnodeoncode/Aquiis/releases/tag/v1.1.2)
 2. **Run installer** and follow the setup wizard
 3. **Launch** from Start Menu or Desktop shortcut
 
 **Option B: Portable Executable**
 
-1. **Download** `Aquiis-1.1.1-x64-Portable.exe` from [releases page](https://github.com/xnodeoncode/Aquiis/releases/tag/v1.1.1)
+1. **Download** `Aquiis-1.1.2-x64-Portable.exe` from [releases page](https://github.com/xnodeoncode/Aquiis/releases/tag/v1.1.2)
 2. **Move to permanent location** (e.g., `C:\Program Files\Aquiis\`)
    - ⚠️ Database and settings are stored relative to the .exe location
 3. **Double-click** to run
@@ -128,13 +128,13 @@ chmod +x install-desktop-integration.sh
 
 ```bash
 # Download checksums
-wget https://github.com/xnodeoncode/Aquiis/releases/download/v1.1.1/checksums.txt
+wget https://github.com/xnodeoncode/Aquiis/releases/download/v1.1.2/checksums.txt
 
 # Linux
 sha256sum -c checksums.txt
 
 # Windows PowerShell
-Get-FileHash "Aquiis-1.1.1-x64-Setup.exe" -Algorithm SHA256
+Get-FileHash "Aquiis-1.1.2-x64-Setup.exe" -Algorithm SHA256
 ```
 
 ### First Run
@@ -200,7 +200,7 @@ Aquiis is available as a portable Windows executable (.exe). No installation req
 
 ### User Documentation
 
-- 📖 **[Release Notes](Documentation/v1.1.1/v1.1.1-Release-Notes.md)** - What's new in v1.1.1
+- 📖 **[Release Notes](Documentation/v1.1.2/v1.1.2-Release-Notes.md)** - What's new in v1.1.2
 - 🚀 **[Quick Start Guide](Documentation/Quick-Start-Guide.md)** - Get started in 15 minutes
 - 💾 **[Database Management Guide](Documentation/Database-Management-Guide.md)** - Backup, restore, troubleshooting
 - 🔒 **[Security Features](Documentation/v1.1.0/Security-Enhancements.md)** - Database encryption, CSP, and more
@@ -323,12 +323,20 @@ We use [Semantic Versioning](https://semver.org/):
 - **MINOR** version (0.X.0): New features, UI changes (backward compatible)
 - **PATCH** version (0.0.X): Bug fixes, minor updates
 
-**Current version:** 1.1.1 (Patch release with Windows encryption and bug fixes)
+**Current version:** 1.1.2 (Patch release with AppImageHub compliance)
 **Database version:** 1.1.0
 
 ---
 
 ## 🗺️ Roadmap
+
+### v1.1.2 (Released March 2026) ✅
+
+**AppImageHub Compliance**
+
+- ✅ Embedded MIT license metadata in AppImage desktop file
+- ✅ AppImageHub catalog integration enabled
+- ✅ Database schema v1.1.0 (unchanged from v1.1.1)
 
 ### v1.1.1 (Released February 2026) ✅
 
@@ -423,11 +431,12 @@ Licensed under the **MIT License** - see [LICENSE](LICENSE) file for details.
 
 ## 🎊 Status
 
-**v1.1.1 - Bug Fix & Windows Enhancement Release** 🎉
+**v1.1.2 - AppImageHub Compliance Release** 🎉
 
 - ✅ **Production Ready**
 - ✅ **303 tests passing**
 - ✅ **Database encryption at rest**
+- ✅ **AppImageHub catalog integration**
 - ✅ **CI/CD pipeline complete**
 - ✅ **Documentation complete**
 - 🔒 **Enterprise-grade security features**

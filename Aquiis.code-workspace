@@ -1,13 +1,16 @@
 {
-	"folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "../../Documents/Orion/Projects/Aquiis"
-		}
-	],
-	"settings": {
-		"powershell.cwd": "Aquiis"
-	}
+  "folders": [
+    {
+      "path": ".",
+    },
+    {
+      "path": "../../Documents/Orion/Projects/Aquiis",
+    },
+    {
+      "path": "../appimage.github.io",
+    },
+  ],
+  "settings": {
+    "powershell.cwd": "Aquiis",
+  },
 }

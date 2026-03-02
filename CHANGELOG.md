@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.2] - 2026-03-01
+
+### 🏷️ AppImageHub Compliance Release
+
+**Aquiis SimpleStart v1.1.2** adds license metadata to the AppImage for AppImageHub catalog integration. This is a metadata-only enhancement with no functional changes.
+
+### Added
+
+#### AppImageHub Integration
+
+- **Embedded MIT license metadata** in AppImage desktop file via `electron.manifest.json` configuration
+  - Added `linux.desktop.entry.X-AppImage-Payload-License: MIT` configuration
+  - Enables automated license detection by AppImageHub CI validation
+  - Desktop file inside AppImage now contains `X-AppImage-Payload-License=MIT` field
+- **Updated appdata.xml** with v1.1.2 release information
+
+### Technical Details
+
+- **Application Version:** 1.1.2
+- **Database Schema:** v1.1.0 (unchanged from v1.1.1)
+- **Assembly Version:** 1.1.2.0
+- **File Version:** 1.1.2.0
+- **Informational Version:** 1.1.2
+- **Release Type:** Patch (metadata enhancement only)
+
+### Changed
+
+- **electron.manifest.json:** Added `linux.desktop.entry` configuration for custom desktop file fields
+- **All project version files:** Updated from 1.1.1 to 1.1.2 (electron.manifest.json, .csproj, appsettings.json, package.json)
+- **Documentation:** Updated all version references to 1.1.2
+
+### Upgrade Path
+
+- **From v1.1.1:** Drop-in replacement, no database migration required, no functional changes
+- **From v1.1.0:** Drop-in replacement, no database migration required
+- **From v1.0.0:** Automatic migration to v1.1.0 schema on first run, then v1.1.2 application starts
+
+### Platform Support
+
+- **Linux:** AppImage (x86_64) with embedded license metadata ✅
+- **Windows:** NSIS Installer and Portable (x64) - unchanged from v1.1.1
+
+### References
+
+- **AppImageHub PR:** [#3688](https://github.com/AppImage/appimage.github.io/pull/3688)
+- **Pattern Reference:** [Gryt Chat](https://github.com/AppImage/appimage.github.io/pull/3689) (successful desktop file license implementation)
+- **electron-builder Desktop Entry:** [Documentation](https://www.electron.build/configuration/linux#desktop-entry)
+
+### Notes
+
+This release focuses solely on AppImageHub catalog compliance by embedding license metadata in the desktop file. Users of v1.1.1 will not experience any functional differences. The version bump from v1.1.1 to v1.1.2 ensures clear distinction between AppImages with and without license metadata for distribution clarity.
+
+---
+
 ## [1.1.1] - 2026-02-28
 
 ### 🐛 Bug Fix & Enhancement Release
