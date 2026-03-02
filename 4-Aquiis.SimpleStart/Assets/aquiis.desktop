@@ -10,4 +10,5 @@ StartupWMClass=Aquiis Property Management
 X-AppImage-Version=1.1.1
 X-AppImage-Name=Aquiis Property Management
 X-AppImage-Arch=x86_64
+X-AppImage-Payload-License=MIT
 Keywords=property;management;landlord;rental;lease;tenant;invoice;
