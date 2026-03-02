@@ -1,3 +1,9 @@
+> **This project has been rebranded.** All new development continues in **[Nine.](https://github.com/xnodeoncode/nine)** — property management perfected for portfolios of up to nine properties.
+>
+> **[Visit Nine →](https://github.com/xnodeoncode/nine)**
+
+---
+
 # Aquiis SimpleStart
 
 **Modern Property Management for Landlords**
@@ -9,13 +15,13 @@
 
 ---
 
-**Aquiis SimpleStart** is a standalone desktop application designed for landlords managing 1-9 residential rental properties. Built with ASP.NET Core 10 and Blazor Server, wrapped in Electron for native desktop experience, it provides professional-grade property management features without the complexity or subscription costs of enterprise solutions.
+**Aquiis SimpleStart** is a desktop application designed for property managers and landlords managing up to nine residential rental properties. Built with ASP.NET Core 10 and Blazor Server, wrapped in Electron for native desktop experience, it provides professional-grade property management features.
 
 **Perfect for:**
 
-- Independent landlords with a few properties
+- Property managers and landlords with up to nine properties
 - Property owners who self-manage their rentals
-- New landlords starting their portfolio
+- New real estate investors starting their portfolio
 - Anyone seeking affordable, easy-to-use property management software
 
 ## ✨ Key Features
