@@ -1,7 +1,7 @@
 # Aquiis SimpleStart - Quick Start Guide
 
-**Version:** 1.1.1  
-**Last Updated:** February 28, 2026  
+**Version:** 1.1.2  
+**Last Updated:** March 1, 2026  
 **Estimated Time:** 15 minutes
 
 ---
@@ -33,7 +33,7 @@ Before you begin, ensure you have:
 - **Hardware:**
   - 2 GB RAM minimum (4 GB recommended)
   - 500 MB disk space
-- **Downloaded:** Aquiis SimpleStart v1.1.1 installer for your platform
+- **Downloaded:** Aquiis SimpleStart v1.1.2 installer for your platform
 
 ### Universal Linux Support:
 
@@ -53,13 +53,13 @@ Aquiis is available as a portable Windows executable (.exe). No installation req
 
 ```bash
 # 1. Download the file
-# File: Aquiis-1.1.0-x86_64.AppImage
+# File: Aquiis-1.1.2-x86_64.AppImage
 
 # 2. Make it executable
-chmod +x Aquiis-1.1.0-x86_64.AppImage
+chmod +x Aquiis-1.1.2-x86_64.AppImage
 
 # 3. Run the application
-./Aquiis-1.1.0-x86_64.AppImage
+./Aquiis-1.1.2-x86_64.AppImage
 ```
 
 **Option B: Debian Package (Ubuntu/Debian users)**
@@ -76,7 +76,7 @@ aquiis-simplestart
 
 **Option A: NSIS Installer (Recommended)**
 
-1. **Download** `Aquiis-1.1.0-x64-Setup.exe`
+1. **Download** `Aquiis-1.1.2-x64-Setup.exe`
 2. **Double-click** the installer
 3. **Follow the wizard:**
    - Click "Next" to begin
