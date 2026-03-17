@@ -52,18 +52,19 @@ echo "AppImage: $APPIMAGE_NAME"
 echo "Location: $APPIMAGE_DIR"
 echo ""
 
-# Create Applications directory
-mkdir -p ~/Applications
+# Create application directory (app-specific subfolder avoids collisions)
+APP_INSTALL_DIR="$HOME/Applications/Aquiis"
+mkdir -p "$APP_INSTALL_DIR"
 
-# Move AppImage to ~/Applications/ if not already there
-if [[ "$APPIMAGE_DIR" != "$HOME/Applications" ]]; then
-    echo "Moving AppImage to ~/Applications/..."
-    mv "$APPIMAGE_PATH" ~/Applications/
-    APPIMAGE_PATH="$HOME/Applications/$APPIMAGE_NAME"
-    APPIMAGE_DIR="$HOME/Applications"
+# Move AppImage to ~/Applications/Aquiis/ if not already there
+if [[ "$APPIMAGE_DIR" != "$APP_INSTALL_DIR" ]]; then
+    echo "Moving AppImage to $APP_INSTALL_DIR/..."
+    mv "$APPIMAGE_PATH" "$APP_INSTALL_DIR/"
+    APPIMAGE_PATH="$APP_INSTALL_DIR/$APPIMAGE_NAME"
+    APPIMAGE_DIR="$APP_INSTALL_DIR"
     echo -e "${GREEN}✓ Moved to: $APPIMAGE_PATH${NC}"
 else
-    echo "✓ AppImage already in ~/Applications/"
+    echo "✓ AppImage already in $APP_INSTALL_DIR/"
 fi
 
 # Make AppImage executable
@@ -76,27 +77,35 @@ echo ""
 mkdir -p ~/.local/share/applications
 mkdir -p ~/.local/share/icons/hicolor/512x512/apps
 
-# Check if icon exists in same directory
-ICON_PATH="${APPIMAGE_DIR}/aquiis-icon.png"
-if [ ! -f "$ICON_PATH" ]; then
-    # Try to find icon.png in same directory
-    ICON_PATH="${APPIMAGE_DIR}/icon.png"
-    
-    if [ ! -f "$ICON_PATH" ]; then
-        echo -e "${YELLOW}Warning: Icon file not found. Using generic AppImage icon.${NC}"
-        ICON_PATH="application-x-executable"
-    else
-        # Copy icon to system location
-        cp "$ICON_PATH" ~/.local/share/icons/hicolor/512x512/apps/aquiis.png
-        ICON_PATH="aquiis"
-        echo "✓ Copied icon to system icons directory"
-    fi
-else
-    # Copy icon to system location
-    cp "$ICON_PATH" ~/.local/share/icons/hicolor/512x512/apps/aquiis.png
+# Extract icon from inside the AppImage.
+# Note: selective extraction (passing a filename to --appimage-extract) is not
+# supported by all runtimes -- always do a full extract then pick the file out.
+ICON_PATH="application-x-executable"
+EXTRACT_WORKDIR="$(mktemp -d)"
+
+echo "Extracting icon from AppImage..."
+(cd "$EXTRACT_WORKDIR" && "$APPIMAGE_PATH" --appimage-extract > /dev/null 2>&1) || true
+
+if [ -f "$EXTRACT_WORKDIR/squashfs-root/usr/share/icons/hicolor/512x512/apps/aquiis.png" ]; then
+    cp "$EXTRACT_WORKDIR/squashfs-root/usr/share/icons/hicolor/512x512/apps/aquiis.png" \
+        ~/.local/share/icons/hicolor/512x512/apps/aquiis.png
     ICON_PATH="aquiis"
-    echo "✓ Copied icon to system icons directory"
+    echo "✓ Extracted and installed icon from AppImage"
+elif [ -f "$EXTRACT_WORKDIR/squashfs-root/aquiis.png" ]; then
+    cp "$EXTRACT_WORKDIR/squashfs-root/aquiis.png" \
+        ~/.local/share/icons/hicolor/512x512/apps/aquiis.png
+    ICON_PATH="aquiis"
+    echo "✓ Extracted and installed icon from AppImage"
+elif [ -L "$EXTRACT_WORKDIR/squashfs-root/.DirIcon" ] || [ -f "$EXTRACT_WORKDIR/squashfs-root/.DirIcon" ]; then
+    cp -L "$EXTRACT_WORKDIR/squashfs-root/.DirIcon" \
+        ~/.local/share/icons/hicolor/512x512/apps/aquiis.png
+    ICON_PATH="aquiis"
+    echo "✓ Extracted and installed icon from AppImage (.DirIcon)"
+else
+    echo -e "${YELLOW}Warning: Could not extract icon from AppImage. Using generic icon.${NC}"
 fi
+
+rm -rf "$EXTRACT_WORKDIR"
 
 # Create desktop entry
 cat > ~/.local/share/applications/aquiis.desktop << EOF
@@ -129,7 +138,10 @@ fi
 
 # Update icon cache
 if command -v gtk-update-icon-cache &> /dev/null; then
-    gtk-update-icon-cache ~/.local/share/icons/hicolor/ 2>/dev/null || true
+    gtk-update-icon-cache -f -t ~/.local/share/icons/hicolor/ 2>/dev/null || true
+    echo "✓ Updated icon cache"
+elif command -v xdg-icon-resource &> /dev/null; then
+    xdg-icon-resource forceupdate 2>/dev/null || true
     echo "✓ Updated icon cache"
 fi
 
@@ -150,5 +162,5 @@ echo "  rm ~/.local/share/icons/hicolor/512x512/apps/aquiis.png"
 echo "  update-desktop-database ~/.local/share/applications/"
 echo ""
 echo "To completely remove Aquiis:"
-echo "  rm $APPIMAGE_PATH"
+echo "  rm -rf $APP_INSTALL_DIR"
 echo ""

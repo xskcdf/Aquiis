@@ -17,7 +17,7 @@
     "appId": "com.aquiis.propertymanagement",
     "productName": "Aquiis",
     "copyright": "Copyright © 2026",
-    "buildVersion": "1.1.2",
+    "buildVersion": "1.1.3",
     "compression": "normal",
     "directories": {
       "output": "../../../bin/Desktop"

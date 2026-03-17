@@ -8,6 +8,7 @@ set -e
 VERSION_TYPE="${1:-patch}"
 CSPROJ_FILE="4-Aquiis.SimpleStart/Aquiis.SimpleStart.csproj"
 APPSETTINGS_FILE="4-Aquiis.SimpleStart/appsettings.json"
+ELECTRON_MANIFEST="4-Aquiis.SimpleStart/electron.manifest.json"
 
 # Colors for output
 RED='\033[0;31m'
@@ -79,6 +80,10 @@ sed -i "s|<InformationalVersion>$CURRENT_VERSION</InformationalVersion>|<Informa
 # Update appsettings.json
 echo -e "${YELLOW}📝 Updating $APPSETTINGS_FILE...${NC}"
 sed -i "s|\"Version\": \"$CURRENT_VERSION\"|\"Version\": \"$NEW_VERSION\"|g" "$APPSETTINGS_FILE"
+
+# Update electron.manifest.json buildVersion
+echo -e "${YELLOW}📝 Updating $ELECTRON_MANIFEST...${NC}"
+sed -i "s|\"buildVersion\": \"[^\"]*\"|\"buildVersion\": \"$NEW_VERSION\"|g" "$ELECTRON_MANIFEST"
 
 # Update database settings if MAJOR or MINOR version changed
 if [ "$VERSION_TYPE" == "major" ] || [ "$VERSION_TYPE" == "minor" ]; then
